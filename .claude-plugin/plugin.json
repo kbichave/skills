@@ -1,7 +1,7 @@
 {
   "name": "deep-plan-enhanced",
   "description": "Discover, plan, and implement complex systems with AI-assisted research, multi-LLM review, TDD sections, and disciplined execution",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "author": {
     "name": "kbichave",
     "url": "https://github.com/kbichave"

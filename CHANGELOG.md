@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.0.2] - 2026-05-20
+
+### Added
+- **Auto-install of statusLine.** New SessionStart hook `scripts/hooks/auto-install-statusline.py` runs `install-statusline.py` on first session if `~/.claude/settings.json` lacks the deep marker. Idempotent on subsequent sessions. Emits a one-line `additionalContext` notice when it actually installs.
+- Opt-out: `export DEEP_DISABLE_STATUSLINE_INSTALL=1`.
+- Tests: `tests/test_auto_install_statusline.py` covers already-installed skip, env-var opt-out, installer-failure silence, missing-installer silence, notice emission.
+
+### Changed
+- `hooks/hooks.json` — added the auto-install hook alongside `capture-session-id.py` under SessionStart.
+
 ## [2.0.1] - 2026-05-20
 
 ### Added
