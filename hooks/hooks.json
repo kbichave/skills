@@ -19,6 +19,14 @@
             "command": "python3 ${CLAUDE_PLUGIN_ROOT}/scripts/hooks/impl-post-tool-use.py"
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/scripts/hooks/deep-context-monitor.py"
+          }
+        ]
       }
     ],
     "Stop": [

@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.0.1] - 2026-05-20
+
+### Added
+- **Context-usage tracker.** Two-layer monitor mirroring GSD's pattern:
+  - `scripts/hooks/deep-statusline.py` — Claude Code `statusLine` hook. Renders `deep:{mode} {step} ▰▰▰▱▱▱▱▱▱▱ {used_pct}% [{model}]` or `ctx …` fallback. Writes `/tmp/deep-ctx-{session_id}.json` bridge file.
+  - `scripts/hooks/deep-context-monitor.py` — `PostToolUse` hook. Reads bridge, injects `hookSpecificOutput.additionalContext` warnings at WARNING (≥65% used) and CRITICAL (≥75% used). 5-tool-call debounce; escalation bypasses.
+  - `scripts/lib/context_metrics.py` — model fallback table (Opus 4.7/Sonnet 4.6 = 1M, Haiku 4.5 = 200k), threshold classifier, debounce state, atomic bridge IO. Stdlib only.
+  - `scripts/checks/install-statusline.py` — safe merger for `~/.claude/settings.json`. Backs up existing entry; supports `--check` and `--uninstall`.
+  - `docs/context-monitor.md` — install, thresholds, troubleshooting, model-limit override.
+- Tests: 79 new pytest cases across `tests/test_context_metrics.py`, `tests/test_deep_statusline.py`, `tests/test_deep_context_monitor.py`, `tests/test_install_statusline.py`.
+
+### Changed
+- `hooks/hooks.json` — added second `PostToolUse` entry (no matcher) for `deep-context-monitor.py`.
+
+### Notes
+- Plugins cannot register `statusLine` in `hooks/hooks.json` or plugin `settings.json` per Claude Code spec. Users run `uv run scripts/checks/install-statusline.py` once to enable the bar.
+- Subagent token usage is not visible in the parent transcript; bridge is per top-level session only. Documented limitation, same as GSD.
+
 ## [2.0.0] - 2026-05-20
 
 ### Breaking
