@@ -45,7 +45,7 @@ Invoke the `skill-router` subagent with this context block:
 
 ```json
 {
-  "mode": "<discovery | plan | plan-all | implement | auto>",
+  "mode": "<discovery | plan | implement | auto>",
   "current_step": "<step name from the tracker>",
   "files": ["<paths touched in this step>"],
   "imports": ["<module names imported>"],
@@ -123,14 +123,14 @@ are still written for later reference.
 ## 4. End-of-Mode wrap-up: vault-curator
 
 After a mode reaches its terminal step (`output-summary` for
-discovery / plan / plan-all / auto, `final-verification` for implement),
+discovery / plan / auto, `final-verification` for implement),
 invoke the `vault-curator` subagent. Pass:
 
 ```json
 {
   "vault_path": "<resolved vault path or empty string>",
   "project_path": "<repo root>",
-  "mode": "<discovery | plan | plan-all | implement | auto>",
+  "mode": "<discovery | plan | implement | auto>",
   "artifacts": [
     {"path": "<absolute path>", "kind": "glossary | adr | finding | plan | transcript | impl_summary", "summary": "<one-line>"}
   ],

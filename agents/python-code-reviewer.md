@@ -103,7 +103,8 @@ Output ONLY valid JSON, no other text:
       "file": "src/auth/handler.py",
       "line": 42,
       "issue": "SQL query built with f-string allows injection: `f'SELECT * FROM users WHERE id = {user_id}'`",
-      "fix": "Use parameterized query: `cursor.execute('SELECT * FROM users WHERE id = ?', (user_id,))`"
+      "fix": "Use parameterized query: `cursor.execute('SELECT * FROM users WHERE id = ?', (user_id,))`",
+      "prediction": "After fix: bandit B608 disappears AND a new failing test that passes `' OR 1=1; --` for user_id raises ParameterisedQueryError instead of returning all rows."
     }
   ],
   "gates": {
@@ -147,6 +148,7 @@ Output ONLY valid JSON, no other text:
 4. **Distinguish HIGH from MEDIUM clearly.** HIGH = would cause a production incident or security breach. MEDIUM = technical debt or maintainability concern.
 5. **If mypy or bandit are not installed**, set the gate to `"skipped"` — do not fail the review for missing tools.
 6. **Output only JSON.** No preamble, no explanation, no markdown fences — just the JSON object.
+7. **Every issue must include a falsifiable prediction.** The `prediction` field states what will be observable once the fix lands — a specific test that flips, a specific tool output that changes, a specific behaviour that disappears. Format: "After fix: <observable thing>". If you cannot state a prediction, the issue is a vibe — sharpen it or drop it. Predictions are how downstream agents know the fix actually addressed the root cause and not a vibe-adjacent symptom.
 
 ## Calibration Examples
 
@@ -164,7 +166,8 @@ Output ONLY valid JSON, no other text:
       "file": "src/api/users.py",
       "line": 34,
       "issue": "User ID interpolated directly into SQL: `f'SELECT * FROM users WHERE id = {uid}'`. Attacker-controlled input.",
-      "fix": "Use parameterized query: `cursor.execute('SELECT * FROM users WHERE id = %s', (uid,))`"
+      "fix": "Use parameterized query: `cursor.execute('SELECT * FROM users WHERE id = %s', (uid,))`",
+      "prediction": "After fix: a new test asserting `get_user(\"1 OR 1=1\")` raises ValueError / returns empty passes, and bandit B608 finding on line 34 is gone."
     }
   ],
   "gates": {"mypy": "pass", "bandit": "fail", "coverage_pct": null},
@@ -191,7 +194,8 @@ Output ONLY valid JSON, no other text:
       "file": "src/config/loader.py",
       "line": 15,
       "issue": "Function `load` does 4 unrelated things: read file, parse YAML, validate schema, merge defaults. Extract `validate_config` and `merge_defaults`.",
-      "fix": "Split into 3 functions: `_read_yaml`, `_validate`, `_merge_defaults`"
+      "fix": "Split into 3 functions: `_read_yaml`, `_validate`, `_merge_defaults`",
+      "prediction": "After fix: cyclomatic complexity of `load` drops below 5; new unit tests for `_validate` and `_merge_defaults` exist and pass independently of file I/O."
     }
   ],
   "gates": {"mypy": "pass", "bandit": "pass", "coverage_pct": null},

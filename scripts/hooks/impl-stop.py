@@ -12,6 +12,13 @@ import re
 import sys
 from pathlib import Path
 
+# Ensure scripts/lib is importable when running as a hook (cwd may differ)
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+try:
+    from lib.scratch import cleanup_scratch
+except ImportError:
+    cleanup_scratch = None  # type: ignore[assignment]
+
 
 def find_active_dir() -> Path | None:
     """Find the active planning directory for the current session."""
@@ -60,6 +67,12 @@ def main() -> int:
     has_summary = summary_file.exists() and summary_file.stat().st_size > 0
 
     if has_summary:
+        # Mode is complete — sweep mode-scoped scratch artifacts
+        if cleanup_scratch is not None:
+            try:
+                cleanup_scratch(active_dir, trigger="mode-complete")
+            except Exception:
+                pass  # Cleanup is best-effort; never block exit
         return 0
 
     if completed >= total:
@@ -73,6 +86,17 @@ def main() -> int:
                 "3. Known issues or TODOs remaining\n"
                 "4. Test results (pass/fail count)\n"
                 "5. Files created or modified\n"
+                "6. Post-mortem: \"what would have prevented the rework that "
+                "happened in this mode?\" Answer honestly:\n"
+                "   - If architectural (no good test seam, tangled callers, "
+                "hidden coupling): add a `## Architectural follow-ups` section "
+                "with specifics and suggest invoking "
+                "Skill(improve-codebase-architecture) on the next session.\n"
+                "   - If spec clarity (confidence gate kept firing at 5-7): "
+                "add `## Spec gaps observed` with what was unclear, so the "
+                "next plan iteration tightens.\n"
+                "   - If nothing — went clean: say so explicitly. Do not "
+                "invent rework.\n"
                 "Then you may exit."
             )
         }
@@ -87,6 +111,9 @@ def main() -> int:
                 "2. What remains and any blockers\n"
                 "3. Errors encountered and how they were resolved\n"
                 "4. Where to pick up next session\n"
+                "5. Post-mortem: any architectural or spec-clarity gaps "
+                "discovered while landing the completed sections (see Phase 10 "
+                "in references/implement-protocol.md)\n"
                 "Then you may exit."
             )
         }

@@ -1,342 +1,175 @@
 ---
 name: deep
-description: Unified discovery, planning, and implementation. Modes — discovery: system audit → phase specs; plan: implementation blueprint; plan-all: batch-plan all phases; implement: execute sections; auto: autonomous end-to-end. Accepts @path, inline text, or no argument.
+description: Discovery, planning, and implementation pipeline. Modes — discovery: system audit → phase specs; plan: implementation blueprint; implement: execute sections; auto: autonomous end-to-end. Accepts @path, inline text, or no argument.
 license: MIT
-compatibility: Requires uv (Python 3.11+), optional Gemini or OpenAI API key for external review. Recommended: mempalace MCP for cross-session knowledge persistence
+compatibility: Requires uv (Python 3.11+). Optional Gemini or OpenAI API key for external review.
 ---
 
 # Deep Skill
 
-Unified entry point for the full planning pipeline:
+Pick mode by question:
+
+| Question | Mode | Output | Load-bearing step |
+|---|---|---|---|
+| "What should we build?" | `discovery` | audit + phase specs | **Topic enumeration** |
+| "How do I build phase X?" | `plan` | blueprint + sections | **Interview** (Premise Challenge) |
+| "Code section X" | `implement` | tested code | **Confidence gate** |
+| "Do it all autonomously" | `auto` | multi-phase plan + implement chain | **Discovery bridge** |
 
 ```
-/deep discovery @path           → system audit + phase specs
-/deep plan @spec.md             → implementation blueprint
-/deep plan-all @phases/         → batch-plan all phases
-/deep implement [@plan-dir/]    → execute sections
-/deep auto @phases/             → autonomous end-to-end
+/deep discovery @path [--depth=quick|standard|deep]  → audit + phase specs
+/deep plan @spec.md [--from-prd @prd.md | --from-adr @adrs/]  → blueprint
+/deep implement [@dir]                               → execute sections
+/deep auto @phases/                                  → end-to-end
 ```
 
-Also accepts inline text or no argument — see **Resolve Input** below.
+**Discovery depth** (`audit` only):
+- `quick`: scan + topics + interview + docs + phasing only (5-10 min)
+- `standard` (default): all steps
+- `deep`: all steps + cross-verify pass on top findings
+
+**Express paths** (`plan` only): when input is already structured, skip research + interview.
+- `--from-prd @prd.md`: PRD with requirements + acceptance criteria
+- `--from-adr @adrs/`: existing ADR file or directory of ADRs
+
+Also accepts inline text or no argument — see **Resolve Input**.
+
+The load-bearing step in each mode is where most of the value lives. Spend disproportionate effort there. Other steps are mechanical.
 
 ---
 
 ## First Actions
 
-### 1. Validate Environment
-
-Locate `DEEP_PLUGIN_ROOT` from SessionStart hook context. Run:
+### 1. Validate environment
 ```bash
 bash ${DEEP_PLUGIN_ROOT}/scripts/checks/validate-env.sh
 ```
-Parse JSON output. Store `plugin_root` and map `review_available` to `review_mode`:
-- `"full"` / `"gemini_only"` / `"openai_only"` → `review_mode = "external_llm"`
-- `"none"` → ask user: Opus subagent (→ `"opus_subagent"`), Sonnet subagent (→ `"sonnet_subagent"`), skip (→ `"skip"`), or exit
+Parse JSON. Map `review_available` to `review_mode` (`full`/`gemini_only`/`openai_only` → `external_llm`; `none` → ask user: opus/sonnet/skip/exit). If `valid == false`: stop.
 
-If `valid == false`: show errors and stop.
+### 2. Vault init + routing
+Lifecycle concerns live in `references/integration-protocol.md`:
+- §1 vault resolution (sets `vault_available`)
+- §2 skill-router invocation between phases
+- §3 architecture-audit prompt (plan + implement)
+- §4 end-of-mode vault-curator
 
-### 1a. Check & Initialize Obsidian Vault
+### 3. Resolve input
 
-Read `references/integration-protocol.md` §1 and execute the vault
-resolution + first-run prompt described there. Sets `vault_available`
-in the session state.
-
-### 1b. Check & Initialize Mempalace
-
-1. Test if the `mempalace` MCP is connected by calling `mcp__mempalace__mempalace_status`.
-2. If the tool is not available or the call errors with a non-palace error: set `mempalace_available = false`. Continue without it.
-3. If the call returns `"No palace found"` or the palace has no wings for this project:
-   - Run `mempalace init <project_working_directory> --yes` via Bash (auto-accepts, non-interactive)
-   - Then run `mempalace mine <project_working_directory>` to seed the palace with project files
-   - Re-check status to confirm initialization succeeded
-4. If status succeeds: set `mempalace_available = true`. Derive a **wing name** from the project directory name (e.g., `my-service` for `/path/to/my-service`).
-
-This is fully automatic — never ask the user to initialize mempalace.
-
-### 2. Resolve Input
-
-Detect mode and argument:
-
-| Argument form | Action |
+| Argument | Mode |
 |---|---|
-| `discovery @path` or `@directory` (no `claude-plan.md` inside) | Mode = `audit` |
-| `plan @file.md` or `@file.md` | Mode = `plan` |
-| `plan-all @path` or `@directory` with `phasing-overview.md` | Mode = `plan-all` |
-| `implement [@path]` or `@directory` with `claude-plan.md` + `sections/` | Mode = `implement` |
-| `auto @path` | Mode = `auto` |
-| Inline text (no `@`, not an existing path) | Synthesize spec first (see below) |
-| No argument | Ask user: `"What do you want to build or audit?"` → treat answer as inline text |
+| `discovery @path` or `@dir` without `claude-plan.md` | `audit` |
+| `plan @file.md` or `@file.md` | `plan` |
+| `implement [@path]` or `@dir` with `claude-plan.md` + `sections/` | `implement` |
+| `auto @path` | `auto` |
+| Inline text (no `@`) | Synthesize via `references/auto-spec-synthesis.md` |
+| Empty | Ask: `"What do you want to build or audit?"` |
 
-**`--no-reframe` flag:** If the input text or spec file contains `--no-reframe`, skip the Premise Challenge round during the interview step. Auto mode always skips the premise challenge (no human to interact with). In plan mode, also skip if the spec contains >5 concrete file paths or function signatures (indicating the user has a highly specific, well-defined ask).
+`--no-reframe`: skip Premise Challenge in interview. Auto always skips. Plan skips when spec has >5 concrete file paths or function signatures.
 
-**Inline text handling:** Read `references/auto-spec-synthesis.md` and follow it to:
-1. Gather project context (git log, README, CLAUDE.md, top-level structure — no subagent)
-2. Synthesize `claude-spec.md` (plan mode) or `objective.md` (discovery mode) in the planning directory
-3. Confirm with user (one round)
-4. Use the synthesized file as `initial_file` — proceed with the resolved mode
+### 4. Setup session
 
-### 3. Setup Session
-
-**For `discovery`, `plan`, `plan-all`, `auto` modes:**
+For `audit` / `plan` / `auto`:
 ```bash
 uv run ${DEEP_PLUGIN_ROOT}/scripts/checks/setup-session.py \
   --file "<target>" --plugin-root "${DEEP_PLUGIN_ROOT}" \
   --review-mode "${review_mode}" --session-id "${DEEP_SESSION_ID}" \
-  --workflow "<discovery→audit | plan | plan-all | auto>"
+  --workflow "<audit | plan | auto>" \
+  [--depth "<quick|standard|deep>"] \
+  [--from-prd "<path>" | --from-adr "<path>"]
 ```
+`--depth` is `audit`-only. `--from-prd` / `--from-adr` are `plan`-only and mutually exclusive.
+Parse JSON: `new` → proceed; `resume` → continue at ready step; `complete` → stop; `success == false` → error.
 
-Parse JSON output:
-- `mode == "new"`: print planning directory, proceed to workflow loop
-- `mode == "resume"`: print ready issues, proceed to workflow loop
-- `mode == "complete"`: print completion message, stop
-- `success == false`: show error and stop
-
-Store `planning_dir`, `initial_file`, `plugin_root` from the output.
-
-### 3b. Mempalace Experience Recall (ONLY if `mempalace_available == true`)
-
-**Skip this step entirely if mempalace is not available.** Do not read the reference file.
-
-If mempalace IS available: read `references/experience-protocol.md` and execute **Phase 1: Experience Recall**. This queries mempalace for prior decisions, coding patterns, lessons learned, domain knowledge, and known risks — then synthesizes an `experience_context` block (under 500 words) that travels with the workflow.
-
-**For `implement` mode:** Skip setup-session. Instead:
-1. If `@path` provided: use it as `planning_dir` (or its parent if a file)
-2. Otherwise: read `~/.claude/.deep-plan-active` for `planning_dir`
-3. Validate: `{planning_dir}/claude-plan.md`, `{planning_dir}/sections/index.md`, `{planning_dir}/.deepstate/state.json` must all exist
+For `implement`: skip setup-session. Use `@path` (or its parent), else `~/.claude/.deep-plan-active`. Validate `claude-plan.md`, `sections/index.md`, `.deepstate/state.json` exist.
 
 ---
-
-## Skill-aware Routing (every mode)
-
-Between major workflow phases, follow `references/integration-protocol.md` §2:
-invoke the `skill-router` subagent (see `agents/skill-router.md`) and
-honour its `auto_invoked` / `prompted` / `skipped` lists. The protocol
-file contains the context-block schema, side-effect demotion rules,
-and the `--no-skill-routing` opt-out.
-
-## Architecture-audit prompt (plan + implement)
-
-Follow `references/integration-protocol.md` §3:
-
-* `/deep plan`: run the audit between research and interview; on
-  `result.total > 0` ask whether to fold one candidate into the plan;
-  invoke `Skill(improve-codebase-architecture)` on accept.
-* `/deep implement`: warn on per-section overlap with audit candidates;
-  default is narrow scope.
-
-In `/deep auto` mode the prompts are skipped; the audit results are
-still written for later reference.
 
 ## Workflow Loop
 
-After setup, follow the tracker for the active mode:
-
 ```
-1. Load tracker from {planning_dir}/.deepstate/
-2. Call tracker.ready() → returns next unblocked step(s)
-3. Auto mode only: if the ready step is a human-interactive step
-   (user-review, context-check-pre-review, context-check-pre-split),
-   auto-close it immediately with reason "Auto mode: skipped" and
-   repeat from step 2
-4. Read the step's reference file (see index below)
-5. Execute the step
-6. Mempalace mine (if mempalace_available) — see Knowledge Mining below
-7. Call tracker.close(issue_id, reason)
-8. Auto mode only: if this was an output-summary step (phase complete),
-   run implement mode for this phase before continuing to next phase
-9. Repeat from 2 until all steps are closed
+1. tracker.ready() → next unblocked step
+2. Auto mode: if step is human-interactive (user-review,
+   context-check-pre-review, context-check-pre-split),
+   auto-close with reason "Auto mode: skipped" and repeat
+3. Read step's reference file (index below)
+4. Execute step
+5. tracker.close(issue_id, reason)
+6. Auto mode: if step was output-summary (phase complete),
+   run implement for that phase before next phase
+7. Repeat until all closed
 ```
-
-### Mempalace Knowledge Mining (ONLY if `mempalace_available == true`)
-
-**Skip entirely if mempalace is not available.** Do not read the reference file.
-
-If mempalace IS available: follow `references/experience-protocol.md` **Phase 2** (store findings at each checkpoint) and **Phase 3** (proactive intelligence — surface risks, flag contradictions with prior decisions, predict gaps). Do NOT ask the user — store and surface intelligence silently.
 
 ---
 
-## Reference File Index
+## Reference Index
 
-### Cross-cutting (all modes)
+### Cross-cutting
+| Concern | File |
+|---|---|
+| Vault, routing, architecture-audit, vault-curator | `references/integration-protocol.md` |
+| Discovery findings reuse for auto + plan | `references/discovery-bridge.md` |
+| Plan mutation (split/skip/reorder/insert/amend) | `references/plan-mutation-protocol.md` |
+| Resume after compaction | `references/resume.md` |
 
-| Concern | Reference |
-|---------|-----------|
-| Mempalace experience recall, knowledge mining, proactive intelligence | `references/experience-protocol.md` |
-| Discovery bridge for plan-all/auto research + interview reuse | `references/discovery-bridge.md` |
-| Plan mutation during implementation (split/skip/reorder/insert/amend) | `references/plan-mutation-protocol.md` |
-
-### Discovery mode (`--workflow audit`)
-
+### Discovery (`--workflow audit`)
 | Step | Reference |
-|------|-----------|
-| Quick Scan | `references/audit-research-protocol.md` |
-| Empirical Data Collection | `references/audit-data-collection.md` |
-| Topic Enumeration | `references/audit-topic-enumeration.md` |
-| Deep Research | `references/audit-research-protocol.md` |
+|---|---|
+| Quick Scan, Deep Research | `references/audit-research-protocol.md` |
+| Empirical Data | `references/audit-data-collection.md` |
+| Topic Enumeration *(load-bearing)* | `references/audit-topic-enumeration.md` |
 | Coverage Validation | `references/audit-coverage-validation.md` |
-| Auto Gap ID | Analyze findings per topic, write `current-state/` and `gaps/` |
 | Stakeholder Interview | `references/audit-interview-protocol.md` |
-| Generate Audit Docs | `references/audit-doc-writing.md` |
-| Build-vs-Buy Analysis | `references/audit-build-vs-buy.md` |
+| Audit Docs | `references/audit-doc-writing.md` |
+| Build-vs-Buy | `references/audit-build-vs-buy.md` |
 | Phase Specs | `references/audit-phasing.md` |
 | External Review | `references/external-review.md` |
-| User Review | Present audit directory for review |
-| Output Summary | Generate `README.md` index, print file listing |
 
-### Plan mode (`--workflow plan`)
-
+### Plan (`--workflow plan`)
 | Step | Reference |
-|------|-----------|
-| Research Decision | `references/research-protocol.md` |
-| Execute Research | `references/research-protocol.md` |
-| Detailed Interview | `references/interview-protocol.md` |
-| Save Interview | Write Q&A to `claude-interview.md` |
-| Write Spec | Combine input + research + interview into `claude-spec.md` |
-| Generate Plan | `references/plan-writing.md` |
+|---|---|
+| Research | `references/research-protocol.md` |
+| Interview *(load-bearing)* | `references/interview-protocol.md` |
+| Write Spec, Generate Plan | `references/plan-writing.md` |
 | Context Check | `references/context-check.md` |
 | External Review | `references/external-review.md` |
-| User Review | AskUserQuestion to review `claude-plan.md` |
 | Apply TDD | `references/tdd-approach.md` |
-| Create Section Index | `references/section-index.md` |
-| Generate Sections | Run `generate-sections.py` (see below) |
-| Write Sections | `references/section-splitting.md` |
-| Final Verification | Run `check-sections.py`, confirm all sections exist |
-| Output Summary | Print generated files and next steps |
+| Section Index, Sections | `references/section-index.md`, `references/section-splitting.md` |
 
-For the **Generate Sections** step, run:
+Generate sections step:
 ```bash
 uv run ${DEEP_PLUGIN_ROOT}/scripts/checks/generate-sections.py \
   --planning-dir "${planning_dir}" --session-id "${DEEP_SESSION_ID}"
 ```
 
-### Plan-All mode (`--workflow plan-all`)
-
-Parse `phasing-overview.md` dependency graph. For each phase in topological order:
-- First phase: full plan workflow (all steps above)
-- Later phases: research and interview steps use `references/discovery-bridge.md` — reads discovery findings (max 5 per phase), identifies gaps, only researches gaps. Discovery interview is passed through to all phases.
-- Reference: same as Plan mode per step, except research/interview for non-first phases
-
-### Auto mode (`--workflow auto`)
-
-Same as Plan-All, plus:
-- Interview: replaced by self-interview subagents (no human interaction)
-- User review: auto-closed when step becomes ready (do NOT pre-close — breaks dependency chain)
-- **Implement after each phase:** After a phase's planning pipeline completes (sections written), run the implement workflow for that phase BEFORE starting the next dependent phase. This ensures later phases plan against the actual post-implementation codebase.
-
-**Auto mode execution order (example with P01→P03→P05 chain):**
+**Coverage gate** (run after sections are written, before `output-summary` closes):
+```bash
+uv run ${DEEP_PLUGIN_ROOT}/scripts/checks/check-coverage.py \
+  --planning-dir "${planning_dir}"
 ```
-plan P01 → implement P01 → plan P03 → implement P03 → plan P05 → implement P05
-```
+Exit 0 = pass, exit 1 = missing items (do NOT close output-summary). Parse JSON `missing` list; either add sections, mark items deferred in spec, or escalate to user.
 
-Independent chains can interleave but each chain completes plan+implement before its dependents start planning:
-```
-Chain 1: plan P01 → implement P01 → plan P03 → ...
-Chain 2: plan P02 → implement P02 → plan P04 → ...
-```
+### Auto (`--workflow auto`)
+Multi-phase: parses `phasing-overview.md`, plans each phase in topological order, implements before next dependent phase plans. First phase = full plan workflow; later phases use `references/discovery-bridge.md`. Human-interactive steps auto-close at ready time (do NOT pre-close — breaks dependency chain).
 
-### Implement mode
+Example: `plan P01 → implement P01 → plan P03 → implement P03 → plan P05 → implement P05`
 
-| Step | Reference |
-|------|-----------|
-| Initialize tracking | Create `impl-task-plan.md`, `impl-findings.md`, `impl-progress.md`, `impl-mutations.md` |
-| Per-section: confidence gate | Rate 1-10 before coding — reads prior section outcomes from `impl-progress.md` (see Confidence Gate below) |
-| Per-section: read spec | `sections/{section-name}.md` + `claude-plan-tdd.md` |
-| Per-section: code standards | `references/coding-standards.md` (read before writing any code) |
-| Per-section: implement | Tests first, then implementation |
-| Per-section: eval check | Verify capability evals pass (new tests) and regression evals pass (existing tests) |
-| Per-section: review | `agents/python-code-reviewer.md` (Python) or `agents/opus-plan-reviewer.md` (other) |
-| Per-section: quality gate | ruff + mypy + bandit + pytest --cov (see `references/coding-standards.md`) |
-| Per-section: chain context | Append `section_outcome` from review JSON to `impl-progress.md` (see Context Chaining below) |
-| Per-section: close | `tracker.close(section_id, reason)`, update `impl-progress.md` |
-| Plan mutation | `references/plan-mutation-protocol.md` — formal split/skip/reorder/insert/amend when reality diverges from plan |
-| Final verification | Full test suite, no TODOs, write `impl-summary.md` |
+### Implement
+All section-level discipline lives in `references/implement-protocol.md`:
+- Phase 1: confidence gate (1-10 rating) *(load-bearing)*
+- Phase 2-3: read spec + standards, tests first
+- Phase 4: eval check (capability + regression)
+- Phase 5-6: review + quality gate (ruff + mypy + bandit + pytest --cov)
+- Phase 7: context chaining (`section_outcome` → `impl-progress.md`)
+- Phase 9: rollback (3-strike rule)
+- Phase 10: post-mortem — answer "what would have prevented the rework?". Architectural answer → suggest `Skill(improve-codebase-architecture)`. Spec-clarity answer → log under `## Spec gaps observed`. None → say so. Stop hook enforces.
 
-#### Confidence Gate
-
-Before coding each section, assess readiness on a 1-10 scale:
-
-| Factor | Question |
-|--------|----------|
-| Spec clarity | Are the eval definitions, test stubs, and function signatures specific enough to implement without guessing? |
-| Dependency readiness | Are all `depends_on` sections complete and their interfaces available? |
-| Codebase context | Can you locate the files and modules this section integrates with? |
-| Scope | Is this section implementable in a single pass (< 500 lines of changes)? |
-
-**Score interpretation:**
-- **8-10:** Proceed normally
-- **5-7:** Proceed with caveats — log concerns in `impl-findings.md`, consider AMEND mutation
-- **1-4:** Do NOT proceed — in interactive mode: ask user. In auto mode: log reason, apply SKIP or SPLIT mutation per `references/plan-mutation-protocol.md`, move to next section
-
-#### Context Chaining
-
-Each section's code review produces a `section_outcome` block (see `agents/python-code-reviewer.md`). After review passes, append this outcome to `impl-progress.md` under a `## Section Outcomes` heading:
-
-```markdown
-## Section Outcomes
-
-### section-01-foundation
-- **Files:** src/core/__init__.py, src/core/types.py, tests/test_core_types.py
-- **Interfaces:** Result[T] generic, AppError base exception, UserId NewType
-- **Deviations:** None
-- **Context:** Foundation types at src/core/types.py. All sections should use Result[T] for fallible operations.
-
-### section-02-config
-- **Files:** src/config/loader.py, src/config/models.py
-- **Interfaces:** load_config(path: Path) -> AppConfig
-- **Deviations:** Used TOML instead of YAML — pyproject.toml already in project
-- **Context:** Config loading via load_config(). Downstream sections needing config import from src/config/loader.
-```
-
-The **confidence gate** for each subsequent section reads these outcomes to assess:
-- Whether dependency interfaces actually match what the section spec assumed
-- Whether any spec deviations in prior sections invalidate the current section's approach
-- Whether an AMEND mutation is needed before proceeding
-
-This prevents drift — later sections account for how earlier sections actually landed, not just what was planned.
-
-#### Eval Check
-
-After implementation, before review, verify against the section's eval definitions:
-- **Capability evals:** Each checkbox item must have a corresponding passing test
-- **Regression evals:** Run existing test suite — zero new failures allowed
-- If any eval fails: fix before proceeding to review. If unfixable: log in `impl-findings.md` with reason
-
-#### Rollback
-
-If a section fails quality gates after 3 attempts (3-strike rule), consult the section's **Rollback Strategy** to undo changes cleanly before moving on.
-
-**3-strike rule:** Same error 3 times → ask user (interactive) or log and continue with rollback (auto mode).
+Reads from `.deepstate/state.json`.
 
 ---
-
-## End-of-Mode Wrap-Up: vault-curator
-
-After a mode reaches its terminal step (`output-summary` for
-discovery / plan / plan-all / auto, `final-verification` for implement),
-follow `references/integration-protocol.md` §4: invoke the
-`vault-curator` subagent and honour the routing decisions it returns.
-Graceful degrade when `vault_available = false`.
 
 ## Guardrails
 
 1. **Always read the reference file for the current step before executing.**
 2. **Never skip a step — `tracker.ready()` determines order.**
 3. **Always close the step with `tracker.close()` after completing it.**
-4. **For implement mode:** Do not exit until `impl-summary.md` exists (enforced by Stop hook).
-
----
-
-## Resuming After Compaction
-
-After `/clear` or context compaction:
-
-1. Re-run `validate-env.sh` to restore `plugin_root`
-2. Check mempalace (step 1b) — if available, run recall (step 3b) to recover prior context
-3. Call `tracker.prime()` and read `{planning_dir}/.deepstate/prime.md` for a compact status summary
-4. Call `tracker.ready()` — returns exactly where to continue
-5. For implement mode: read `impl-progress.md` for current section status
-6. Reference files are at `{plugin_root}/references/`
-
-If `planning_dir` is unknown: check `~/.claude/.deep-plan-active` for the last active session path.
-
-Mempalace recall after compaction is especially valuable — it restores decisions, tradeoffs, and findings that were in the compacted context.
+4. **Implement mode:** Do not exit until `impl-summary.md` exists (Stop hook enforces).

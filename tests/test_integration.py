@@ -21,7 +21,7 @@ from lib.tasks import TASK_IDS, TASK_DEPENDENCIES
 from lib.workflow import (
     create_plan_workflow,
     create_section_issues,
-    create_plan_all_workflow,
+    create_autonomous_workflow,
 )
 
 
@@ -248,10 +248,10 @@ class TestBeadsSyncFireAndForget:
         assert tracker.show("issue-3")["status"] == "open"
 
 
-# ── Test 4: Plan-All Phase Sequencing ─────────────────────────────────
+# ── Test 4: Autonomous Multi-Phase Sequencing ─────────────────────────
 
 
-class TestPlanAllPhaseSequencing:
+class TestAutonomousPhaseSequencing:
     """Phase sub-epics respect inter-phase deps; parallel phases surface together."""
 
     @pytest.fixture
@@ -265,7 +265,7 @@ class TestPlanAllPhaseSequencing:
             "P01 --> P02 --> P04\n"
             "P01 --> P03 --> P04\n"
         )
-        create_plan_all_workflow(
+        create_autonomous_workflow(
             tracker,
             phases_dir=str(phases_dir),
             plugin_root="/fake",

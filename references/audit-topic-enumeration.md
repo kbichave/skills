@@ -40,17 +40,7 @@ Extract empirical signals and generate targeted questions:
 - Tag every empirical question with `source: empirical`
 - Thresholds are guidance, not hard rules — use judgment for borderline cases
 
-## Step 3: Check for Prior Research (MemPalace, if available)
-
-If the `mempalace_search` MCP tool is available:
-1. Call `mempalace_search` with 2–3 key terms from the project domain (e.g. "authentication Python API")
-2. Filter results where room = "research-topics"
-3. Review returned topics — mark any that are directly relevant as candidates
-4. These become suggested topics in the manifest (with `source: prior_project`)
-
-This avoids re-researching what you already know from other projects.
-
-## Step 3.5: Detect Project Domain
+## Step 3: Detect Project Domain
 
 Using data from Steps 1-2, classify the project domain to select appropriate expert perspectives.
 
@@ -182,4 +172,3 @@ topics:
 1. **Do not skip categories** — every category should have at least one topic unless the project genuinely has nothing in that area (e.g. a CLI tool has no deployment category — mark it explicitly as N/A in metadata).
 2. **Questions must be specific and answerable** — not "How does security work?" but "What input validation exists at API boundaries?".
 3. **Priority is about gap-finding impact**, not importance to the project. Security topics are often high priority even for small projects because they're commonly missed.
-4. **Prior-project topics** (from MemPalace) should be reviewed critically — mark them `source: prior_project` in a notes field and verify they apply to this codebase before including.

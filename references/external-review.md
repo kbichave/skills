@@ -158,3 +158,35 @@ All modes write to `{planning_dir}/reviews/`:
 - `iteration-1-openai.md` - OpenAI review (external_llm mode)
 - `iteration-1-opus.md` - Opus review (opus_subagent mode)
 - `iteration-1-sonnet.md` - Sonnet review (sonnet_subagent mode)
+
+---
+
+## Stall Detection (revision loop)
+
+After each `integrate-feedback` iteration that re-runs review (iteration ≥ 2), invoke the stall detector before launching the next round:
+
+```python
+from scripts.lib.stall_detector import StallDetector
+
+detector = StallDetector(min_diff_ratio=0.10)
+# Record every revision recorded so far in this session
+for iteration in iterations_so_far:
+    detector.record_revision(
+        label=f"iteration-{iteration.n}",
+        text=iteration.plan_text,            # claude-plan.md content for that iteration
+        findings=iteration.review_findings,  # bullet list from reviewer JSON
+    )
+verdict = detector.check()
+```
+
+If `verdict.stalled` is True:
+
+- **Interactive mode:** surface `verdict.reason` via `AskUserQuestion` with options:
+  - "Accept current plan and proceed" — close review with reason quoting the verdict
+  - "Force one more revision" — continue loop (max 3 total)
+  - "Abort planning" — exit
+- **Auto mode:** accept-with-caveat. Append the verdict to `claude-plan.md` under `## Review caveats` and close review with reason "Stall detected — accepted with caveat".
+
+A stall verdict is information, not failure. The artifact may already be good enough; the loop has just stopped sharpening it.
+
+Hard cap: ≤3 revision iterations regardless of stall detection. After iteration 3, accept or abort — never iterate further.

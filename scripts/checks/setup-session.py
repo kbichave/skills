@@ -25,8 +25,7 @@ from lib.config import (
 )
 from lib.deepstate import DeepStateTracker
 from lib.beads_sync import BeadsSyncTracker, detect_beads
-from lib.workflow import create_plan_workflow, create_discovery_workflow, create_plan_all_workflow, create_autonomous_workflow
-from lib.research_topics import index_session_in_mempalace
+from lib.workflow import create_plan_workflow, create_discovery_workflow, create_autonomous_workflow
 
 
 VALID_REVIEW_MODES = {"external_llm", "opus_subagent", "sonnet_subagent", "skip"}
@@ -231,14 +230,17 @@ def setup_session(
     session_id: str | None,
     workflow: str,
     force: bool,
+    depth: str = "standard",
+    express_source: str | None = None,
+    express_kind: str | None = None,
 ) -> dict:
     """Core setup logic. Returns JSON-serializable result dict."""
     is_audit = workflow == "audit"
-    is_plan_all = workflow in ("plan-all", "auto")
+    is_auto = workflow == "auto"
 
     # Input validation
     if file_path.is_dir():
-        if not is_audit and not is_plan_all:
+        if not is_audit and not is_auto:
             return {
                 "success": False,
                 "error": f"Expected a spec file (.md), got a directory: {file_path}. "
@@ -253,17 +255,15 @@ def setup_session(
     # Derive the project root for slug computation.
     # audit: file_path IS the project directory
     # plan: file_path is a spec .md, project root is its parent
-    # plan-all/auto: file_path is the phases dir, project root is its parent
+    # auto: file_path is the phases dir, project root is its parent
     if file_path.is_dir():
         project_path = file_path
     else:
         project_path = file_path.parent
 
     # Resolve planning directory
-    if is_plan_all and file_path.is_dir():
-        # For plan-all/auto: check legacy location first, then SESSIONS_ROOT
-        subdir = "auto" if workflow == "auto" else "plan-all"
-        legacy_dir = file_path.parent / subdir
+    if is_auto and file_path.is_dir():
+        legacy_dir = file_path.parent / "auto"
         if legacy_dir.exists() and (legacy_dir / ".deepstate" / "state.json").exists():
             planning_dir = legacy_dir
         else:
@@ -319,7 +319,7 @@ def setup_session(
 
     # Initialize tracker
     from lib.tasks import TASK_IDS, AUDIT_TASK_IDS
-    if is_plan_all:
+    if is_auto:
         expected_count = None  # Dynamic — depends on number of phases
     elif is_audit:
         expected_count = len(AUDIT_TASK_IDS)
@@ -392,17 +392,10 @@ def setup_session(
 
     if is_audit:
         epic_title = create_discovery_workflow(
-            tracker, **context,
+            tracker, **context, depth=depth,
         )
-    elif workflow == "auto":
+    elif is_auto:
         epic_title = create_autonomous_workflow(
-            tracker,
-            phases_dir=str(file_path),
-            plugin_root=str(plugin_root),
-            discovery_findings=str(file_path.parent),
-        )
-    elif is_plan_all:
-        epic_title = create_plan_all_workflow(
             tracker,
             phases_dir=str(file_path),
             plugin_root=str(plugin_root),
@@ -414,6 +407,8 @@ def setup_session(
             tracker,
             **context,
             discovery_findings=str(discovery_dir) if discovery_dir else None,
+            express_source=express_source,
+            express_kind=express_kind,
         )
 
     # Store epic reference in config
@@ -438,14 +433,6 @@ def setup_session(
             workflow=workflow,
             initial_file=str(file_path),
         )
-        # Mirror to MemPalace when available (semantic, cross-project lookup)
-        index_session_in_mempalace(
-            project_slug=slug,
-            session_prefix=prefix,
-            workflow=workflow,
-            initial_file=str(file_path),
-            planning_dir=str(planning_dir),
-        )
     except Exception:
         pass  # Index is a convenience feature; never block the workflow
 
@@ -460,7 +447,7 @@ def setup_session(
         "epic_id": epic_title,
         "beads_available": beads_available,
         "sessions_root": str(SESSIONS_ROOT),
-        "message": f"Starting new {'audit' if is_audit else 'plan-all' if is_plan_all else 'planning'} session in: {planning_dir}",
+        "message": f"Starting new {'audit' if is_audit else 'auto' if is_auto else 'planning'} session in: {planning_dir}",
     }
 
 
@@ -475,10 +462,42 @@ def main():
     parser.add_argument("--force", action="store_true", help="Force overwrite of existing state")
     parser.add_argument("--session-id", help="Session ID from hook's additionalContext")
     parser.add_argument(
-        "--workflow", choices=["plan", "audit", "plan-all", "auto"], default="plan",
-        help="Workflow type: plan (default), audit, plan-all, or auto",
+        "--workflow", choices=["plan", "audit", "auto"], default="plan",
+        help="Workflow type: plan (default), audit, or auto",
+    )
+    parser.add_argument(
+        "--depth", choices=["quick", "standard", "deep"], default="standard",
+        help="Discovery depth (audit workflow only): quick (scan + topics + interview), "
+             "standard (default, all steps), deep (all steps + cross-verify pass)",
+    )
+    parser.add_argument(
+        "--from-prd",
+        help="Express path (plan workflow): path to a PRD file. Skips research + interview.",
+    )
+    parser.add_argument(
+        "--from-adr",
+        help="Express path (plan workflow): path to an ADR file or directory. "
+             "Skips research + interview.",
     )
     args = parser.parse_args()
+
+    if args.from_prd and args.from_adr:
+        print(json.dumps({
+            "success": False,
+            "mode": "error",
+            "error": "Cannot use --from-prd and --from-adr together. Pick one.",
+        }))
+        sys.exit(2)
+
+    express_source = args.from_prd or args.from_adr
+    express_kind = "prd" if args.from_prd else ("adr" if args.from_adr else None)
+    if express_source and args.workflow != "plan":
+        print(json.dumps({
+            "success": False,
+            "mode": "error",
+            "error": f"--from-prd / --from-adr only valid with --workflow plan, got {args.workflow}",
+        }))
+        sys.exit(2)
 
     # Normalize review_mode
     if args.review_mode not in VALID_REVIEW_MODES:
@@ -496,6 +515,9 @@ def main():
             session_id=args.session_id,
             workflow=args.workflow,
             force=args.force,
+            depth=args.depth,
+            express_source=express_source,
+            express_kind=express_kind,
         )
     except Exception as e:
         result = {"success": False, "error": str(e), "mode": "error"}

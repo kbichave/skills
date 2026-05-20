@@ -207,6 +207,28 @@ After collecting results from all subagents, combine them into `<planning_dir>/c
 
 Structure the file however makes sense for the findings. The goal is to capture useful research that will inform the implementation plan - there's no required format.
 
+### 7.5 Throwaway scratch (optional)
+
+For exploratory notes that informed `claude-research.md` but should NOT survive the session — e.g. comparing 3 libraries when only one made it into the plan, scratch benchmarks, half-formed prototype scripts — write them via `scripts/lib/scratch.write_scratch_artifact`:
+
+```python
+from pathlib import Path
+from scripts.lib.scratch import write_scratch_artifact
+
+write_scratch_artifact(
+    Path(planning_dir),
+    "oauth-library-comparison.md",
+    body_text,
+    delete_after="mode-complete",  # swept when Stop hook fires
+)
+```
+
+Lands under `{planning_dir}/scratch/` with a THROWAWAY header. Auto-deleted at mode end by the Stop hook. Use this aggressively — clutter in `findings/` and `claude-research.md` is durable; scratch is not.
+
+Do NOT use scratch for:
+- Anything referenced by `claude-plan.md` / `claude-spec.md` / `findings/`
+- Anything that would inform a future `/deep` run
+
 ---
 
 ## Edge Cases

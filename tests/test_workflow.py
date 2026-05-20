@@ -10,7 +10,6 @@ from lib.workflow import (
     create_plan_workflow,
     create_discovery_workflow,
     create_section_issues,
-    create_plan_all_workflow,
     create_autonomous_workflow,
     _toposort,
     _has_discovery_artifacts,
@@ -266,6 +265,99 @@ class TestCreateDiscoveryWorkflow:
             assert ref_file in issue["description"]
 
 
+class TestPlanExpressPath:
+    def test_express_prd_precloses_research_and_interview(self, tracker, plan_context):
+        create_plan_workflow(
+            tracker, **plan_context, express_source="/path/to/prd.md", express_kind="prd"
+        )
+        for skipped in ("research-decision", "execute-research", "detailed-interview", "save-interview"):
+            issue = tracker.show(skipped)
+            assert issue["status"] == "closed"
+            assert "Express path" in (issue.get("closed_reason") or "")
+            assert "prd" in (issue.get("closed_reason") or "")
+
+    def test_express_adr_uses_adr_label(self, tracker, plan_context):
+        create_plan_workflow(
+            tracker, **plan_context, express_source="/path/to/adrs", express_kind="adr"
+        )
+        issue = tracker.show("research-decision")
+        assert "adr" in (issue.get("closed_reason") or "")
+
+    def test_express_keeps_plan_steps_open(self, tracker, plan_context):
+        create_plan_workflow(
+            tracker, **plan_context, express_source="/path/to/prd.md", express_kind="prd"
+        )
+        for task_id in ("write-spec", "generate-plan", "external-review", "user-review"):
+            assert tracker.show(task_id)["status"] == "open"
+
+    def test_express_write_spec_description_references_source(self, tracker, plan_context):
+        create_plan_workflow(
+            tracker, **plan_context, express_source="/x/prd.md", express_kind="prd"
+        )
+        desc = tracker.show("write-spec")["description"]
+        assert "/x/prd.md" in desc
+        assert "Express path" in desc
+
+    def test_no_express_keeps_research_open(self, tracker, plan_context):
+        create_plan_workflow(tracker, **plan_context)
+        for task_id in ("research-decision", "execute-research"):
+            assert tracker.show(task_id)["status"] == "open"
+
+    def test_express_invalid_kind_raises(self, tracker, plan_context):
+        with pytest.raises(ValueError, match="express_kind"):
+            create_plan_workflow(
+                tracker, **plan_context, express_source="/x", express_kind="rfc"
+            )
+
+
+class TestDiscoveryDepth:
+    def test_standard_depth_keeps_all_open(self, tracker, plan_context):
+        create_discovery_workflow(tracker, **plan_context, depth="standard")
+        # All non-context audit tasks should be open
+        for task_id in AUDIT_TASK_IDS.values():
+            assert tracker.show(task_id)["status"] == "open"
+
+    def test_quick_depth_preclose_excluded_steps(self, tracker, plan_context):
+        create_discovery_workflow(tracker, **plan_context, depth="quick")
+        skipped = {
+            "deep-research",
+            "coverage-validation",
+            "auto-gaps",
+            "generate-build-vs-buy",
+            "external-review",
+        }
+        for task_id in skipped:
+            issue = tracker.show(task_id)
+            assert issue["status"] == "closed"
+            assert "depth=quick" in (issue.get("closed_reason") or "")
+
+    def test_quick_depth_keeps_load_bearing_steps_open(self, tracker, plan_context):
+        create_discovery_workflow(tracker, **plan_context, depth="quick")
+        # Topic enumeration (load-bearing) and interview must remain open
+        for task_id in ("quick-scan", "topic-enumeration", "stakeholder-interview",
+                        "generate-audit-docs", "generate-phase-specs"):
+            assert tracker.show(task_id)["status"] == "open"
+
+    def test_deep_depth_adds_cross_verify_note(self, tracker, plan_context):
+        create_discovery_workflow(tracker, **plan_context, depth="deep")
+        for task_id in ("deep-research", "coverage-validation"):
+            assert "cross-verify" in tracker.show(task_id)["description"].lower()
+
+    def test_standard_depth_no_cross_verify_note(self, tracker, plan_context):
+        create_discovery_workflow(tracker, **plan_context, depth="standard")
+        for task_id in ("deep-research", "coverage-validation"):
+            assert "cross-verify" not in tracker.show(task_id)["description"].lower()
+
+    def test_unknown_depth_raises(self, tracker, plan_context):
+        with pytest.raises(ValueError, match="Unknown depth"):
+            create_discovery_workflow(tracker, **plan_context, depth="ultra")
+
+    def test_depth_stored_in_context(self, tracker, plan_context):
+        create_discovery_workflow(tracker, **plan_context, depth="quick")
+        state = tracker._load()
+        assert state["epic"]["context"]["depth"] == "quick"
+
+
 # ── create_section_issues ───────────────────────────────────────────
 
 
@@ -364,7 +456,7 @@ class TestCreateSectionIssues:
         assert "section-02-beta" in gamma["depends_on"]
 
 
-# ── create_plan_all_workflow ────────────────────────────────────────
+# ── create_autonomous_workflow ──────────────────────────────────────
 
 
 class TestToposort:
@@ -397,36 +489,19 @@ class TestToposort:
             _toposort(deps)
 
 
-class TestCreatePlanAllWorkflow:
+class TestCreateAutonomousWorkflow:
     def test_requires_valid_phases_dir(self, tracker):
         """parse_phasing_overview raises FileNotFoundError for missing dir."""
         with pytest.raises(FileNotFoundError):
-            create_plan_all_workflow(
+            create_autonomous_workflow(
                 tracker,
                 phases_dir="/nonexistent",
                 plugin_root="/fake",
                 discovery_findings="/fake",
             )
 
-    def test_forward_dependency_succeeds(self, tracker, tmp_path):
-        """P01 depends on P08 — must not fail with 'dependency does not exist'."""
-        phases_dir = tmp_path / "phases"
-        phases_dir.mkdir()
-        (phases_dir / "phasing-overview.md").write_text(
-            "## Dependency Graph\n\n"
-            "P00 ──→ P08 ──→ P01\n"
-        )
-        create_plan_all_workflow(
-            tracker,
-            phases_dir=str(phases_dir),
-            plugin_root="/fake",
-            discovery_findings="/fake",
-        )
-        p01 = tracker.show("phase-P01")
-        assert "phase-P08" in p01["depends_on"]
-
-    def test_autonomous_forward_dependency_succeeds(self, tmp_path):
-        """Same forward-dependency bug fix applies to autonomous workflow."""
+    def test_forward_dependency_succeeds(self, tmp_path):
+        """Forward-dependency support: P01 may depend on P08."""
         tracker = DeepStateTracker(state_dir=tmp_path / ".deepstate")
         phases_dir = tmp_path / "phases"
         phases_dir.mkdir()
@@ -442,49 +517,6 @@ class TestCreatePlanAllWorkflow:
         )
         p01 = tracker.show("phase-P01")
         assert "phase-P08" in p01["depends_on"]
-
-    def test_first_phase_uses_bridge_when_discovery_artifacts_exist(self, tmp_path):
-        """plan-all first phase uses bridge when discovery artifacts are present."""
-        tracker = DeepStateTracker(state_dir=tmp_path / ".deepstate")
-        phases_dir = tmp_path / "phases"
-        phases_dir.mkdir()
-        (phases_dir / "phasing-overview.md").write_text(
-            "## Dependency Graph\n\nP01\n"
-        )
-        # Create discovery artifacts in parent of phases_dir (where plan-all looks)
-        discovery_dir = tmp_path
-        (discovery_dir / "interview.md").write_text("Q: foo\nA: bar")
-        (discovery_dir / "findings").mkdir()
-
-        create_plan_all_workflow(
-            tracker,
-            phases_dir=str(phases_dir),
-            plugin_root="/fake",
-            discovery_findings=str(discovery_dir),
-        )
-        issue = tracker.show("P01-detailed-interview")
-        assert "discovery-bridge.md" in issue["description"]
-        assert "Do NOT conduct a new interview" in issue["description"]
-
-    def test_first_phase_uses_standard_interview_when_no_discovery(self, tmp_path):
-        """plan-all first phase runs standard interview when no discovery artifacts."""
-        tracker = DeepStateTracker(state_dir=tmp_path / ".deepstate")
-        phases_dir = tmp_path / "phases"
-        phases_dir.mkdir()
-        (phases_dir / "phasing-overview.md").write_text(
-            "## Dependency Graph\n\nP01\n"
-        )
-        # No discovery artifacts in tmp_path
-
-        create_plan_all_workflow(
-            tracker,
-            phases_dir=str(phases_dir),
-            plugin_root="/fake",
-            discovery_findings=str(tmp_path),
-        )
-        issue = tracker.show("P01-detailed-interview")
-        # Should use default task description, NOT bridge
-        assert "discovery-bridge.md" not in issue["description"]
 
     def test_autonomous_first_phase_uses_bridge_when_discovery_exists(self, tmp_path):
         """auto first phase uses bridge passthrough when discovery artifacts present."""

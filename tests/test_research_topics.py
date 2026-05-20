@@ -11,7 +11,7 @@ import pytest
 import sys
 sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 
-from lib.research_topics import FlatFileBackend, ResearchTopicStore, _detect_mempalace
+from lib.research_topics import FlatFileBackend, ResearchTopicStore
 
 
 # ── Fixtures ────────────────────────────────────────────────────────────────
@@ -199,13 +199,11 @@ class TestCoveragePct:
 
 
 class TestFactory:
-    def test_returns_flatfile_when_mempalace_absent(self, planning_dir, monkeypatch):
-        monkeypatch.setattr("lib.research_topics._detect_mempalace", lambda: False)
+    def test_returns_flatfile(self, planning_dir):
         store = ResearchTopicStore.create(planning_dir=planning_dir, project_slug="test-a1b2c3")
         assert isinstance(store, FlatFileBackend)
 
-    def test_flatfile_uses_correct_planning_dir(self, planning_dir, monkeypatch):
-        monkeypatch.setattr("lib.research_topics._detect_mempalace", lambda: False)
+    def test_flatfile_uses_correct_planning_dir(self, planning_dir):
         store = ResearchTopicStore.create(planning_dir=planning_dir, project_slug="test-a1b2c3")
         assert store.planning_dir == planning_dir
 

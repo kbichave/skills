@@ -1,13 +1,12 @@
 # deep-plan-enhanced
 
-A Claude Code plugin for discovering, planning, and implementing complex systems — one unified `/deep` skill with five modes.
+A Claude Code plugin for discovering, planning, and implementing complex systems — one unified `/deep` skill with four modes.
 
 ```
 /deep discovery @path               → system audit + phase specs
 /deep plan @spec.md                 → implementation blueprint
-/deep plan-all @phases/             → batch-plan all phases
 /deep implement [@plan-dir/]        → execute sections
-/deep auto @phases/                 → autonomous end-to-end
+/deep auto @phases/                 → autonomous end-to-end (multi-phase plan + implement)
 ```
 
 Also accepts **inline text** or **no argument** — the plugin synthesizes a spec or objective from git history + codebase context before proceeding.
@@ -40,7 +39,6 @@ cd ~/.claude/plugins/deep-plan-enhanced && uv sync
 ### Optional Integrations
 
 - **[Beads](https://github.com/plastic-labs/beads)** — richer issue tracking alongside the built-in deepstate tracker. When `bd` is on PATH, the plugin automatically mirrors issue operations. Never required.
-- **[MemPalace](https://github.com/milla-jovovich/mempalace)** — cross-session intelligence layer. Installed as a dependency (`uv sync`). When the `mempalace` MCP is connected, the plugin automatically initializes and mines knowledge — no user setup required. See [Experience Protocol](#experience-protocol) below.
 
 ## The Workflow
 
@@ -51,13 +49,12 @@ cd ~/.claude/plugins/deep-plan-enhanced && uv sync
 /deep plan         Research → Interview → Spec → Plan → Review → TDD → Sections
                    (produces implementation blueprint for one phase)
 
-/deep plan-all     Parses phasing-overview.md → Plans all phases in dependency order
-                   (batch orchestration of /deep plan across phases)
-
 /deep implement    Reads sections → Implements in dependency order with quality gates
                    (writes code, tracks progress, enforces standards)
 
-/deep auto         Discovery → Plan-All → Implement (fully autonomous, no user interaction)
+/deep auto         Multi-phase plan + implement loop (parses phasing-overview.md,
+                   plans each phase in dependency order then implements before
+                   the next phase plans, fully autonomous)
 ```
 
 ## What's Inside
@@ -84,7 +81,6 @@ A general-purpose system discovery that works on any project — existing codeba
 - **3-perspective enumeration** — security auditor + new engineer + PM viewpoints ensure comprehensive topic coverage
 - **Coverage validation loop** — automated gap agents fill uncovered topics until ≥80% threshold
 - **Per-topic findings files** — `findings/<topic-id>-<slug>.md` instead of monolithic output
-- **Cross-session intelligence** — MemPalace experience protocol recalls prior decisions, patterns, and lessons to make each session smarter (see below)
 - **Dynamic research depth** — 2 agents for a small CLI, 10+ for a large platform
 - **Interview expands scope** — suggests capabilities user didn't ask for based on ecosystem research
 - **Build-vs-buy is granular** — real package names with real version numbers per capability
@@ -106,17 +102,6 @@ A multi-step planning pipeline that produces a complete implementation blueprint
 
 **Inline prompt support:** No spec file required. Run `/deep plan "add OAuth2 login"` and the plugin synthesizes a spec from git history + codebase context, confirms with you, then proceeds.
 
-### /deep plan-all
-
-Batch-plans all phases from a `/deep discovery` audit. Parses `phasing-overview.md` dependency graph (ASCII `-->` or Unicode `──→` arrows), creates per-phase planning workflows with correct inter-phase dependencies, and executes them sequentially.
-
-| Feature | Description |
-|---------|-------------|
-| **Dependency graph parsing** | Reads `## Dependency Graph` section from phasing-overview.md |
-| **Parallel phase detection** | Independent phases (e.g., P02 and P03 both depending on P01) are not mutually blocked |
-| **Discovery bridge** | Later phases read discovery findings (max 5 per phase), only research phase-specific gaps via `references/discovery-bridge.md` |
-| **Interview passthrough** | Discovery interview transcript passed to all phases as context for spec writing |
-
 ### /deep implement
 
 Executes the blueprint section by section with strict quality gates.
@@ -133,7 +118,15 @@ Executes the blueprint section by section with strict quality gates.
 
 ### /deep auto
 
-Fully autonomous end-to-end pipeline: discovery → plan-all → implement. No user interaction required — interviews are replaced by self-interview subagents, user reviews are pre-closed, and the implement phase runs autonomously.
+Fully autonomous multi-phase pipeline. Parses `phasing-overview.md`, plans each phase in dependency order, and implements immediately before the next dependent phase plans. No user interaction required — interviews replaced by self-interview subagents, user reviews auto-closed.
+
+| Feature | Description |
+|---------|-------------|
+| **Dependency graph parsing** | Reads `## Dependency Graph` section from phasing-overview.md |
+| **Parallel phase detection** | Independent phases (e.g. P02 and P03 both depending on P01) not mutually blocked |
+| **Discovery bridge** | Later phases read discovery findings (max 5 per phase), only research phase-specific gaps via `references/discovery-bridge.md` |
+| **Interview passthrough** | Discovery interview transcript passed to all phases as context |
+| **Plan-then-implement chain** | Each phase implements before its dependents plan, so later specs reflect actual codebase |
 
 ## Session Storage
 
@@ -172,9 +165,8 @@ Legacy sessions that already exist inside project directories are detected via f
 |---------|---------|--------|
 | Workflow step progress | `.deepstate/state.json` | `DeepStateTracker` |
 | Workflow steps → Beads CLI (optional) | Beads CLI (`bd`) | `BeadsSyncTracker` |
-| Research topics + coverage + findings | MemPalace (if installed) or `research-topics.yaml` | `ResearchTopicStore` |
-| Session index across projects | MemPalace (if installed) or `index.json` | `ResearchTopicStore` |
-| Cross-session intelligence | MemPalace rooms: codecraft, decisions, experience, domain, risks | Experience Protocol |
+| Research topics + coverage + findings | `research-topics.yaml` | `ResearchTopicStore` |
+| Session index across projects | `index.json` | `ResearchTopicStore` |
 
 ### Library Modules (`scripts/lib/`)
 
@@ -182,7 +174,7 @@ Legacy sessions that already exist inside project directories are detected via f
 |--------|---------|
 | `deepstate.py` | JSON dependency graph tracker with atomic writes |
 | `beads_sync.py` | Write-through wrapper that mirrors to Beads CLI |
-| `research_topics.py` | `ResearchTopicStore` — MemPalace or flat-file backend for research topics |
+| `research_topics.py` | `ResearchTopicStore` — flat-file backend for research topics |
 | `workflow.py` | Workflow issue factory — creates task graphs for each mode |
 | `tasks.py` | Task definitions, IDs, and dependency edges for all workflow modes |
 | `config.py` | Session config (read/write `deep_plan_config.json`) |
@@ -210,8 +202,7 @@ Legacy sessions that already exist inside project directories are detected via f
 | `section-index.md` | Plan: section index creation |
 | `section-splitting.md` | Plan: section splitting with dependency graph |
 | `context-check.md` | Plan: context window management |
-| `experience-protocol.md` | All modes: mempalace recall, knowledge mining, proactive intelligence |
-| `discovery-bridge.md` | Plan-all/Auto: reuse discovery research + interview for non-first phases |
+| `discovery-bridge.md` | Auto/Plan: reuse discovery research + interview for non-first phases |
 
 ### Agent Definitions (`agents/`)
 
@@ -222,24 +213,6 @@ Legacy sessions that already exist inside project directories are detected via f
 | `audit-doc-writer.md` | Focused audit document generation per topic |
 | `section-writer.md` | Self-contained section content generation |
 
-## Experience Protocol
-
-When the [MemPalace](https://github.com/milla-jovovich/mempalace) MCP is connected, the plugin runs a three-phase intelligence loop — fully automatic, no user action needed:
-
-| Phase | When | What |
-|-------|------|------|
-| **Recall** | Session start | Query mempalace for prior decisions, coding patterns, lessons learned, domain knowledge, and known risks. Synthesize into an `experience_context` block that travels with the workflow. |
-| **Mine** | After each workflow step | Store findings, architectural decisions, quality gate results, and domain insights as they're discovered — not batched at the end. Uses structured rooms: `codecraft`, `decisions`, `experience`, `research`, `domain`, `risks`, `reviews`, `implementation`. |
-| **Think Ahead** | Every decision point | Surface risks the user hasn't asked about, flag contradictions with prior decisions, enforce observed conventions, predict gaps before they become problems. |
-
-**On first run:** If no palace exists, the plugin runs `mempalace init --yes` and `mempalace mine` automatically.
-
-**On resume after compaction:** Experience recall restores decisions and context lost during `/clear` or context compression.
-
-**Cross-session accumulation:** Each `/deep` run gets smarter because it draws on what prior runs learned — not just about the code, but about what approaches worked, what failed, and what the user cares about.
-
-See [`references/experience-protocol.md`](references/experience-protocol.md) for the full protocol.
-
 ## Requirements
 
 - [Claude Code](https://docs.anthropic.com/en/docs/claude-code) CLI
@@ -247,7 +220,6 @@ See [`references/experience-protocol.md`](references/experience-protocol.md) for
 - Python 3.11+
 - (Optional) Gemini API key or OpenAI API key for external plan review
 - (Optional) [Beads](https://github.com/plastic-labs/beads) (`brew install beads`) for enhanced issue tracking
-- (Recommended) [MemPalace](https://github.com/milla-jovovich/mempalace) MCP for cross-session intelligence (installed via `uv sync`, MCP connection optional)
 
 ## Tests
 
@@ -270,7 +242,6 @@ This project combines patterns from [deep-plan](https://github.com/piercelamb/de
 | Python coding standards + 7-criterion code reviewer | python-skills patterns |
 | Quality gates: ruff + mypy --strict + bandit + pytest --cov ≥85% | python-skills patterns |
 | Session storage isolation (`~/.claude/marketplace/...`) | New (v1.5.0) |
-| MemPalace experience protocol — recall, mine, think ahead | New (v1.7.1) |
 | Session isolation (concurrent sessions don't overwrite) | New |
 | PostToolUse progress nudge hooks | planning-with-files pattern |
 | Stop hook with exit summary requirement | planning-with-files pattern |

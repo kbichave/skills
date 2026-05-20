@@ -1,7 +1,8 @@
 """Workflow issue factory for deep-plan-enhanced.
 
 Creates structured issue hierarchies in DeepStateTracker for each
-workflow type: plan, discovery, section splitting, and plan-all.
+workflow type: plan, discovery, section splitting, and autonomous
+(multi-phase plan + implement).
 
 Consumes task definitions from tasks.py. Does NOT contain workflow
 logic — only issue creation.
@@ -99,6 +100,17 @@ def _build_description(
     return "\n".join(lines)
 
 
+# Express-path steps that are pre-closed when --from-prd or --from-adr is set.
+# Research + interview + save-interview are unnecessary when the user supplies
+# a structured input that already captures requirements and decisions.
+_EXPRESS_PATH_SKIP_STEPS = {
+    "research-decision",
+    "execute-research",
+    "detailed-interview",
+    "save-interview",
+}
+
+
 def create_plan_workflow(
     tracker: DeepStateTracker,
     *,
@@ -107,19 +119,34 @@ def create_plan_workflow(
     initial_file: str,
     review_mode: str,
     discovery_findings: str | None = None,
+    express_source: str | None = None,
+    express_kind: str | None = None,
 ) -> str:
     """Create epic + 17 step issues for /deep-plan.
+
+    `express_source` + `express_kind` ("prd" or "adr") enable the express path:
+    research-decision, execute-research, detailed-interview, and save-interview
+    are pre-closed because the structured input already captures requirements.
+    Plan-writing reads the source directly.
 
     Returns the epic title string.
     """
     spec_name = Path(initial_file).stem
     epic_title = f"deep-plan: {spec_name}"
-    tracker.init(epic_title, {
+    context = {
         "plugin_root": plugin_root,
         "planning_dir": planning_dir,
         "initial_file": initial_file,
         "review_mode": review_mode,
-    })
+    }
+    if express_source:
+        if express_kind not in {"prd", "adr"}:
+            raise ValueError(
+                f"express_kind must be 'prd' or 'adr', got {express_kind!r}"
+            )
+        context["express_source"] = express_source
+        context["express_kind"] = express_kind
+    tracker.init(epic_title, context)
 
     has_discovery = _has_discovery_artifacts(discovery_findings)
     bridge_ref = f"{plugin_root}/references/discovery-bridge.md"
@@ -154,9 +181,63 @@ def create_plan_workflow(
                     f"\n**Planning dir:** {planning_dir}"
                 )
 
+        # Express path: write-spec and generate-plan read the source directly
+        if express_source and task_id == "write-spec":
+            description = (
+                f"Express path active (--from-{express_kind} {express_source}).\n"
+                f"Read `{express_source}` and translate its contents into `claude-spec.md`.\n"
+                "Preserve every requirement / decision / acceptance criterion verbatim. "
+                "Do NOT discard items even if they seem out of scope — flag them in a "
+                "`## Deferred` section instead.\n"
+                f"\n**Planning dir:** {planning_dir}"
+            )
+        if express_source and task_id == "generate-plan":
+            description = (
+                f"Express path active (--from-{express_kind} {express_source}).\n"
+                f"Generate plan from `claude-spec.md` only. Source-of-truth is `{express_source}` "
+                "— if the spec misses anything from the source, fix the spec before planning.\n"
+                f"\n**Planning dir:** {planning_dir}"
+            )
+
         tracker.create(task_id, task_def.subject, description=description, depends_on=real_deps)
 
+        if express_source and task_id in _EXPRESS_PATH_SKIP_STEPS:
+            tracker.close(task_id, f"Express path: --from-{express_kind} skips this step")
+
     return epic_title
+
+
+# Discovery depth profiles. Steps in `skip` are pre-closed at creation so
+# the workflow still has correct dependency edges, but the agent never has
+# to execute them. Steps in `enrich` get a cross-verify note appended.
+_DISCOVERY_DEPTH_PROFILES: dict[str, dict[str, set[str]]] = {
+    "quick": {
+        "skip": {
+            "deep-research",
+            "coverage-validation",
+            "auto-gaps",
+            "generate-build-vs-buy",
+            "external-review",
+        },
+        "enrich": set(),
+    },
+    "standard": {
+        "skip": set(),
+        "enrich": set(),
+    },
+    "deep": {
+        "skip": set(),
+        "enrich": {"deep-research", "coverage-validation"},
+    },
+}
+
+_CROSS_VERIFY_NOTE = (
+    "\n\n**Deep depth: cross-verify pass.** After completing this step "
+    "normally, run one additional pass: pick the top 3 findings and "
+    "verify each against a second authoritative source (different agent / "
+    "different documentation tree / different search angle). Note any "
+    "discrepancies in findings/cross-verify.md."
+)
 
 
 def create_discovery_workflow(
@@ -166,12 +247,28 @@ def create_discovery_workflow(
     planning_dir: str,
     initial_file: str,
     review_mode: str,
+    depth: str = "standard",
 ) -> str:
     """Create epic + step issues for /deep-discovery.
+
+    `depth` selects which steps run:
+    - quick: scan + topic enumeration + interview + docs + phasing (no deep research,
+      no coverage validation, no auto-gaps, no build-vs-buy, no external review)
+    - standard: all steps (default)
+    - deep: all steps, with cross-verify pass added to deep-research and coverage-validation
 
     Returns the epic title string.
     """
     from lib.tasks import AUDIT_TASK_IDS, AUDIT_TASK_DEFINITIONS, AUDIT_TASK_DEPENDENCIES
+
+    if depth not in _DISCOVERY_DEPTH_PROFILES:
+        raise ValueError(
+            f"Unknown depth: {depth!r}. Expected one of: "
+            f"{sorted(_DISCOVERY_DEPTH_PROFILES)}"
+        )
+    profile = _DISCOVERY_DEPTH_PROFILES[depth]
+    skip = profile["skip"]
+    enrich = profile["enrich"]
 
     spec_name = Path(initial_file).stem
     epic_title = f"deep-discovery: {spec_name}"
@@ -180,6 +277,7 @@ def create_discovery_workflow(
         "planning_dir": planning_dir,
         "initial_file": initial_file,
         "review_mode": review_mode,
+        "depth": depth,
     })
 
     for step_num in sorted(AUDIT_TASK_IDS.keys()):
@@ -191,7 +289,13 @@ def create_discovery_workflow(
         description = _build_description(
             task_id, task_def, plugin_root, planning_dir, _AUDIT_REFERENCE_FILES
         )
+        if task_id in enrich:
+            description += _CROSS_VERIFY_NOTE
+
         tracker.create(task_id, task_def.subject, description=description, depends_on=real_deps)
+
+        if task_id in skip:
+            tracker.close(task_id, f"Skipped — depth={depth}")
 
     return epic_title
 
@@ -391,92 +495,6 @@ _HUMAN_INTERACTIVE_STEPS = {
 }
 
 
-def create_plan_all_workflow(
-    tracker: DeepStateTracker,
-    *,
-    phases_dir: str,
-    plugin_root: str,
-    discovery_findings: str,
-) -> str:
-    """Parse phasing-overview.md, create phase sub-epics with dependency edges.
-
-    Returns the top-level epic title.
-    """
-    phase_deps = parse_phasing_overview(phases_dir)
-
-    # Determine project name from phases_dir
-    project_name = Path(phases_dir).parent.name or "project"
-    epic_title = f"plan-all: {project_name}"
-
-    tracker.init(epic_title, {
-        "phases_dir": phases_dir,
-        "plugin_root": plugin_root,
-        "discovery_findings": discovery_findings,
-    })
-
-    # Topological sort so dependencies are created before dependents
-    sorted_phases = _toposort(phase_deps)
-
-    is_first = True
-
-    for phase_id in sorted_phases:
-        deps = phase_deps[phase_id]
-        phase_issue_id = f"phase-{phase_id}"
-
-        # Phase issue depends on predecessor phases
-        phase_dep_ids = [f"phase-{d}" for d in deps]
-        tracker.create(phase_issue_id, phase_id, depends_on=phase_dep_ids)
-
-        # Create 17 step issues within this phase
-        prev_step_id = None
-        for step_num in sorted(TASK_IDS.keys()):
-            task_id = TASK_IDS[step_num]
-            task_def = TASK_DEFINITIONS[task_id]
-            namespaced_id = f"{phase_id}-{task_id}"
-
-            # First step depends on phase issue; subsequent depend on previous step
-            if prev_step_id is None:
-                step_deps = [phase_issue_id]
-            else:
-                step_deps = [prev_step_id]
-
-            description = task_def.description
-            bridge_ref = f"{plugin_root}/references/discovery-bridge.md"
-            use_bridge = not is_first or _has_discovery_artifacts(discovery_findings)
-
-            if use_bridge and task_id in {"research-decision", "execute-research"}:
-                description = (
-                    f"**Reference:** {bridge_ref}\n\n"
-                    f"Review discovery findings from {discovery_findings}. "
-                    "Follow discovery-bridge.md protocol: detect artifacts, "
-                    "ingest findings (max 5), research gaps only."
-                )
-            elif use_bridge and task_id == "detailed-interview":
-                description = (
-                    f"**Reference:** {bridge_ref}\n\n"
-                    f"Read discovery interview from {discovery_findings}/interview.md. "
-                    "Extract phase-relevant Q&A. Do NOT conduct a new interview."
-                )
-            elif use_bridge and task_id == "save-interview":
-                description = (
-                    "Write discovery-derived interview to claude-interview.md. "
-                    "Add header noting this is derived from discovery interview."
-                )
-
-            tracker.create(
-                namespaced_id,
-                task_def.subject,
-                description=description,
-                depends_on=step_deps,
-            )
-
-            prev_step_id = namespaced_id
-
-        is_first = False
-
-    return epic_title
-
-
 def create_autonomous_workflow(
     tracker: DeepStateTracker,
     *,
@@ -484,11 +502,12 @@ def create_autonomous_workflow(
     plugin_root: str,
     discovery_findings: str,
 ) -> str:
-    """Create plan-all workflow with human-interactive steps pre-closed.
+    """Create multi-phase autonomous workflow.
 
-    Same as create_plan_all_workflow but also pre-closes interview,
-    user-review, and context-check steps across ALL phases. This enables
-    fully autonomous execution without human interaction.
+    Parses phasing-overview.md, creates phase sub-epics with dependency
+    edges, and creates all step issues within each phase. Human-interactive
+    steps are auto-closed at ready time (SKILL.md handles this) — not
+    pre-closed, since that breaks the linear dependency chain.
 
     Returns the top-level epic title.
     """

@@ -76,6 +76,18 @@ This tells the plan author nothing they don't already know. It identifies no ris
 
 Reference specific sections by name or number. Every finding must say what is wrong AND what to do about it.
 
+### Falsifiable prediction (required per finding)
+
+Every Critical and Major finding ends with a `**Prediction:**` line stating what will be observable once the fix lands. Format:
+
+> **Prediction:** After fix, <X> will <Y>.
+
+Examples:
+- "After fix, the integration test in `tests/test_session.py` exercising round-robin across 3 instances will pass deterministically (currently 50% flake)."
+- "After fix, killing the worker mid-write and restarting leaves at most one row in `orders` for the same idempotency key."
+
+If you cannot state a prediction, the finding is a vibe — sharpen it (so the implementer can verify the fix worked) or drop it. Predictions are the single most valuable artifact of a review: they turn "what could go wrong" into "what I will observe when it's fixed."
+
 ## Instructions
 
 1. Read the plan file at the path provided in the prompt

@@ -1,6 +1,6 @@
 ---
 name: vault-curator
-description: Decides which session artifacts deserve long-lived storage in the Obsidian vault and writes the survivors via the obsidian-vault skill. Invoked at the end of every /deep mode (discovery, plan, plan-all, implement, auto).
+description: Decides which session artifacts deserve long-lived storage in the Obsidian vault and writes the survivors via the obsidian-vault skill. Invoked at the end of every /deep mode (discovery, plan, implement, auto).
 tools: Read, Grep, Glob, Bash, Write, Edit
 model: inherit
 ---
@@ -44,7 +44,7 @@ The parent process passes:
 
 * `vault_path` — resolved Obsidian vault root, or empty string when the vault is unavailable
 * `project_path` — repository root for the current `/deep` run
-* `mode` — `discovery` | `plan` | `plan-all` | `implement` | `auto`
+* `mode` — `discovery` | `plan` | `implement` | `auto`
 * `artifacts` — list of `{path, kind, summary}` describing files produced this session
 * `cross_project_hits` — terms/decisions seen in at least one other project's vault entry (computed by the parent)
 

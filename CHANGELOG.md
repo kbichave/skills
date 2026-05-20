@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-05-20
+
+### Breaking
+- **Removed `mempalace` dependency and integration.** All MemPalace MCP wiring, `MemPalaceBackend`, `index_session_in_mempalace`, and the experience-protocol reference are gone. Research topics persist via `FlatFileBackend` only. Migration: existing flat-file artifacts (`research-topics.yaml`, `findings/`) are unchanged. Anyone using mempalace for cross-session intelligence must roll their own.
+- **Removed `/deep plan-all` mode.** Multi-phase orchestration is now `auto`-only. `--workflow plan-all` rejected by `setup-session.py`. Migration: use `/deep auto @phases/` instead — it does plan-then-implement per phase in dependency order.
+
+### Added — Tier 1 (matt-style restructure)
+- **SKILL.md trimmed** from 342 → 175 lines. Branching question table at top with load-bearing step per mode (discovery: topic enumeration; plan: interview; implement: confidence gate). Detailed workflows live under `references/`.
+- **New references**: `implement-protocol.md` (Phase 1-10 per-section discipline), `resume.md` (post-compaction recovery), `INDEX.md` (navigation hub).
+
+### Added — Tier 2 (gsd-style features)
+- **Discovery depth flag** — `/deep discovery --depth=quick|standard|deep`. `quick` pre-closes deep-research, coverage-validation, auto-gaps, build-vs-buy, external-review for a 5-10 min audit. `deep` appends a cross-verify pass to research steps.
+- **Express paths** — `/deep plan --from-prd @prd.md` or `--from-adr @adrs/` skips research + interview. `write-spec` and `generate-plan` read the structured input directly. Generalizes the ad-hoc `--no-reframe` flag.
+- **Coverage gate** — new `scripts/checks/check-coverage.py` parses spec requirements/capabilities and asserts each maps to a section in `sections/index.md`. Blocking — exit 1 with `missing` JSON list when items dropped.
+- **Stall detection** — new `scripts/lib/stall_detector.py` for the external-review revision loop. Flags consecutive revisions with <10% diff or recurring findings. Interactive: escalate to user. Auto: accept-with-caveat. Hard cap of 3 iterations regardless.
+
+### Added — Tier 3 (matt-style discipline)
+- **Falsifiable predictions in reviews** — `agents/python-code-reviewer.md` adds required `prediction` field per issue. `agents/opus-plan-reviewer.md` requires `**Prediction:**` line on every Critical/Major finding. Format: "After fix, <X> will <Y>."
+- **Throwaway scratch artifacts** — new `scripts/lib/scratch.py`. Research notes that informed but should not survive the session land under `{planning_dir}/scratch/` with a `THROWAWAY:` header. Stop hook sweeps `mode-complete` scratch at exit.
+- **Post-mortem hand-off** — Stop hook now requires `impl-summary.md` to answer "what would have prevented the rework?" Architectural answer → suggest `Skill(improve-codebase-architecture)`. Spec-clarity answer → log `## Spec gaps observed`. None → say so.
+
+### Notes
+- **572 tests pass** (up from 437). New test modules: `test_check_coverage.py` (16), `test_stall_detector.py` (14), `test_scratch.py` (17). Existing modules pruned to remove mempalace + plan-all tests.
+- `pyproject.toml` synced to plugin version (was 1.5.0, now 2.0.0).
+- Plugin restart / reinstall recommended after upgrade.
+
 ## [1.8.0] - 2026-04-27
 
 ### Added

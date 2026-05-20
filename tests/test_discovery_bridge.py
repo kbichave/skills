@@ -8,7 +8,6 @@ from scripts.lib.deepstate import DeepStateTracker
 from scripts.lib.tasks import TASK_DEFINITIONS
 from scripts.lib.workflow import (
     create_autonomous_workflow,
-    create_plan_all_workflow,
     create_plan_workflow,
 )
 
@@ -33,25 +32,26 @@ def _make_phases(tmp_path: Path, *, num_phases: int = 2) -> Path:
     return phases_dir
 
 
-# ── Plan-All: Research Bridge ─────────────────────────────────────────
+# ── Auto Mode: Research Bridge ────────────────────────────────────────
 
 
-class TestPlanAllResearchBridge:
-    def test_non_first_research_has_bridge_ref(self, tracker, tmp_path):
+class TestAutoResearchBridge:
+    def test_non_first_research_has_bridge_ref(self, tmp_path):
+        tracker = DeepStateTracker(state_dir=tmp_path / ".deepstate")
         phases_dir = _make_phases(tmp_path)
-        create_plan_all_workflow(
+        create_autonomous_workflow(
             tracker,
             phases_dir=str(phases_dir),
             plugin_root="/fake",
             discovery_findings="/fake/discovery",
         )
-        # P02 is non-first phase
         research = tracker.show("P02-research-decision")
         assert "discovery-bridge.md" in research["description"]
 
-    def test_non_first_execute_research_has_bridge_ref(self, tracker, tmp_path):
+    def test_non_first_execute_research_has_bridge_ref(self, tmp_path):
+        tracker = DeepStateTracker(state_dir=tmp_path / ".deepstate")
         phases_dir = _make_phases(tmp_path)
-        create_plan_all_workflow(
+        create_autonomous_workflow(
             tracker,
             phases_dir=str(phases_dir),
             plugin_root="/fake",
@@ -59,55 +59,6 @@ class TestPlanAllResearchBridge:
         )
         research = tracker.show("P02-execute-research")
         assert "discovery-bridge.md" in research["description"]
-
-    def test_first_phase_uses_standard_research(self, tracker, tmp_path):
-        phases_dir = _make_phases(tmp_path)
-        create_plan_all_workflow(
-            tracker,
-            phases_dir=str(phases_dir),
-            plugin_root="/fake",
-            discovery_findings="/fake/discovery",
-        )
-        research = tracker.show("P01-research-decision")
-        assert "discovery-bridge.md" not in research["description"]
-
-
-# ── Plan-All: Interview Passthrough ───────────────────────────────────
-
-
-class TestPlanAllInterviewPassthrough:
-    def test_non_first_interview_not_preclosed(self, tracker, tmp_path):
-        phases_dir = _make_phases(tmp_path)
-        create_plan_all_workflow(
-            tracker,
-            phases_dir=str(phases_dir),
-            plugin_root="/fake",
-            discovery_findings="/fake/discovery",
-        )
-        interview = tracker.show("P02-detailed-interview")
-        assert interview["status"] == "open"
-
-    def test_non_first_interview_references_discovery(self, tracker, tmp_path):
-        phases_dir = _make_phases(tmp_path)
-        create_plan_all_workflow(
-            tracker,
-            phases_dir=str(phases_dir),
-            plugin_root="/fake",
-            discovery_findings="/fake/discovery",
-        )
-        interview = tracker.show("P02-detailed-interview")
-        assert "discovery interview" in interview["description"].lower() or "interview.md" in interview["description"]
-
-    def test_first_phase_interview_standard(self, tracker, tmp_path):
-        phases_dir = _make_phases(tmp_path)
-        create_plan_all_workflow(
-            tracker,
-            phases_dir=str(phases_dir),
-            plugin_root="/fake",
-            discovery_findings="/fake/discovery",
-        )
-        interview = tracker.show("P01-detailed-interview")
-        assert "discovery-bridge.md" not in interview["description"]
 
 
 # ── Auto Mode: Interview Guard ────────────────────────────────────────
@@ -138,18 +89,6 @@ class TestAutoInterviewGuard:
         interview = tracker.show("P02-detailed-interview")
         assert "SELF-INTERVIEW" not in interview["description"]
         assert "discovery interview" in interview["description"].lower() or "interview.md" in interview["description"]
-
-    def test_non_first_research_has_bridge_ref(self, tmp_path):
-        tracker = DeepStateTracker(state_dir=tmp_path / ".deepstate")
-        phases_dir = _make_phases(tmp_path)
-        create_autonomous_workflow(
-            tracker,
-            phases_dir=str(phases_dir),
-            plugin_root="/fake",
-            discovery_findings="/fake/discovery",
-        )
-        research = tracker.show("P02-research-decision")
-        assert "discovery-bridge.md" in research["description"]
 
 
 # ── Task Definitions ──────────────────────────────────────────────────

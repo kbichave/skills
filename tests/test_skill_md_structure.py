@@ -61,12 +61,9 @@ def test_skill_md_has_tracker_close(skill_content):
 
 
 def test_skill_md_is_under_budget(skill_content):
-    """Unified SKILL.md budget. Originally 300 when /deep replaced 5
-    skills; raised to 350 to absorb the plan-all, auto, mempalace,
-    experience, and integration wiring that landed since. Detailed
-    workflows live under references/, not inline."""
+    """Unified SKILL.md budget. Detailed workflows live under references/, not inline."""
     lines = skill_content.split("\n")
-    assert len(lines) <= 350, f"SKILL.md has {len(lines)} lines, max is 350"
+    assert len(lines) <= 300, f"SKILL.md has {len(lines)} lines, max is 300"
 
 
 def test_frontmatter_preserved(skill_content):
@@ -77,7 +74,7 @@ def test_frontmatter_preserved(skill_content):
 
 
 def test_references_setup_session(skill_content):
-    """SKILL.md must reference setup-session.py (used by plan/audit/plan-all/auto)."""
+    """SKILL.md must reference setup-session.py (used by plan/audit/auto)."""
     assert "setup-session.py" in skill_content
 
 
@@ -121,8 +118,8 @@ def test_old_skill_dirs_removed():
 
 
 def test_all_modes_dispatched(skill_content):
-    """SKILL.md must dispatch all five modes."""
-    for mode in ("audit", "plan", "plan-all", "implement", "auto"):
+    """SKILL.md must dispatch all four modes."""
+    for mode in ("audit", "plan", "implement", "auto"):
         assert mode in skill_content, f"Mode '{mode}' not mentioned in SKILL.md"
 
 
