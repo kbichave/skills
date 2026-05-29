@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import json
 import shutil
 from pathlib import Path
@@ -25,13 +26,29 @@ check_partial_setup = _mod.check_partial_setup
 
 
 def _patch_no_beads():
-    """Patch detect_beads on the dynamically loaded module."""
+    """Patch detect_beads to return False (simulates bd missing — hard-fail path)."""
     return patch.object(_mod, "detect_beads", return_value=False)
 
 
 def _patch_beads_available():
-    """Patch detect_beads to return True."""
+    """Patch detect_beads to return True (simulates bd installed)."""
     return patch.object(_mod, "detect_beads", return_value=True)
+
+
+@contextlib.contextmanager
+def _patch_tracker():
+    """Simulate beads installed AND stub BeadsSyncTracker as a pass-through.
+
+    Real beads is required in production. Unit tests should not spawn bd
+    subprocesses, so we replace the wrapper with one that returns the inner
+    tracker untouched.
+    """
+    def _passthrough(tracker, beads_available=True, beads_cwd=None):
+        return tracker
+
+    with _patch_beads_available(), \
+         patch.object(_mod, "BeadsSyncTracker", side_effect=_passthrough):
+        yield
 
 from lib.deepstate import DeepStateTracker
 
@@ -58,7 +75,7 @@ def plugin_root(tmp_path):
 
 class TestNewSession:
     def test_creates_deepstate_directory(self, spec_file, plugin_root):
-        with _patch_no_beads():
+        with _patch_tracker():
             result = setup_session(
                 file_path=spec_file, plugin_root=plugin_root,
                 review_mode="skip", session_id=None,
@@ -70,7 +87,7 @@ class TestNewSession:
         assert (planning_dir / ".deepstate" / "state.json").exists()
 
     def test_returns_epic_id(self, spec_file, plugin_root):
-        with _patch_no_beads():
+        with _patch_tracker():
             result = setup_session(
                 file_path=spec_file, plugin_root=plugin_root,
                 review_mode="skip", session_id=None,
@@ -80,7 +97,7 @@ class TestNewSession:
         assert "deep-plan: spec" == result["epic_id"]
 
     def test_writes_config_with_deepstate_epic_id(self, spec_file, plugin_root):
-        with _patch_no_beads():
+        with _patch_tracker():
             result = setup_session(
                 file_path=spec_file, plugin_root=plugin_root,
                 review_mode="skip", session_id=None,
@@ -91,7 +108,7 @@ class TestNewSession:
         assert "deepstate_epic_id" in config
 
     def test_output_includes_required_fields(self, spec_file, plugin_root):
-        with _patch_no_beads():
+        with _patch_tracker():
             result = setup_session(
                 file_path=spec_file, plugin_root=plugin_root,
                 review_mode="skip", session_id=None,
@@ -107,7 +124,7 @@ class TestNewSession:
 
 class TestResumeSession:
     def test_resume_detects_existing_epic(self, spec_file, plugin_root):
-        with _patch_no_beads():
+        with _patch_tracker():
             # First call: new session
             result1 = setup_session(
                 file_path=spec_file, plugin_root=plugin_root,
@@ -125,7 +142,7 @@ class TestResumeSession:
         assert result2["mode"] == "resume"
 
     def test_resume_returns_ready_issues(self, spec_file, plugin_root):
-        with _patch_no_beads():
+        with _patch_tracker():
             setup_session(
                 file_path=spec_file, plugin_root=plugin_root,
                 review_mode="skip", session_id=None,
@@ -140,7 +157,7 @@ class TestResumeSession:
         assert len(result["ready_issues"]) > 0
 
     def test_resume_does_not_recreate_issues(self, spec_file, plugin_root):
-        with _patch_no_beads():
+        with _patch_tracker():
             result1 = setup_session(
                 file_path=spec_file, plugin_root=plugin_root,
                 review_mode="skip", session_id=None,
@@ -166,7 +183,7 @@ class TestResumeSession:
 
 class TestPartialSetupRecovery:
     def test_partial_setup_without_force_returns_error(self, spec_file, plugin_root):
-        with _patch_no_beads():
+        with _patch_tracker():
             # Create a partial state
             result = setup_session(
                 file_path=spec_file, plugin_root=plugin_root,
@@ -190,7 +207,7 @@ class TestPartialSetupRecovery:
         assert "partial_setup" in result2["mode"]
 
     def test_force_reinitializes_cleanly(self, spec_file, plugin_root):
-        with _patch_no_beads():
+        with _patch_tracker():
             result = setup_session(
                 file_path=spec_file, plugin_root=plugin_root,
                 review_mode="skip", session_id=None,
@@ -227,7 +244,7 @@ class TestInputValidation:
         assert "directory" in result["error"].lower()
 
     def test_accepts_directory_for_audit_workflow(self, tmp_path, plugin_root):
-        with _patch_no_beads():
+        with _patch_tracker():
             result = setup_session(
                 file_path=tmp_path, plugin_root=plugin_root,
                 review_mode="skip", session_id=None,
@@ -260,34 +277,28 @@ class TestInputValidation:
 
 
 class TestBeadsIntegration:
-    def test_beads_available_reported_in_output(self, spec_file, plugin_root):
-        with _patch_beads_available(), \
-             patch.object(_mod, "BeadsSyncTracker") as mock_bst:
-            # Make the mock behave like a tracker
-            mock_bst.return_value = mock_bst
-            mock_bst.init = lambda *a, **kw: None
-            mock_bst.create = lambda *a, **kw: {"id": a[0] if len(a) > 0 else "x", "status": "open"}
-            mock_bst.list_issues = lambda **kw: []
-            mock_bst.ready = lambda: []
-            # Actually run with real tracker to avoid complexity
-            pass
-
-        with _patch_no_beads():
-            result = setup_session(
-                file_path=spec_file, plugin_root=plugin_root,
-                review_mode="skip", session_id=None,
-                workflow="plan", force=False,
-            )
-        assert result["beads_available"] is False
-
-    def test_succeeds_without_beads(self, spec_file, plugin_root):
-        with _patch_no_beads():
+    def test_beads_available_reported_true_when_installed(self, spec_file, plugin_root):
+        with _patch_tracker():
             result = setup_session(
                 file_path=spec_file, plugin_root=plugin_root,
                 review_mode="skip", session_id=None,
                 workflow="plan", force=False,
             )
         assert result["success"] is True
+        assert result["beads_available"] is True
+
+    def test_missing_beads_raises_system_exit(self, spec_file, plugin_root):
+        """bd is required; absence must hard-fail with install guidance."""
+        with _patch_no_beads():
+            with pytest.raises(SystemExit) as exc_info:
+                setup_session(
+                    file_path=spec_file, plugin_root=plugin_root,
+                    review_mode="skip", session_id=None,
+                    workflow="plan", force=False,
+                )
+        msg = str(exc_info.value).lower()
+        assert "bd" in msg or "beads" in msg
+        assert "install" in msg
 
 
 # ── LegacyConfigDetection ─────────────────────────────────────────
@@ -314,7 +325,7 @@ class TestLegacyConfigDetection:
         assert result["mode"] == "legacy_config"
 
     def test_fresh_config_proceeds_normally(self, spec_file, plugin_root):
-        with _patch_no_beads():
+        with _patch_tracker():
             result = setup_session(
                 file_path=spec_file, plugin_root=plugin_root,
                 review_mode="skip", session_id=None,
@@ -333,7 +344,7 @@ class TestLegacyConfigDetection:
 
 class TestSessionIsolation:
     def test_session_id_stored_in_config(self, spec_file, plugin_root):
-        with _patch_no_beads():
+        with _patch_tracker():
             result = setup_session(
                 file_path=spec_file, plugin_root=plugin_root,
                 review_mode="skip", session_id="abcdef12-3456-7890",
@@ -344,7 +355,7 @@ class TestSessionIsolation:
         assert config.get("session_id") == "abcdef12-3456-7890"
 
     def test_session_prefix_used_for_directory(self, spec_file, plugin_root):
-        with _patch_no_beads():
+        with _patch_tracker():
             result = setup_session(
                 file_path=spec_file, plugin_root=plugin_root,
                 review_mode="skip", session_id="abcdef12-3456-7890",
@@ -353,7 +364,7 @@ class TestSessionIsolation:
         assert "abcdef12" in result["planning_dir"]
 
     def test_existing_session_dir_reused(self, spec_file, plugin_root):
-        with _patch_no_beads():
+        with _patch_tracker():
             result1 = setup_session(
                 file_path=spec_file, plugin_root=plugin_root,
                 review_mode="skip", session_id="abcdef12-3456-7890",
@@ -372,7 +383,7 @@ class TestSessionIsolation:
 
 class TestJSONOutput:
     def test_success_output_fields(self, spec_file, plugin_root):
-        with _patch_no_beads():
+        with _patch_tracker():
             result = setup_session(
                 file_path=spec_file, plugin_root=plugin_root,
                 review_mode="skip", session_id=None,

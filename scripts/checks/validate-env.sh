@@ -51,12 +51,17 @@ if ! command -v uv &> /dev/null; then
     exit 5
 fi
 
-# Check: bd (beads) — optional enhancement for audit trail + multi-agent support
+# Check: bd (beads) — REQUIRED for audit trail + multi-agent coordination
 if command -v bd &> /dev/null; then
     beads_available="true"
 else
     beads_available="false"
-    warnings+=("bd (beads) not installed. Optional: install beads for audit trail + multi-agent support")
+    case "$(uname -s)" in
+        Darwin) install_hint="brew install beads  (or: bash ${SCRIPT_DIR}/install-beads.sh)" ;;
+        Linux)  install_hint="go install github.com/plastic-labs/beads/cmd/bd@latest  (or: bash ${SCRIPT_DIR}/install-beads.sh)" ;;
+        *)      install_hint="see https://github.com/plastic-labs/beads/releases" ;;
+    esac
+    errors+=("bd (beads) required but not on PATH. Install: ${install_hint}")
 fi
 
 # Load config values

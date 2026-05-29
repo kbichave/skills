@@ -137,19 +137,26 @@ class TestValidateEnv:
         output = json.loads(result.stdout)
         assert output["beads_available"] is True
 
-    def test_missing_bd_produces_warning_not_error(self, run_script):
-        """Missing bd should appear in warnings, not errors."""
-        result = run_script()
-        output = json.loads(result.stdout)
-        if not output["beads_available"]:
-            warning_text = " ".join(output["warnings"])
-            assert "bd" in warning_text.lower() or "beads" in warning_text.lower()
-            error_text = " ".join(output["errors"])
-            assert "beads" not in error_text.lower()
+    def test_missing_bd_produces_error_with_install_hint(self, run_script, tmp_path):
+        """Missing bd is a fatal error; message must include install guidance."""
+        # Build a PATH that has uv + jq but NOT bd, via symlinks in a temp dir.
+        import shutil as _shutil
+        uv = _shutil.which("uv")
+        jq = _shutil.which("jq")
+        if not uv or not jq:
+            pytest.skip("uv or jq not available to construct test PATH")
+        (tmp_path / "uv").symlink_to(uv)
+        (tmp_path / "jq").symlink_to(jq)
 
-    def test_missing_bd_does_not_change_exit_code(self, run_script):
-        """Missing bd must not cause a non-zero exit code by itself."""
-        result = run_script()
+        env = os.environ.copy()
+        env["PATH"] = f"{tmp_path}:/usr/bin:/bin"
+
+        result = run_script(env=env)
         output = json.loads(result.stdout)
-        if output["valid"]:
-            assert result.returncode == 0
+
+        assert output["beads_available"] is False
+        assert output["valid"] is False
+        assert result.returncode != 0
+        error_text = " ".join(output["errors"]).lower()
+        assert "bd" in error_text or "beads" in error_text
+        assert "install" in error_text

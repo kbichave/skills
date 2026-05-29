@@ -36,9 +36,13 @@ cd ~/.claude/plugins/deep-plan-enhanced && uv sync
 # "enabledPlugins": { "deep-plan-enhanced@kbichave-plugins": true }
 ```
 
-### Optional Integrations
+### Required Integrations
 
-- **[Beads](https://github.com/plastic-labs/beads)** — richer issue tracking alongside the built-in deepstate tracker. When `bd` is on PATH, the plugin automatically mirrors issue operations. Never required.
+- **[Beads](https://github.com/plastic-labs/beads)** (`bd`) — issue tracking + multi-agent coordination. Mirrored from the built-in deepstate tracker.
+  - macOS: `brew install beads`
+  - Linux: `go install github.com/plastic-labs/beads/cmd/bd@latest`
+  - Or run the bundled helper: `bash scripts/checks/install-beads.sh`
+  - Releases: https://github.com/plastic-labs/beads/releases
 
 ## The Workflow
 
@@ -219,7 +223,7 @@ Legacy sessions that already exist inside project directories are detected via f
 - [uv](https://docs.astral.sh/uv/) (Python package manager)
 - Python 3.11+
 - (Optional) Gemini API key or OpenAI API key for external plan review
-- (Optional) [Beads](https://github.com/plastic-labs/beads) (`brew install beads`) for enhanced issue tracking
+- [Beads](https://github.com/plastic-labs/beads) (`bd`) — required. Install: `brew install beads` (macOS) / `go install github.com/plastic-labs/beads/cmd/bd@latest` (Linux) / `bash scripts/checks/install-beads.sh` (bundled helper)
 
 ## Tests
 

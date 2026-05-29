@@ -372,16 +372,18 @@ def setup_session(
             **mode_info,
         }
 
-    # New session — create workflow
-    beads_available = detect_beads()
-    if beads_available:
-        tracker = BeadsSyncTracker(
-            tracker=base_tracker,
-            beads_available=True,
-            beads_cwd=planning_dir,
+    # New session — create workflow. Beads is required.
+    if not detect_beads():
+        installer = Path(plugin_root) / "scripts" / "checks" / "install-beads.sh"
+        raise SystemExit(
+            "bd (beads) required but not on PATH. "
+            f"Install: bash {installer}  (or: brew install beads)"
         )
-    else:
-        tracker = base_tracker
+    tracker = BeadsSyncTracker(
+        tracker=base_tracker,
+        beads_available=True,
+        beads_cwd=planning_dir,
+    )
 
     context = {
         "plugin_root": str(plugin_root),
@@ -445,7 +447,7 @@ def setup_session(
         "workflow": workflow,
         "review_mode": review_mode,
         "epic_id": epic_title,
-        "beads_available": beads_available,
+        "beads_available": True,
         "sessions_root": str(SESSIONS_ROOT),
         "message": f"Starting new {'audit' if is_audit else 'auto' if is_auto else 'planning'} session in: {planning_dir}",
     }
