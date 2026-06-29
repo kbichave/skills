@@ -1,0 +1,17 @@
+{
+  "language": "typescript",
+  "thresholds": {"complexity": 10, "fn_lines": 50, "file_lines": 500, "nesting": 3, "params": 4},
+  "packs": {
+    "core": [
+      "eslint --max-warnings 0 {paths}",
+      "tsc --noEmit",
+      "semgrep --config p/typescript --error {paths}"
+    ],
+    "service": ["semgrep --config p/typescript --error {paths}"],
+    "delivery": ["npm audit --audit-level=high"],
+    "supply": ["npm audit --audit-level=high", "npm config get ignore-scripts"],
+    "frontend": ["eslint --plugin jsx-a11y --max-warnings 0 {paths}"],
+    "llm": ["semgrep --config p/typescript --error {paths}"]
+  },
+  "test": "vitest run --coverage"
+}

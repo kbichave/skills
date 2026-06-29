@@ -38,8 +38,12 @@ If research was done, use it to:
 
 ## Technique
 
-The default style is the **grill-me** sequential walk (vendored from
-`skills/grill-me/SKILL.md`). It is on by default — no flag, no opt-in.
+The default style is the **grill-me** sequential walk. Invoke it internally as a
+pipeline step — call `Skill(grill-me)` (the same in-process mechanism used for
+`Skill(improve-codebase-architecture)`); the user does not run `/grill-me`
+themselves. It is on by default — no flag, no opt-in. If the skill is
+unavailable, fall back to the inline walk below (it mirrors
+`skills/grill-me/SKILL.md`).
 
 1. **One question at a time.** Resolve the answer to the current
    decision-tree branch before opening the next branch. Do not batch

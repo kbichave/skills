@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added — Quality pipeline (conditional rule packs, multi-language)
+- **Rule packs** under `references/quality/`: always-on `core` (ENG/SEC/TEST/ERR)
+  plus triggered `service`, `delivery`, `perf`, `frontend`, `library`, `supply`,
+  `iac`, `llm`. Each pack has `applies_when` frontmatter + family sub-files.
+- **`scripts/lib/pack_router.py`** — resolves which packs apply to the *target*
+  repo from detected languages / project type / changed globs / task type
+  (spec-driven for greenfield). Languages act as an eligibility filter; packs
+  activate on project-type/glob/task. Stdlib-only frontmatter parser.
+- **`scripts/lib/quality_gate.py`** — composes the implement Phase 6 gate from
+  `active packs × languages` via `lint/{python,ts,go}/adapter.json` (per-language
+  thresholds; Go relaxed). `--quality=legacy` restores the fixed gate.
+- **`agents/code-reviewer.md`** — multi-language, pack-scoped reviewer; rule-ID
+  tagged findings, three-layer report-only dead-code. `python-code-reviewer`
+  retained for back-compat.
+- **`Skill(grill-me)`** now invoked internally by the plan/discovery interview
+  and the implement confidence gate (not user-run).
+- **Discovery** emits a mandatory audit topic per active quality family
+  (`audit-topic-enumeration` Step 3.5).
+- **`scripts/lib/quality_artifacts.py`** — pack fingerprint + freshness check;
+  deferred (flag-gated) Qodo `best_practices.md` export.
+- Tests: `test_pack_router`, `test_quality_gate`, `test_quality_artifacts`.
+- Rollout: new always-on SEC/ENG BLOCKs ship as WARN for one release. Plan:
+  `docs/quality-pipeline-plan.md`.
+- Reimplements (does not vendor) rubrics from `levnikolaevich/claude-code-skills`
+  (MIT) — see `NOTICE`.
+
 ## [2.0.2] - 2026-05-20
 
 ### Added

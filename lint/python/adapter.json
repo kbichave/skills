@@ -1,0 +1,17 @@
+{
+  "language": "python",
+  "thresholds": {"complexity": 10, "fn_lines": 50, "file_lines": 500, "nesting": 3, "params": 4},
+  "packs": {
+    "core": [
+      "ruff check --select E,F,C901,BLE,B,S {paths}",
+      "mypy --strict {paths}",
+      "bandit -q -r {paths}"
+    ],
+    "service": ["semgrep --config p/python --error {paths}"],
+    "delivery": ["pip-audit"],
+    "supply": ["pip-audit --strict"],
+    "iac": ["semgrep --config p/dockerfile --config p/terraform --error {paths}"],
+    "llm": ["semgrep --config p/python --error {paths}"]
+  },
+  "test": "pytest --cov --cov-report=term-missing"
+}

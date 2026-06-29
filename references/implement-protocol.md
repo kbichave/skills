@@ -22,7 +22,9 @@ Read prior `section_outcome` blocks from `impl-progress.md` before rating — ea
 - **8-10:** Proceed normally.
 - **5-7:** Proceed with caveats. Log concerns in `impl-findings.md`. Consider AMEND mutation per `plan-mutation-protocol.md`.
 - **1-4:** Do NOT proceed.
-  - Interactive: ask user.
+  - Interactive: resolve the blocking unknowns by invoking `Skill(grill-me)`
+    internally (one question at a time, each with a recommended answer) before
+    re-rating — do not ask the user to run `/grill-me`.
   - Auto: log reason, apply SKIP or SPLIT mutation, move to next section.
 
 Treat the gate as load-bearing. Cheap to do, prevents the worst class of bugs (implementing against a stale dependency interface).
@@ -48,12 +50,34 @@ After implementation, before review:
 
 ## Phase 5 — Review
 
-- Python: `agents/python-code-reviewer.md` (7-criterion)
-- Other: `agents/opus-plan-reviewer.md`
+- Multi-language / non-Python / any target with resolved quality packs:
+  `agents/code-reviewer.md` (pack-scoped, rule-ID tagged, per-language thresholds,
+  report-only dead-code). Pass `active_packs` + `languages` from the blueprint.
+- Python-only (legacy / `--quality=legacy`): `agents/python-code-reviewer.md`
+  (7-criterion) remains for back-compat.
+- `agents/opus-plan-reviewer.md` reviews **plans**, not code — not a code reviewer.
 
 ## Phase 6 — Quality gate
 
-`ruff` + `mypy --strict` + `bandit -r` + `pytest --cov ≥85%`. See `references/coding-standards.md`.
+The gate is composed from the quality packs active for this target (frozen in the
+blueprint at plan time) and the target's detected languages:
+
+```python
+from lib.pack_router import resolve_quality_mode, resolve_packs, detect_signals
+from lib.quality_gate import build_gate
+mode = resolve_quality_mode(cli_value=<--quality flag or None>)
+plan = build_gate(active_packs, languages, Path("lint"), mode=mode)
+# run plan.commands; enforce diff coverage >= plan.diff_coverage_min on changed lines
+```
+
+- `active_packs` come from the blueprint (resolved by `pack_router` at plan time);
+  re-check drift at implement start.
+- Diff coverage ≥85% on **changed lines**; whole-suite coverage must not drop;
+  generated/vendored files exempt.
+- `--quality=legacy` returns the fixed gate `ruff` + `mypy --strict` + `bandit -r`
+  + `pytest --cov ≥85%` (see `references/coding-standards.md`) for rollout opt-out.
+- New always-on `SEC-*`/`ENG-*` BLOCKs ship as WARN for one release before
+  flipping to BLOCK. See `docs/quality-pipeline-plan.md`.
 
 ## Phase 7 — Context chaining
 

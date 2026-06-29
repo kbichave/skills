@@ -19,6 +19,24 @@ unchanged unless explicitly noted:
 | `skills/write-a-skill/` | https://github.com/mattpocock/skills/tree/main/write-a-skill | Verbatim. Standalone meta-skill for plugin extension. |
 | `skills/zoom-out/` | https://github.com/mattpocock/skills/tree/main/zoom-out | Verbatim. Standalone strategic step-back skill. |
 
+## Reimplemented Ideas (not vendored)
+
+The quality pipeline (`references/quality/`, `scripts/lib/pack_router.py`,
+`scripts/lib/quality_gate.py`, `agents/code-reviewer.md`) reimplements — in this
+project's own format, not by copying files — several tool-agnostic rubrics from
+[levnikolaevich/claude-code-skills](https://github.com/levnikolaevich/claude-code-skills)
+(MIT):
+
+| Idea | Upstream source |
+|------|-----------------|
+| Code-quality metric thresholds (complexity/size/params) | `ln-511-code-quality-checker` |
+| Gated tech-debt auto-fix (≥90% confidence, low-risk only) | `ln-512-tech-debt-cleaner` |
+| Three-layer dead-code detection (scan → context → entrypoint) | `ln-626-dead-code-pruning-auditor` |
+| Quality-tooling bootstrap shape | `ln-740-quality-setup` |
+
+No source files from that repository are included; only the underlying rubrics
+were reimplemented.
+
 ## Upstream License (MIT)
 
 ```

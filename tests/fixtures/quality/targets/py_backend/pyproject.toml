@@ -1,0 +1,4 @@
+[project]
+name = "py-backend-fixture"
+version = "0.0.0"
+dependencies = ["fastapi>=0.110", "uvicorn>=0.29"]

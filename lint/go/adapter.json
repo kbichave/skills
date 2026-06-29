@@ -1,0 +1,17 @@
+{
+  "language": "go",
+  "thresholds": {"complexity": 15, "fn_lines": 70, "file_lines": 800, "nesting": 3, "params": 5, "params_exclude": ["context.Context", "error"]},
+  "packs": {
+    "core": [
+      "golangci-lint run {paths}",
+      "gocyclo -over 15 {paths}",
+      "gosec ./..."
+    ],
+    "service": ["go test -race ./..."],
+    "delivery": ["govulncheck ./..."],
+    "supply": ["govulncheck ./..."],
+    "iac": ["semgrep --config p/dockerfile --config p/terraform --error {paths}"],
+    "llm": ["gosec ./..."]
+  },
+  "test": "go test -cover ./..."
+}

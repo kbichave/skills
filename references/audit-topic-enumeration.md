@@ -65,6 +65,39 @@ Using data from Steps 1-2, classify the project domain to select appropriate exp
 5. No matches or tie → fall back to `default` with `confidence: low`
 6. Record `detected_domain` and `domain_confidence` for Steps 4 and 6
 
+## Step 3.5: Quality-family lenses
+
+Resolve the quality rule-packs active for this target and emit one mandatory
+audit topic per active family. This guarantees discovery covers the same quality
+dimensions the implement phase will gate on (no blind spots).
+
+```python
+from lib.pack_router import detect_signals, resolve_packs
+signals = detect_signals(Path(target_root), spec_text=objective_text)
+resolution = resolve_packs(signals, Path(plugin_root) / "references" / "quality")
+```
+
+For each active pack, read `references/quality/<pack>/index.md` `provides_rules`
+and add a coverage topic per family (tag `source: quality-lens`):
+
+| Family | Lens topic |
+|--------|-----------|
+| ENG | "Where is complexity/dead-code/duplication concentrated?" |
+| SEC | "What are the authn/authz, injection, and secret-handling risks?" |
+| TEST | "What is failure-path + diff coverage; where are the gaps?" |
+| ERR | "How are errors handled — fail-closed, swallowed, or silent?" |
+| API | "What public contracts exist; what would a breaking change hit?" |
+| DATA | "Migration reversibility, transactions, N+1 hot paths?" |
+| OBS | "Logging/metrics/correlation coverage on critical paths?" |
+| CONC | "Shared-state, timeout/retry, idempotency risks?" |
+| DEP/SUPPLY | "Dependency CVEs, license, provenance, CI-action pinning?" |
+| CFG/IAC | "Config/secret handling; container/IaC misconfig?" |
+| LLM | "Prompt-injection, tool-call allowlisting, output handling?" |
+
+- `core` families (ENG/SEC/TEST/ERR) are always added.
+- Triggered families are added only when their pack is active for the target.
+- These topics are mandatory — merge with, do not replace, perspective topics.
+
 ## Step 4: Load Domain Perspectives
 
 1. Using `detected_domain` from Step 3.5, load `{plugin_root}/references/perspectives/{detected_domain}.md`

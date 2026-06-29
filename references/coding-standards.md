@@ -2,6 +2,12 @@
 
 Read this file at the start of every section implementation. These standards apply to Python projects. For non-Python projects, apply the equivalent idioms for the target language.
 
+> **Quality pipeline (in progress):** the always-on baseline is being migrated to
+> the `core` quality pack at `references/quality/core/` (ENG/SEC/TEST/ERR, with
+> per-language thresholds). Until build step 4 wires the multi-language gate, the
+> Python-specific guidance below remains the live source for the implement gate.
+> See `docs/quality-pipeline-plan.md`.
+
 ---
 
 ## Vocabulary

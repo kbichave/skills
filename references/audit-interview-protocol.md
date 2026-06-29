@@ -11,8 +11,9 @@ The interview has three jobs:
 
 The tool should be SMARTER than the user about what's available in the ecosystem. After deep research (step 5), it knows what competitors do, what packages exist, what academic research says. The interview surfaces this knowledge to expand scope.
 
-**Default style:** the **grill-me** sequential walk (see
-`skills/grill-me/SKILL.md`). Every question carries your recommended
+**Default style:** the **grill-me** sequential walk, invoked internally via
+`Skill(grill-me)` (not user-run; falls back to the inline walk in
+`skills/grill-me/SKILL.md` if unavailable). Every question carries your recommended
 answer drawn from the research findings; the user accepts, redirects,
 or asks for context. Each question resolves one decision-tree branch
 before the next is opened. This is on by default — there is no flag,

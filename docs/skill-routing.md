@@ -4,6 +4,13 @@
 points. The router enumerates every skill installed on the machine
 and decides whether each one is relevant to the current `/deep` step.
 
+> **Distinct from quality-pack routing.** `skill-router` routes *skills* by
+> keyword/description against installed skills. The **quality pipeline** uses a
+> separate resolver, `scripts/lib/pack_router.py`, which inspects the *target*
+> repository (languages, project type, changed globs, task type) to decide which
+> rule packs under `references/quality/` are active. The two are independent: one
+> picks skills, the other picks rule packs. See `docs/quality-pipeline-plan.md`.
+
 ## Why
 
 Users install skills constantly — `claude-api`, `code-review`,
