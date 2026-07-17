@@ -39,8 +39,9 @@ If research was done, use it to:
 ## Technique
 
 The default style is the **grilling** sequential walk. Invoke it internally as a
-pipeline step — call `Skill(grilling)` (the global skill, formerly vendored as
-`grill-me`; the same in-process mechanism used for `Skill(codebase-design)`);
+pipeline step — call `Skill(grilling)` (installed from mattpocock/skills by
+`scripts/checks/install-mattpocock-skills.py`; the same in-process mechanism
+used for `Skill(codebase-design)`);
 the user does not run it themselves. It is on by default — no flag, no opt-in.
 If the skill is unavailable, fall back to the inline walk below (it mirrors
 the upstream grill approach).

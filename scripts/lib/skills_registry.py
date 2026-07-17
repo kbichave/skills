@@ -179,7 +179,7 @@ def filter_relevant(
     for entry in entries:
         if entry.name in mute_list:
             continue
-        if entry.name in {"deep", "deep-plan-enhanced:deep"}:
+        if entry.name in {"deep", "deep:deep"}:
             continue
         confidence, reason = _score(entry, haystack, context)
         if confidence == "skip":

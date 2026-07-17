@@ -1,38 +1,59 @@
-# Bundled Skills
+# Bundled and Installed Skills
 
-The plugin previously vendored seven skills from
-[mattpocock/skills](https://github.com/mattpocock/skills) (MIT). Six were
-**removed** in favor of their globally installed equivalents — vendoring
-them alongside the global copies produced duplicate skill entries. Full
-attribution history lives in [`NOTICE`](../NOTICE).
+The plugin follows one naming convention: skills the plugin **owns** are
+bundled in `skills/` and surface under the `deep:` namespace; skills the
+plugin **depends on** are installed unmodified from their upstream source
+(no vendored copies, no renamed forks). Full attribution history lives in
+[`NOTICE`](../NOTICE).
 
-| Formerly vendored | Now resolved by (global skill) | Wired into `/deep` via |
-|---|---|---|
-| `grill-me` | `grilling` | `Skill(grilling)` in interview protocols; inline fallback walk in `references/interview-protocol.md` |
-| `tdd` | `tdd` | rules inlined in `references/coding-standards.md`, `agents/section-writer.md`, `agents/opus-plan-reviewer.md` |
-| `ubiquitous-language` | `domain-modeling` | always-on audit topic in `references/audit-topic-enumeration.md` |
-| `improve-codebase-architecture` | `codebase-design` | `Skill(codebase-design)` in `references/integration-protocol.md`; vocabulary inlined at `references/architecture-language.md` |
-| `obsidian-vault` | `obsidian-vault` | `Skill(obsidian-vault)` from the `vault-curator` subagent |
-| `write-a-skill` | `write-a-skill` | standalone meta-skill, no `/deep` wiring |
-
-**Dependency note:** the `/deep` flows degrade gracefully when a global
-skill is missing — interview protocols carry an inline fallback walk, and
-the tdd/architecture rules are inlined in `references/`. Only the
-opportunistic `Skill(...)` invocations no-op without the global skills.
-
-## Still bundled
+## Bundled (plugin-owned, `deep:*`)
 
 | Skill | Purpose |
 |---|---|
 | `deep` | The plugin's own discovery/plan/implement pipeline. |
-| `mp-zoom-out` | Strategic step-back prompt (Matt Pocock upstream `zoom-out`, renamed with the `mp-` prefix to mark provenance and avoid clashing with any global copy). |
 | `code-review` | Standalone entry point to the `code-reviewer` agent with context gathering and web-verified findings. |
-| `humanizer` | Removes signs of AI-generated writing from prose (user's own skill, v2.5.1; global copy archived — plugin is now the single source). |
+| `humanizer` | Removes signs of AI-generated writing from prose (user's own skill, v2.5.1; global copy archived — plugin is the single source). |
+
+## Installed from mattpocock/skills
+
+Run once (re-run to update to current upstream):
+
+```bash
+uv run scripts/checks/install-mattpocock-skills.py
+```
+
+Downloads these skills verbatim from
+[mattpocock/skills](https://github.com/mattpocock/skills) into
+`~/.claude/skills/`, recording provenance + hashes in
+`~/.claude/skills/skills-lock.json`:
+
+| Skill | Wired into `/deep` via |
+|---|---|
+| `grilling` | `Skill(grilling)` in interview protocols; inline fallback walk in `references/interview-protocol.md` |
+| `grill-me` | standalone grill entry point, no direct `/deep` wiring |
+| `handoff` | standalone session-handoff skill, no direct `/deep` wiring |
+
+## Global skills `/deep` invokes opportunistically
+
+Resolved from the user's `~/.claude/skills/` if present:
+
+| Skill | Wired into `/deep` via |
+|---|---|
+| `tdd` | rules inlined in `references/coding-standards.md`, `agents/section-writer.md`, `agents/opus-plan-reviewer.md` |
+| `domain-modeling` | always-on audit topic in `references/audit-topic-enumeration.md` |
+| `codebase-design` | `Skill(codebase-design)` in `references/integration-protocol.md`; vocabulary inlined at `references/architecture-language.md` |
+| `obsidian-vault` | `Skill(obsidian-vault)` from the `vault-curator` subagent |
+| `write-a-skill` | standalone meta-skill, no `/deep` wiring |
+
+**Dependency note:** the `/deep` flows degrade gracefully when a skill is
+missing — interview protocols carry an inline fallback walk, and the
+tdd/architecture rules are inlined in `references/`. Only the
+opportunistic `Skill(...)` invocations no-op without the installed skills.
 
 ## Cross-references in protocol files
 
-Load-bearing content from the removed skills was inlined so the plugin
-stays self-contained:
+Load-bearing content from formerly vendored skills was inlined so the
+plugin stays self-contained:
 
 * `references/architecture-language.md` — the module/depth/seam/deletion-test
   vocabulary (formerly `improve-codebase-architecture/LANGUAGE.md`).

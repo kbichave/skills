@@ -5,6 +5,28 @@ All notable changes to deep-plan will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [5.0.0] - 2026-07-17
+
+**Breaking:** plugin renamed `deep-plan-enhanced` → `deep` (repo name and
+URL unchanged); `skills/mp-zoom-out/` removed. Reinstall required:
+`claude plugin uninstall deep-plan-enhanced@kbichave-plugins && claude
+plugin install deep@kbichave-plugins`.
+
+### Changed
+- **Plugin name is now `deep`** — bundled skills surface as `deep:deep`,
+  `deep:code-review`, `deep:humanizer`. One namespace, no vestigial
+  prefixes.
+- **No vendored mattpocock skills.** New one-time setup script
+  `scripts/checks/install-mattpocock-skills.py` installs `grilling`,
+  `grill-me`, and `handoff` verbatim from
+  [mattpocock/skills](https://github.com/mattpocock/skills) into
+  `~/.claude/skills/` under upstream names, with provenance + hashes
+  recorded in `skills-lock.json`. Re-run to update.
+
+### Removed
+- **`skills/mp-zoom-out/`** — upstream deleted `zoom-out`; the vendored
+  rename is dropped rather than maintained as an orphan fork.
+
 ## [4.1.0] - 2026-07-17
 
 ### Added

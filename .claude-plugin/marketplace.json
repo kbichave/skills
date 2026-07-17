@@ -2,16 +2,16 @@
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "kbichave-plugins",
   "description": "Claude Code plugins by kbichave",
-  "version": "4.1.0",
+  "version": "5.0.0",
   "owner": {
     "name": "kbichave",
     "url": "https://github.com/kbichave"
   },
   "plugins": [
     {
-      "name": "deep-plan-enhanced",
+      "name": "deep",
       "description": "Unified discovery, planning, and implementation with STORM-inspired research coverage, strict Python quality gates, and session isolation",
-      "version": "4.1.0",
+      "version": "5.0.0",
       "author": {
         "name": "kbichave",
         "url": "https://github.com/kbichave"

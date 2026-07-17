@@ -12,7 +12,8 @@ The interview has three jobs:
 The tool should be SMARTER than the user about what's available in the ecosystem. After deep research (step 5), it knows what competitors do, what packages exist, what academic research says. The interview surfaces this knowledge to expand scope.
 
 **Default style:** the **grilling** sequential walk, invoked internally via
-`Skill(grilling)` (the global skill, formerly vendored as `grill-me`; not
+`Skill(grilling)` (installed from mattpocock/skills by
+`scripts/checks/install-mattpocock-skills.py`; not
 user-run — falls back to the inline walk in
 `references/interview-protocol.md` if unavailable). Every question carries your recommended
 answer drawn from the research findings; the user accepts, redirects,

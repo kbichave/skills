@@ -64,7 +64,7 @@ def test_filter_relevant_demotes_side_effect_skills(tmp_path):
 
 def test_filter_relevant_excludes_deep(tmp_path):
     path = _write_skill(tmp_path, "deep", "deep self")
-    entries = [sr.parse_skill_md(path, source="plugin:deep-plan-enhanced")]
+    entries = [sr.parse_skill_md(path, source="plugin:deep")]
     matches = sr.filter_relevant(entries, context={"files": []})
     assert all(m.skill.name != "deep" for m in matches)
 

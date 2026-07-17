@@ -1,24 +1,30 @@
 # Third-Party Notices
 
-This plugin vendors several skills from the upstream
+This plugin depends on several skills from the upstream
 [mattpocock/skills](https://github.com/mattpocock/skills) repository
 under the terms of the MIT License.
 
-## Vendored Skills
+## Installed Skills (not vendored)
 
-One skill remains vendored, renamed with an `mp-` prefix to mark
-provenance:
+No mattpocock skills are vendored in this repository. The setup script
+`scripts/checks/install-mattpocock-skills.py` installs them verbatim
+from the upstream repository into `~/.claude/skills/` under their
+upstream names, recording provenance and content hashes in
+`~/.claude/skills/skills-lock.json`:
 
-| Path | Upstream | Notes |
-|------|----------|-------|
-| `skills/mp-zoom-out/` | https://github.com/mattpocock/skills/tree/main/zoom-out | Verbatim content; directory + `name:` field renamed `zoom-out` → `mp-zoom-out`. |
+| Skill | Upstream path |
+|-------|---------------|
+| `grilling` | `skills/productivity/grilling/` |
+| `grill-me` | `skills/productivity/grill-me/` |
+| `handoff` | `skills/productivity/handoff/` |
 
-Six previously vendored skills (`grill-me`, `tdd`, `ubiquitous-language`,
-`improve-codebase-architecture`, `obsidian-vault`, `write-a-skill`) were
-**removed** — globally installed equivalents (`grilling`, `tdd`,
-`domain-modeling`, `codebase-design`, `obsidian-vault`, `write-a-skill`)
-supersede them, and vendoring alongside the global copies produced
-duplicates. Load-bearing content was inlined before removal:
+Seven previously vendored skills (`grill-me`, `tdd`,
+`ubiquitous-language`, `improve-codebase-architecture`,
+`obsidian-vault`, `write-a-skill`, `zoom-out` — the last briefly as
+`mp-zoom-out`) were **removed** in favor of upstream-installed or
+globally installed equivalents; vendoring alongside installed copies
+produced duplicates, and `zoom-out` was deleted upstream. Load-bearing
+content was inlined before removal:
 `references/architecture-language.md` (from
 `improve-codebase-architecture/LANGUAGE.md`) and the TDD/module rules
 already inlined in `references/coding-standards.md` and
@@ -96,9 +102,9 @@ SOFTWARE.
 
 ## Modifications
 
-No content modifications were made to the vendored skill files at vendor
-time. If a vendored skill is later edited in this repository, the change
-will be noted in the table above and recorded in `CHANGELOG.md`.
+The installer copies upstream skill files verbatim — no renames, no
+content modifications. Installed copies live outside this repository
+(`~/.claude/skills/`) and are refreshed by re-running the installer.
 
 The cross-reference edits made to *this* repository's existing files
 (under `references/` and `agents/`) cite these skills by path; they do

@@ -50,7 +50,7 @@ If `pack_router` or a blueprint is unavailable, fall back to
 
 Write a prompt file (temp) containing: changed files, section spec path
 (or "none — standalone review"), `active_packs`, `languages`,
-`review_context`. Spawn `deep-plan-enhanced:code-reviewer` with it.
+`review_context`. Spawn `deep:code-reviewer` with it.
 
 ### 5. Verify claims
 

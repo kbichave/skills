@@ -1,4 +1,4 @@
-# deep-plan-enhanced
+# deep-plan-enhanced (plugin: `deep`)
 
 A Claude Code plugin for discovering, planning, and implementing complex systems — one unified `/deep` skill with four modes.
 
@@ -17,7 +17,7 @@ Also accepts **inline text** or **no argument** — the plugin synthesizes a spe
 
 ```bash
 claude plugin marketplace add github:kbichave/deep-plan-enhanced
-claude plugin install deep-plan-enhanced
+claude plugin install deep
 ```
 
 This registers the `/deep` skill and all hooks automatically.
@@ -33,7 +33,7 @@ cd ~/.claude/plugins/deep-plan-enhanced && uv sync
 
 # Enable the plugin
 # Add to ~/.claude/settings.json:
-# "enabledPlugins": { "deep-plan-enhanced@kbichave-plugins": true }
+# "enabledPlugins": { "deep@kbichave-plugins": true }
 ```
 
 ### Required Integrations
@@ -258,15 +258,31 @@ This project combines patterns from [deep-plan](https://github.com/piercelamb/de
 
 This plugin vendors a curated subset of [mattpocock/skills](https://github.com/mattpocock/skills) (MIT). Full attribution is in [`NOTICE`](NOTICE).
 
+**Bundled in this plugin (`deep:*` namespace):**
+
 | Skill | Slash command | Use |
 |-------|--------------|-----|
-| `grill-me` | `/grill-me` | Sequential decision-tree interview with recommended answers. Default style for `/deep plan` interviews. |
-| `tdd` | `/tdd` | Tracer-bullet test-driven development. Cited from `references/coding-standards.md`. |
-| `ubiquitous-language` | `/ubiquitous-language` | Domain glossary extraction. Always-on topic in `/deep discovery`. |
-| `improve-codebase-architecture` | `/improve-codebase-architecture` | Shallow-vs-deep module audit. Auto-prompts during `/deep plan` and `/deep implement`. |
-| `obsidian-vault` | `/obsidian-vault` | Note management. Backing store for the knowledge vault below. |
-| `write-a-skill` | `/write-a-skill` | Standalone meta-skill for extending the plugin. |
-| `zoom-out` | `/zoom-out` | Strategic step-back. Pairs with `/deep auto`. |
+| `deep` | `/deep` | The discovery/plan/implement/auto pipeline. |
+| `code-review` | `/code-review` | Standalone pack-scoped review via the `code-reviewer` agent. |
+| `humanizer` | `/humanizer` | Strips AI-writing tells from prose outputs. |
+
+**Installed from [mattpocock/skills](https://github.com/mattpocock/skills)** — run `uv run scripts/checks/install-mattpocock-skills.py` once (re-run to update):
+
+| Skill | Use |
+|-------|-----|
+| `grilling` | Sequential decision-tree interview with recommended answers. Default style for `/deep plan` interviews. |
+| `grill-me` | Standalone grill entry point. |
+| `handoff` | Session-handoff summary skill. |
+
+**Global skills `/deep` invokes opportunistically (inline fallbacks when missing):**
+
+| Skill | Use |
+|-------|-----|
+| `tdd` | Tracer-bullet test-driven development. Cited from `references/coding-standards.md`. |
+| `domain-modeling` | Domain glossary extraction. Always-on topic in `/deep discovery`. |
+| `codebase-design` | Shallow-vs-deep module audit. Auto-prompts during `/deep plan` and `/deep implement`. |
+| `obsidian-vault` | Note management. Backing store for the knowledge vault below. |
+| `write-a-skill` | Standalone meta-skill for extending the plugin. |
 
 See [`docs/skills-bundled.md`](docs/skills-bundled.md) for the full table including when each is auto-invoked vs. manually invocable.
 
@@ -292,7 +308,7 @@ Between major workflow phases, `/deep` consults a `skill-router` subagent that e
 - [STORM](https://arxiv.org/abs/2402.14207) by Stanford — outline-first research enumeration for coverage breadth
 - [Deep-Research-skills](https://github.com/Weizhena/Deep-Research-skills) by Weizhena — research skill patterns for discovery agents
 - [python-skills](https://github.com/wdm0006/python-skills) by wdm0006 — Python coding standards and advanced quality gates
-- [mattpocock/skills](https://github.com/mattpocock/skills) by Matt Pocock — vendored skills for grill-me / tdd / ubiquitous-language / improve-codebase-architecture / obsidian-vault / write-a-skill / zoom-out (MIT License, see [`NOTICE`](NOTICE))
+- [mattpocock/skills](https://github.com/mattpocock/skills) by Matt Pocock — grilling / grill-me / handoff installed verbatim from upstream by `scripts/checks/install-mattpocock-skills.py` (MIT License, see [`NOTICE`](NOTICE))
 
 ## License
 
