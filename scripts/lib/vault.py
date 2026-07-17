@@ -154,7 +154,7 @@ def findings_dir(vault: Path, project_path: Path) -> Path:
 _README_BODY = """# deep-plan vault
 
 This vault is the long-lived knowledge store for the
-[deep-plan-enhanced](https://github.com/kbichave/deep-plan-enhanced)
+[deep](https://github.com/kbichave/skills)
 plugin.
 
 It is created the first time a `/deep` workflow needs to persist

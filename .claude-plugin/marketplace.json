@@ -1,7 +1,7 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
-  "name": "kbichave-plugins",
-  "description": "Claude Code plugins by kbichave",
+  "name": "kbichave-skills",
+  "description": "kbichave's pack of usable skills and plugins",
   "version": "5.0.0",
   "owner": {
     "name": "kbichave",
@@ -18,7 +18,7 @@
       },
       "source": "./",
       "category": "development",
-      "homepage": "https://github.com/kbichave/deep-plan-enhanced",
+      "homepage": "https://github.com/kbichave/skills",
       "tags": ["planning", "implementation", "tdd", "architecture", "llm-review", "execution", "discovery", "system-design", "build-vs-buy"]
     }
   ]

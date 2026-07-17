@@ -6,7 +6,7 @@
     "name": "kbichave",
     "url": "https://github.com/kbichave"
   },
-  "repository": "https://github.com/kbichave/deep-plan-enhanced",
+  "repository": "https://github.com/kbichave/skills",
   "license": "MIT",
   "keywords": ["planning", "implementation", "tdd", "architecture", "llm-review", "execution", "discovery", "system-design", "build-vs-buy"]
 }

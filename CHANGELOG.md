@@ -7,10 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [5.0.0] - 2026-07-17
 
-**Breaking:** plugin renamed `deep-plan-enhanced` → `deep` (repo name and
-URL unchanged); `skills/mp-zoom-out/` removed. Reinstall required:
+**Breaking:** plugin renamed `deep-plan-enhanced` → `deep`;
+`skills/mp-zoom-out/` removed. Reinstall required:
 `claude plugin uninstall deep-plan-enhanced@kbichave-plugins && claude
-plugin install deep@kbichave-plugins`.
+plugin install deep@kbichave-skills`. The GitHub repo was also renamed
+`kbichave/deep-plan-enhanced` → `kbichave/skills` and the marketplace
+`kbichave-plugins` → `kbichave-skills` (old repo URL redirects).
 
 ### Changed
 - **Plugin name is now `deep`** — bundled skills surface as `deep:deep`,

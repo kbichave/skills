@@ -16,7 +16,7 @@ Also accepts **inline text** or **no argument** — the plugin synthesizes a spe
 ### As a Plugin (Recommended)
 
 ```bash
-claude plugin marketplace add github:kbichave/deep-plan-enhanced
+claude plugin marketplace add github:kbichave/skills
 claude plugin install deep
 ```
 
@@ -26,14 +26,14 @@ This registers the `/deep` skill and all hooks automatically.
 
 ```bash
 # Clone
-git clone https://github.com/kbichave/deep-plan-enhanced.git ~/.claude/plugins/deep-plan-enhanced
+git clone https://github.com/kbichave/skills.git ~/.claude/plugins/deep
 
 # Install Python dependencies
 cd ~/.claude/plugins/deep-plan-enhanced && uv sync
 
 # Enable the plugin
 # Add to ~/.claude/settings.json:
-# "enabledPlugins": { "deep@kbichave-plugins": true }
+# "enabledPlugins": { "deep@kbichave-skills": true }
 ```
 
 ### Required Integrations
