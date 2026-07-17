@@ -5,7 +5,11 @@ All notable changes to deep-plan will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [4.0.0] - 2026-07-17
+
+**Breaking:** `agents/python-code-reviewer.md` deleted (merged into
+`code-reviewer`); six vendored mattpocock skills removed in favor of
+globally installed equivalents.
 
 ### Changed — Unified code reviewer (merged + enriched)
 - **`agents/code-reviewer.md` is now the sole code-review agent.**
