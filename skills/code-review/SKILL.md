@@ -192,23 +192,30 @@ Every finding row carries the exact `file` path (repo-relative) and `line`
 from the reviewer JSON — never omit or approximate them. Findings fixed
 during step 6 stay in the table, marked `(fixed)` in the Fix column.
 
-### 8. Humanized triage — approve, skip, or comment per finding
+### 8. Humanize (mandatory gate) — then triage
 
-After the report file is written, walk the user through every unfixed
-finding and improvement, one decision each:
+**Humanization is a hard gate: no finding text is ever shown as a marker or
+posted to a PR in raw reviewer voice.** The orchestrator runs this, NOT the
+subagents — panel experts and the review-verifier have only Read/Grep/Glob/
+Bash and cannot invoke a skill. So after the review-verifier returns its
+approved set, invoke the `deep:humanizer` skill here on every approved
+finding + improvement, producing a one-line `humanized_comment` per finding.
+Feed the humanizer the raw `issue`/`fix` (or `better`/`why`) text; keep its
+output as the comment that markers (step 8 triage) and PR posts (step 9) use.
+The `.reviews/` report and chat keep the precise original wording; only the
+externalized comment lines are humanized.
 
-1. **Humanize** each finding's comment text with the `deep:humanizer` skill
-   — the marker line the user will live with in their code should read like
-   a sharp colleague's note, not agent output. Humanize the one-line marker
-   text only; the report file keeps the precise original wording.
-2. **Present** findings via AskUserQuestion — batch up to 4 per call,
+Then walk the user through every unfixed finding and improvement, one
+decision each:
+
+1. **Present** findings via AskUserQuestion — batch up to 4 per call,
    ordered high → medium → low → improvements. Each question shows
    `file:line`, the humanized comment, and the code context; options:
    - **Approve** — insert the marker as shown.
    - **Skip** — no marker; report file marks the row `(skipped)`.
    - **Edit comment** — user supplies their own wording (via "Other"/notes);
      insert the marker with the user's text.
-3. **Insert markers for approved findings only** (rules below).
+2. **Insert markers for approved findings only** (rules below).
 
 ### Marker insertion (approved findings only)
 
@@ -256,6 +263,11 @@ review **as the user's own** via `gh pr review` / `gh pr comment`.
   they never appear in the PR.
 - First person, direct, humanized (reuse the step-8 humanized text). Read
   like a colleague's review, not a report.
+- Use Markdown `` `code` `` spans for every code token — filenames, paths,
+  symbols, functions, config keys, values, commands, error strings (e.g.
+  `` `dbt_project.yml` ``, `` `LT02` ``, `` `{% for kpi %}` ``). Use fenced
+  ```` ``` ```` blocks for multi-line snippets or suggested diffs. GitHub
+  renders Markdown — never post code as bare prose.
 - Strip finding machinery from the visible text: no `rule_id`/tag codes,
   no `[expert]` labels, no severity emoji dumps. Lead with the verdict and
   the blocking issues in plain prose.
