@@ -18,16 +18,25 @@ Determine what to review:
 - Nothing named: default to uncommitted + staged changes (`git diff HEAD --name-only`);
   if clean, ask for a base.
 
+Fail fast before any agent spawns: `git rev-parse <base>` must resolve and the
+diff must be non-empty. A bad ref or empty diff dies here, not inside a
+sub-agent.
+
 ### 2. Context gathering
 
 Ask once (AskUserQuestion):
 1. **Provide** — user pastes ticket text, spec, or constraints.
 2. **Skip** — review the code on its own terms.
 3. **Auto-discover** — enumerate available MCPs and tooling, then pull
-   context: issue keys from branch name / commit messages → issue tracker
-   (Jira via Atlassian MCP, or `bd show`); PR description via `gh pr view`;
-   linked specs via Confluence MCP. Summarize into a `review_context` block
-   (≤40 lines). Use whatever is available; note what was skipped.
+   context. Spec-source search order:
+   1. Issue references in commit messages (`#123`, `Closes #45`, issue keys)
+      → issue tracker (Jira via Atlassian MCP, or `bd show`).
+   2. PR description via `gh pr view`; linked specs via Confluence MCP.
+   3. A PRD/spec file under `docs/`, `specs/`, or the planning dir matching
+      the branch/feature name.
+   4. Nothing found → proceed spec-less; the report notes "no spec available".
+   Summarize into a `review_context` block (≤40 lines). Use whatever is
+   available; note what was skipped.
 
 ### 3. Resolve packs + languages
 
@@ -53,7 +62,20 @@ Downgrade to `medium` + note if the docs contradict or don't support it.
 
 ### 6. Render the report
 
-Translate the JSON for the user (the JSON is machine-facing):
+Translate the JSON for the user (the JSON is machine-facing). Report on
+**two separate axes** — do not merge or rerank across them, so a clean
+standards pass can't mask a spec miss (and vice versa):
+
+- **`## Spec`** — SPEC-COMPLIANCE findings: missing/partial requirements,
+  scope creep, implemented-but-wrong. Quote the spec/`review_context` line
+  per finding. No spec → "no spec available".
+- **`## Standards`** — everything else (rule-pack findings). Documented repo
+  standards override judgment-call heuristics: where a repo convention
+  endorses something a heuristic would flag, suppress the finding. Design
+  smells (see `references/quality/cross-cutting/code-quality-universal.md`)
+  are always labelled judgment calls, never hard violations.
+
+Within each axis:
 - Verdict line: pass/fail + one-sentence summary.
 - Findings grouped by severity — `high` 🔴 / `medium` 🟡 / `low` 🟢 —
   each as `file:line — issue → fix (rule_id)`, with verification sources
