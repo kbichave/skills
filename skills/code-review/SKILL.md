@@ -24,7 +24,12 @@ sub-agent.
 
 ### 2. Context gathering
 
-Ask once (AskUserQuestion):
+**Mandatory gate — do not spawn the reviewer without completing this step.**
+Skip the question ONLY if the invocation itself already carried spec/ticket
+context (e.g. the user pasted requirements or named a ticket when calling
+the skill); in that case use it as `review_context` and say so.
+
+Otherwise ask (AskUserQuestion):
 1. **Provide** — user pastes ticket text, spec, or constraints.
 2. **Skip** — review the code on its own terms.
 3. **Auto-discover** — enumerate available MCPs and tooling, then pull
