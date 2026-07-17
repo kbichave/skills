@@ -1,7 +1,7 @@
 {
   "name": "deep",
   "description": "Discover, plan, and implement complex systems with AI-assisted research, multi-LLM review, TDD sections, and disciplined execution",
-  "version": "5.1.0",
+  "version": "5.2.0",
   "author": {
     "name": "kbichave",
     "url": "https://github.com/kbichave"

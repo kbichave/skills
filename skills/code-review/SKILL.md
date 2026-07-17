@@ -42,6 +42,14 @@ Fail fast before any agent spawns: `git rev-parse <base>` must resolve and the
 diff must be non-empty. A bad ref or empty diff dies here, not inside a
 sub-agent.
 
+**Size guardrail.** Measure the diff (`git diff <base> --shortstat`). Defect
+detection collapses past ~400 changed LOC (SmartBear); a review that big is
+worth splitting. If the diff exceeds ~400 LOC, tell the user, and offer to
+either (a) scope the review to a subset of files/commits now, or (b) proceed
+but run in paced passes so no region gets a shallow read. Proceed whole only
+on the user's say-so. Never silently give a 2000-line diff the same one-shot
+attention as a 100-line one.
+
 ### 2. Context gathering
 
 **Mandatory gate — do not spawn the panel without completing this step.**
@@ -143,14 +151,48 @@ standards pass can't mask a spec miss (and vice versa):
   `file:line — current → better (technique): why`. Advisory only — never
   affects either verdict. Omit the section when empty.
 
+- **`## Learning summary`** — the teaching payoff, synthesized by the
+  orchestrator from the approved findings' `teach` blocks. NOT a re-list of
+  findings. Produce:
+  - **Recurring themes** — cluster findings by `principle`; where the author
+    hit the same class ≥2 times, say so ("null handling slipped in 3 spots —
+    the pattern is: trace every optional to its use before shipping").
+  - **What to study** — 2–4 concrete pointers (the `reference` links, a
+    concept to read up on), chosen from the themes, not generic advice.
+  - **Strengths** — pull the panel's `praise` here as positive
+    reinforcement: what the author did well and should keep doing.
+  This section is what turns a gate into a mentor. Always render it (even a
+  clean review gets a strengths note); it never affects a verdict.
+
 Within each axis:
 - Verdict line: pass/fail + one-sentence summary.
-- Findings grouped by severity — `high` 🔴 / `medium` 🟡 / `low` 🟢 —
-  each as `file:line — issue → fix (rule_id or tag) [expert]`, with
-  verification sources where used.
+- **Exhaustive, blocking-first.** Render every approved finding — never
+  truncate, never "N more noted". Split each axis into **Blocking** (`high` 🔴)
+  first, then **Non-blocking** (`medium` 🟡 / `low` 🟢, including nits) so a
+  long nit list can never bury a real bug. The count may be large; that is the
+  point of exhaustive mode. Each finding as `file:line — issue → fix
+  (rule_id or tag) [expert]`, with verification sources where used.
 - Praise entries, if any.
 - Gates table (lint/types/security).
 - Dead-code report (report-only — never auto-delete).
+
+**Conventional Comment labels.** Prefix every externalized comment (chat
+render, PR posts, and the humanized marker text) with a
+[Conventional Comments](https://conventionalcomments.org/) label + decoration,
+so severity and intent read at a glance. Mapping:
+
+| Finding | Label + decoration |
+|---|---|
+| `high` issue | `issue (blocking):` |
+| `medium` issue | `issue (non-blocking):` |
+| `low` issue / nit | `nitpick (non-blocking):` |
+| improvement | `suggestion (non-blocking):` |
+| praise | `praise:` |
+| Socratic-mode finding | `question:` |
+
+`blocking` findings are the ones that fail a verdict; everything else is
+`non-blocking`. The internal `.reviews/` table keeps `rule_id`/severity; the
+label is for the human-facing surfaces.
 
 Offer to fix `high` findings; apply fixes only on user confirmation.
 
@@ -200,6 +242,17 @@ verdict_standards: <pass|fail>
 |------|------|---------|--------|-----------|-----|
 | src/api/users.py | 51 | manual dict loop | `Counter(...)` | collections.Counter | one tested line replaces 6 |
 
+## Learning summary
+
+**Recurring themes**
+- <principle cluster — e.g. "null handling (3×): trace every optional to its use">
+
+**What to study**
+- <concrete pointer / reference link>
+
+**Strengths**
+- <praise entry — what to keep doing>
+
 ## Gates
 <lint/types/security table>
 
@@ -223,6 +276,16 @@ Feed the humanizer the raw `issue`/`fix` (or `better`/`why`) text; keep its
 output as the comment that markers (step 8 triage) and PR posts (step 9) use.
 The `.reviews/` report and chat keep the precise original wording; only the
 externalized comment lines are humanized.
+
+**Socratic mode (optional, ask once up front).** Offer the user a teaching
+voice: instead of dictating each fix, phrase the externalized comment as a
+guiding question that leads the author to the fix themselves — "what happens
+here when `items` is empty?" rather than "add an empty check". Research on
+mentorship shows discovered fixes stick; dictated ones create dependency.
+When enabled, the humanized comment for each `medium`/`low` finding becomes a
+question paired with the `teach.why`; keep `high`/blocking findings direct
+(no riddles on security). Default off — many users want the direct fix. The
+`.reviews/` file always keeps the direct wording regardless.
 
 Then walk the user through every unfixed finding and improvement, one
 decision each:

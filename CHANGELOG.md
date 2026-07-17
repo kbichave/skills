@@ -5,6 +5,51 @@ All notable changes to deep-plan will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [5.2.0] - 2026-07-17
+
+World-class, factual, teaching-oriented upgrade to the `code-review` skill.
+
+### Changed
+- **Exhaustive review is now the default.** Removed the per-expert issue and
+  improvement caps and the triage-suppression language ("five findings beat
+  twenty nitpicks", "style police"). Every real standards deviation is
+  surfaced at its true severity — nits included, as `low`/non-blocking. The
+  report renders **blocking-first**, splitting Blocking (`high`) from
+  Non-blocking so a long nit list can never bury a real bug.
+- **Praise is uncapped** — reinforcement of good patterns teaches as much as
+  flagging bad ones.
+
+### Added
+- **Factual gate.** Every finding must quote the verbatim offending code and
+  carry a falsifiable prediction; a new `evidence` field captures tool output.
+  The `review-verifier` gains a gate-0 that rejects any finding whose quoted
+  snippet it cannot find, and a check-8 that downgrades unverified
+  framework/behavior claims lacking tool output, a doc URL, or a claim-verifier
+  verdict.
+- **Tools where needed.** Panel experts now have an explicit mandate to run the
+  language linter/type/security tools, `grep`, and tests to *confirm* findings
+  before reporting ("prefer executing to asserting"). Web verification stays
+  centralized in an expanded `claim-verifier` (single pass, claim batching).
+- **Teaching layer.** Every issue carries a `teach` block — `principle`,
+  `why`, `pattern` (the general form to internalize), optional `reference`.
+  A new `## Learning summary` report section clusters recurring themes, points
+  to concrete study, and surfaces strengths. Optional **Socratic mode** phrases
+  non-blocking findings as guiding questions.
+- **Standards taxonomy.** OWASP-2021 + CWE-Top-25 crosswalk on every `SEC-*`
+  rule, plus new `SEC-011` SSRF (CWE-918), `SEC-012` unsafe deserialization
+  (CWE-502), `SEC-013` path traversal (CWE-22), `SEC-014` open redirect
+  (CWE-601). Externalized comments adopt **Conventional Comments** labels
+  (issue/suggestion/nitpick/praise/question + blocking/non-blocking).
+- **Diff-size guardrail** in the scope step: diffs over ~400 LOC trigger a
+  warning and an offer to split or run paced passes (SmartBear defect-detection
+  threshold).
+- **Mandatory detective sweep** in the shared panel protocol — data-flow,
+  invariants, hostile inputs, error paths, concurrency/TOCTOU, arithmetic —
+  now required of every expert, not just `logic`.
+- Eval cases and rubric items for the large-diff guardrail, the learning
+  summary, exhaustive blocking-first output, teach blocks, OWASP/CWE citation,
+  and Conventional Comment labels.
+
 ## [5.1.0] - 2026-07-17
 
 Multi-expert code review, grounded in "Don't Ship Skills Without Evals".

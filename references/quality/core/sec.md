@@ -2,6 +2,13 @@
 
 Always-on. All `SEC-*` BLOCKs are **non-overridable** (decision Q8).
 
+Every rule carries its **OWASP Top 10 (2021)** category and **CWE** id so
+findings cite the canonical taxonomy (e.g. `SEC-003 → A03:Injection / CWE-89`).
+Include the code in the finding `tag` or `teach.principle`. Reviewers should
+sweep the diff against the OWASP Top 10 and the CWE Top 25 most-dangerous
+weaknesses, not just the rules enumerated here — an uncovered weakness is a
+`SEC-000` finding pointing at its CWE.
+
 ### SEC-001: No secrets committed
 - **Trigger:** any change.
 - **Required behavior:** no keys/tokens/credentials in source, config, or history.
@@ -71,3 +78,53 @@ Always-on. All `SEC-*` BLOCKs are **non-overridable** (decision Q8).
 - **Verification signal:** pip-audit / osv-scanner; severity+reachability tiered.
 - **Severity:** BLOCK on reachable critical, else WARN
 - **Enforcer:** linter
+
+### SEC-011: No server-side request forgery (SSRF)
+- **Trigger:** server makes an outbound request to a URL/host derived from user input.
+- **Required behavior:** allowlist destinations; block internal/metadata ranges (169.254.169.254, RFC-1918, localhost); resolve-then-validate to defeat DNS rebinding.
+- **Verification signal:** reviewer + test that an internal-IP target is rejected.
+- **Severity:** BLOCK
+- **Enforcer:** reviewer + test
+
+### SEC-012: No unsafe deserialization of untrusted data
+- **Trigger:** deserializing external input (`pickle`, `yaml.load`, `Marshal.load`, Java native, `unserialize`).
+- **Required behavior:** never deserialize untrusted data with an object-constructing loader; use data-only formats (JSON) or safe loaders (`yaml.safe_load`), or sign+verify the payload.
+- **Verification signal:** semgrep / bandit (B301/B506) + reviewer.
+- **Severity:** BLOCK
+- **Enforcer:** linter + reviewer
+
+### SEC-013: No path traversal
+- **Trigger:** file path built from user input.
+- **Required behavior:** canonicalize and confirm the resolved path stays within the intended base dir; reject `..` and absolute-path escapes.
+- **Verification signal:** reviewer + test that `../../etc/passwd` is rejected.
+- **Severity:** BLOCK
+- **Enforcer:** reviewer + test
+
+### SEC-014: No open redirect
+- **Trigger:** redirect/forward target derived from user input.
+- **Required behavior:** redirect only to a relative path or an allowlisted host; never to an arbitrary user-supplied absolute URL.
+- **Verification signal:** reviewer + test that an off-site redirect target is rejected.
+- **Severity:** WARN
+- **Enforcer:** reviewer
+
+## OWASP / CWE crosswalk
+
+Cite these codes in findings. Sweep the whole OWASP Top 10 and CWE Top 25 —
+these are the mapped anchors, not the ceiling.
+
+| Rule | OWASP 2021 | CWE |
+|---|---|---|
+| SEC-001 secrets | A05 Security Misconfiguration / A07 | CWE-798 hard-coded credentials |
+| SEC-002 boundary validation | A03 Injection / A04 Insecure Design | CWE-20 improper input validation |
+| SEC-003 injection | A03 Injection | CWE-89 SQLi / CWE-78 OS cmd / CWE-77 |
+| SEC-004 authz before mutation | A01 Broken Access Control | CWE-862 missing authorization |
+| SEC-005 object-level authz (IDOR) | A01 Broken Access Control | CWE-639 / CWE-863 |
+| SEC-006 session/token + CSRF | A07 Auth Failures | CWE-352 CSRF / CWE-384 |
+| SEC-007 rate limiting | A04 Insecure Design | CWE-770 / CWE-400 resource consumption |
+| SEC-008 no secrets/PII in logs | A09 Logging Failures | CWE-532 / CWE-200 info exposure |
+| SEC-009 vetted crypto, fail closed | A02 Cryptographic Failures | CWE-327 / CWE-326 |
+| SEC-010 vulnerable dependencies | A06 Vulnerable Components | CWE-1104 / CWE-937 |
+| SEC-011 SSRF | A10 SSRF | CWE-918 |
+| SEC-012 unsafe deserialization | A08 Software/Data Integrity | CWE-502 |
+| SEC-013 path traversal | A01 / A03 | CWE-22 |
+| SEC-014 open redirect | A01 Broken Access Control | CWE-601 |

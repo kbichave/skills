@@ -89,6 +89,16 @@ cases:
     should_trigger: true
     checks: [no_duplicate_markers]
 
+  - id: edge-large-diff-guardrail
+    prompt: "Review my changes"  # workspace seeds a >400 LOC diff
+    should_trigger: true
+    checks: [warns_large_diff]
+
+  - id: edge-exhaustive-learning
+    prompt: "Review my changes and teach me what I got wrong"  # diff has nits + a security bug
+    should_trigger: true
+    checks: [writes_reviews_file, learning_summary_present]
+
 # Deterministic check definitions (regex/exit-code against transcript + workspace).
 # ~90% deterministic; LLM-judge reserved for report quality only.
 checks:
@@ -107,15 +117,22 @@ checks:
   no_agent_spawn_on_bad_ref: "zero Agent tool calls"
   skips_context_question_uses_provided: "no context AskUserQuestion; review_context contains 'DAI-123'"
   no_duplicate_markers: "grep -c 'CODECHANGE(review)' on seeded line == 1 after run"
+  warns_large_diff: "response warns the diff exceeds ~400 LOC and offers to split or run paced passes"
+  learning_summary_present: "the .reviews/ report contains a '## Learning summary' section with recurring-themes or what-to-study content"
 
 llm_judge:
   # Reserved for qualitative criteria deterministic checks cannot capture.
   report_quality:
-    applies_to: [golden-pr-review, golden-ml-routing]
+    applies_to: [golden-pr-review, golden-ml-routing, edge-exhaustive-learning]
     rubric:
       - every finding row has repo-relative file path and integer line
       - spec and standards verdicts reported on separate axes
       - humanized marker text reads like a colleague's note, not agent output
+      - findings are exhaustive and blocking-first — nits appear (non-blocking) yet never bury the high-severity findings
+      - every issue teaches — names a principle and general pattern, not just the one-line patch
+      - Learning summary clusters recurring themes and points to concrete study, not generic advice
+      - security findings cite the OWASP/CWE code for the weakness
+      - externalized comments carry Conventional Comment labels (issue/suggestion/nitpick/praise + blocking/non-blocking)
     output_schema: {pass: bool, grade: int, notes: str}
 
 ablation:
