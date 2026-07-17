@@ -1,12 +1,13 @@
 ---
 name: code-review
-description: Standalone code review using the plugin's pack-scoped code-reviewer agent, outside of /deep implement. Reviews a diff, branch, or set of files against the quality rule-packs, gathers context interactively or via MCP auto-discovery, and web-verifies framework-behavior claims against current documentation. Use when the user asks to review code, review a diff/branch/PR, or check changes against the quality packs.
+description: Standalone multi-expert code review, outside of /deep implement. Routes the diff to a panel of specialist reviewer subagents (core packs, logic, architecture, ML, stats, MLOps, data engineering, prompt engineering), verifies claims against current docs, gates everything through a final review-verifier, writes a .reviews/ report, and walks the user through humanized approve/skip/edit triage before inserting inline CODECHANGE/RECOMMENDATION markers. Use when the user asks to review code, review a diff/branch/PR, or check changes against the quality packs.
 ---
 
-# Code Review (standalone)
+# Code Review (standalone, expert panel)
 
-Entry point to the same review machinery `/deep implement` Phase 5 uses —
-without needing a planning session.
+Multi-expert review: the diff decides which specialist subagents spawn, two
+verifier stages filter their findings, and only user-approved comments land
+in the source.
 
 ## Flow
 
@@ -51,19 +52,47 @@ from lib.pack_router import resolve_packs, detect_signals  # scripts/lib
 If `pack_router` or a blueprint is unavailable, fall back to
 `active_packs=["core"]` and infer languages from changed-file extensions.
 
-### 4. Spawn the reviewer
+### 4. Assemble and spawn the review panel
 
-Write a prompt file (temp) containing: changed files, section spec path
-(or "none — standalone review"), `active_packs`, `languages`,
-`review_context`. Spawn `deep:code-reviewer` with it.
+Route experts from the diff's signals, then spawn ALL selected experts **in
+parallel — one message, multiple Agent calls**. Every expert follows
+`references/review-panel-protocol.md`.
 
-### 5. Verify claims
+| Expert | Spawn when |
+|---|---|
+| `deep:code-reviewer` (core) | Always — packs, security, gates, dead code |
+| `deep:logic-reviewer` | Always — correctness deep-dive |
+| `deep:architecture-reviewer` | ≥8 changed files, a new module/package, or cross-package import changes |
+| `deep:ml-reviewer` | torch / tensorflow / sklearn / xgboost / lightgbm / transformers imports; training/eval scripts; `.ipynb` |
+| `deep:stats-reviewer` | scipy.stats / statsmodels; A/B-test, experiment-analysis, metric-definition, or forecasting code |
+| `deep:mlops-reviewer` | Dockerfile / K8s manifests; Airflow / Dagster / Prefect; MLflow / W&B; model-serving or feature-store code; ML CI |
+| `deep:data-eng-reviewer` | `.sql` files, dbt models, Spark, pandas/polars ETL |
+| `deep:prompt-reviewer` | SKILL.md / agent definitions / hook prompts; LLM API calls; prompt templates |
 
-The agent web-verifies framework-behavior claims it is unsure of (rule 10
-in the agent definition). After the JSON returns, spot-check: any `high`
-finding whose `fix` cites no tool output and no documentation URL gets one
-verification pass — WebSearch the claim against current official docs.
-Downgrade to `medium` + note if the docs contradict or don't support it.
+Detect signals by extension + `grep -l` for the trigger imports across
+changed files. When in doubt, spawn — a no-findings expert returns cheaply.
+Tell the user which experts were selected and why (one line each).
+
+Each expert's prompt file (temp) contains: `changed_files`, `diff_base`,
+`review_context`, its `focus`. The core reviewer additionally gets
+`active_packs`, `languages`, and the section spec path (or "none —
+standalone review") per its own contract.
+
+### 5. Merge and verify (sequential chain)
+
+1. **Merge** all expert JSONs into one findings set. Keep each finding's
+   `expert` tag. Do not dedupe or rerank yourself — the verifiers own that.
+2. **`deep:claim-verifier`** — spawn if any finding has
+   `needs_verification: true` or any `high` finding cites neither tool
+   output nor a documentation URL. It web-verifies each claim against
+   current official docs and returns confirmed/contradicted/unresolved
+   verdicts with sources. Skip only when nothing qualifies.
+3. **`deep:review-verifier`** — ALWAYS spawn, always last. It re-reads the
+   actual code for every finding, kills phantoms, fixes wrong file:line
+   refs, merges duplicate findings across experts, normalizes severity, and
+   applies the claim verdicts. Its approved set is the ONLY set that
+   reaches steps 6–8. Relay its rejection count to the user
+   ("panel raised N, verifier approved M").
 
 ### 6. Render the report
 
@@ -89,8 +118,8 @@ standards pass can't mask a spec miss (and vice versa):
 Within each axis:
 - Verdict line: pass/fail + one-sentence summary.
 - Findings grouped by severity — `high` 🔴 / `medium` 🟡 / `low` 🟢 —
-  each as `file:line — issue → fix (rule_id)`, with verification sources
-  where used.
+  each as `file:line — issue → fix (rule_id or tag) [expert]`, with
+  verification sources where used.
 - Praise entries, if any.
 - Gates table (lint/types/security).
 - Dead-code report (report-only — never auto-delete).
@@ -115,6 +144,8 @@ base: <base ref or "uncommitted">
 date: <YYYY-MM-DD>
 packs: [<active_packs>]
 languages: [<languages>]
+panel: [<experts spawned>]
+verifier: "raised <N>, approved <M>"
 spec: <spec source or "none">
 verdict_spec: <pass|fail|n/a>
 verdict_standards: <pass|fail>
@@ -130,9 +161,10 @@ verdict_standards: <pass|fail>
 
 ## Findings table
 
-| Severity | File | Line | Rule | Issue | Fix |
-|----------|------|------|------|-------|-----|
-| high | src/auth.py | 42 | core.error-handling | ... | ... |
+| Severity | File | Line | Rule/Tag | Expert | Issue | Fix |
+|----------|------|------|----------|--------|-------|-----|
+| high | src/auth.py | 42 | SEC-003 | core | ... | ... |
+| high | src/train.py | 87 | ML-LEAKAGE | ml | ... | ... |
 
 ## Improvements
 
@@ -151,15 +183,30 @@ Every finding row carries the exact `file` path (repo-relative) and `line`
 from the reviewer JSON — never omit or approximate them. Findings fixed
 during step 6 stay in the table, marked `(fixed)` in the Fix column.
 
-### 8. Insert review markers in source
+### 8. Humanized triage — approve, skip, or comment per finding
 
-After the report file is written, annotate the reviewed source files with
-greppable comment markers at each finding's line:
+After the report file is written, walk the user through every unfixed
+finding and improvement, one decision each:
 
-- `issues` (high/medium, not yet fixed) →
-  `CODECHANGE(review): <rule_id> — <one-line fix>`
-- `improvements` and `low` issues →
-  `RECOMMENDATION(review): <technique> — <one-line why>`
+1. **Humanize** each finding's comment text with the `deep:humanizer` skill
+   — the marker line the user will live with in their code should read like
+   a sharp colleague's note, not agent output. Humanize the one-line marker
+   text only; the report file keeps the precise original wording.
+2. **Present** findings via AskUserQuestion — batch up to 4 per call,
+   ordered high → medium → low → improvements. Each question shows
+   `file:line`, the humanized comment, and the code context; options:
+   - **Approve** — insert the marker as shown.
+   - **Skip** — no marker; report file marks the row `(skipped)`.
+   - **Edit comment** — user supplies their own wording (via "Other"/notes);
+     insert the marker with the user's text.
+3. **Insert markers for approved findings only** (rules below).
+
+### Marker insertion (approved findings only)
+
+- `issues` (high/medium, approved) →
+  `CODECHANGE(review): <rule_id or tag> — <humanized one-line fix>`
+- `improvements` and `low` issues (approved) →
+  `RECOMMENDATION(review): <technique> — <humanized one-line why>`
 
 Placement rules:
 - Insert as a full-line comment directly **above** the flagged line, using
@@ -172,7 +219,8 @@ Placement rules:
   marker (no duplicates on re-review).
 - Markers go only in files the review covered — never elsewhere.
 
-Append a `## Markers inserted` list (`file:line — marker text`) to the
-report file, and tell the user markers are greppable via
-`grep -rn "(review):" <paths>`. Markers are working annotations — the user
-removes them as they address each one; they are not meant to be committed.
+Append a `## Markers inserted` list (`file:line — marker text — approved/
+edited`) plus a `## Skipped` list to the report file, and tell the user
+markers are greppable via `grep -rn "(review):" <paths>`. Markers are
+working annotations — the user removes them as they address each one; they
+are not meant to be committed.
