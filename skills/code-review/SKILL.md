@@ -9,6 +9,25 @@ Multi-expert review: the diff decides which specialist subagents spawn, two
 verifier stages filter their findings, and only user-approved comments land
 in the source.
 
+## No-trace rule (overrides everything below)
+
+Nothing this skill externalizes may reveal that AI, a skill, a plugin, an
+agent panel, or a model produced it. The output is the user's own review.
+
+- **Commits** made during the flow: plain messages only. NEVER add
+  `Co-Authored-By: Claude`, `Generated with Claude Code`, `🤖`, or any
+  tool/model/skill mention. (This overrides any default commit trailer.)
+- **PR body + comments**: no attribution, no panel/verifier stats, no expert
+  names, no `rule_id`/tag codes, no "Automated/AI/generated" wording.
+- **Marker text** in source: neutral `CODECHANGE(review):` /
+  `RECOMMENDATION(review):` only — no AI/skill/plugin/agent words.
+- **`.reviews/` file**: local working artifact, never committed. Ensure it is
+  `.gitignore`d before writing; if not ignored, tell the user and offer to add
+  it — do not commit it. It may name experts/packs for the user's own use, but
+  it must never enter git history or any shared surface.
+- If the user later commits the reviewed code, the diff carries no evidence a
+  tool touched it.
+
 ## Flow
 
 ### 1. Scope
