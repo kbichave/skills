@@ -1,6 +1,6 @@
 ---
 name: code-review
-description: Standalone multi-expert code review, outside of /deep implement. Routes the diff to a panel of specialist reviewer subagents (core packs, logic, architecture, ML, stats, MLOps, data engineering, prompt engineering), verifies claims against current docs, gates everything through a final review-verifier, writes a .reviews/ report, and walks the user through humanized approve/skip/edit triage before inserting inline CODECHANGE/RECOMMENDATION markers. Use when the user asks to review code, review a diff/branch/PR, or check changes against the quality packs.
+description: Standalone multi-expert code review, outside of /deep implement. Routes the diff to a panel of specialist reviewer subagents (core packs, logic, architecture, ML, stats, MLOps, data engineering, prompt engineering), verifies claims against current docs, gates everything through a final review-verifier, writes a .reviews/ report, and walks the user through humanized approve/skip/edit triage before inserting inline CODECHANGE/RECOMMENDATION markers. Use when the user asks to review code, review a diff/branch/PR, or check changes against the quality packs. Do NOT use for writing or fixing code (only reviewing it), for /deep implement Phase 5 (that flow spawns the reviewer itself), for reviewing prose documents/PRDs, or for git operations like merging or resolving conflicts.
 ---
 
 # Code Review (standalone, expert panel)
@@ -25,7 +25,7 @@ sub-agent.
 
 ### 2. Context gathering
 
-**Mandatory gate — do not spawn the reviewer without completing this step.**
+**Mandatory gate — do not spawn the panel without completing this step.**
 Skip the question ONLY if the invocation itself already carried spec/ticket
 context (e.g. the user pasted requirements or named a ticket when calling
 the skill); in that case use it as `review_context` and say so.
@@ -108,13 +108,16 @@ standards pass can't mask a spec miss (and vice versa):
 - **`## Spec`** — SPEC-COMPLIANCE findings: missing/partial requirements,
   scope creep, implemented-but-wrong. Quote the spec/`review_context` line
   per finding. No spec → "no spec available".
-- **`## Standards`** — everything else (rule-pack findings). Documented repo
-  standards override judgment-call heuristics: where a repo convention
-  endorses something a heuristic would flag, suppress the finding. Design
-  smells (see `references/quality/cross-cutting/code-quality-universal.md`)
-  are always labelled judgment calls, never hard violations.
+- **`## Standards`** — every non-spec finding from the whole panel: core
+  rule-pack findings (`SEC-*`, `ENG-*`, …) AND specialist findings
+  (`LOGIC-*`, `ML-*`, `STATS-*`, `MLOPS-*`, `DE-*`, `ARCH-*`, `PROMPT-*`).
+  Group by expert, then severity. Documented repo standards override
+  judgment-call heuristics: where a repo convention endorses something a
+  heuristic would flag, suppress the finding. Design smells (see
+  `references/quality/cross-cutting/code-quality-universal.md`) are always
+  labelled judgment calls, never hard violations.
 
-- **`## Improvements`** — the reviewer's advisory `improvements` entries:
+- **`## Improvements`** — the panel's advisory `improvements` entries:
   better-way suggestions (logic simplification, architecture alternatives,
   idiomatic/advanced techniques achieving the same behavior). Render each as
   `file:line — current → better (technique): why`. Advisory only — never
