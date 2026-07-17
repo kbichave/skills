@@ -74,8 +74,8 @@ entirely. See `docs/skill-routing.md`.
 
 ## 3. Architecture-audit prompt (plan + implement)
 
-Adopted from `skills/improve-codebase-architecture`. Always offered,
-never flag-gated.
+Adopted from the global `codebase-design` skill (formerly the vendored
+`improve-codebase-architecture`). Always offered, never flag-gated.
 
 **During `/deep plan`** (between research and interview):
 
@@ -97,7 +97,7 @@ never flag-gated.
    > Options: `Yes — pick one` / `Show candidates first` / `No — keep
    > plan focused`.
 
-3. On `yes`, invoke `Skill(improve-codebase-architecture)` with the
+3. On `yes`, invoke `Skill(codebase-design)` with the
    audit candidates. Merge its output into the plan as a dedicated
    `## Architecture improvement` section and emit an ADR file under
    `findings/adrs/<slug>-<date>.md`.

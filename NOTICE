@@ -6,18 +6,49 @@ under the terms of the MIT License.
 
 ## Vendored Skills
 
-The following directories under `skills/` are copied from upstream
-unchanged unless explicitly noted:
+One skill remains vendored, renamed with an `mp-` prefix to mark
+provenance:
 
 | Path | Upstream | Notes |
 |------|----------|-------|
-| `skills/grill-me/` | https://github.com/mattpocock/skills/tree/main/grill-me | Verbatim. Cross-referenced from `references/interview-protocol.md`. |
-| `skills/tdd/` | https://github.com/mattpocock/skills/tree/main/tdd | Verbatim. Cross-referenced from `references/coding-standards.md` and `agents/section-writer.md`. |
-| `skills/ubiquitous-language/` | https://github.com/mattpocock/skills/tree/main/ubiquitous-language | Verbatim. Cross-referenced from `references/audit-topic-enumeration.md`. |
-| `skills/improve-codebase-architecture/` | https://github.com/mattpocock/skills/tree/main/improve-codebase-architecture | Verbatim. Wired into `/deep plan` and `/deep implement` as opportunistic prompts. |
-| `skills/obsidian-vault/` | https://github.com/mattpocock/skills/tree/main/obsidian-vault | Verbatim. Used as backing store for long-lived knowledge via the `vault-curator` subagent. |
-| `skills/write-a-skill/` | https://github.com/mattpocock/skills/tree/main/write-a-skill | Verbatim. Standalone meta-skill for plugin extension. |
-| `skills/zoom-out/` | https://github.com/mattpocock/skills/tree/main/zoom-out | Verbatim. Standalone strategic step-back skill. |
+| `skills/mp-zoom-out/` | https://github.com/mattpocock/skills/tree/main/zoom-out | Verbatim content; directory + `name:` field renamed `zoom-out` → `mp-zoom-out`. |
+
+Six previously vendored skills (`grill-me`, `tdd`, `ubiquitous-language`,
+`improve-codebase-architecture`, `obsidian-vault`, `write-a-skill`) were
+**removed** — globally installed equivalents (`grilling`, `tdd`,
+`domain-modeling`, `codebase-design`, `obsidian-vault`, `write-a-skill`)
+supersede them, and vendoring alongside the global copies produced
+duplicates. Load-bearing content was inlined before removal:
+`references/architecture-language.md` (from
+`improve-codebase-architecture/LANGUAGE.md`) and the TDD/module rules
+already inlined in `references/coding-standards.md` and
+`references/plan-writing.md`. See `docs/skills-bundled.md`.
+
+## Vendored Review References
+
+The following files are copied from
+[awesome-skills/code-review-skill](https://github.com/awesome-skills/code-review-skill)
+(MIT), each with a prepended rule-mapping header tying it to this plugin's
+quality rule families; content below the header is upstream-verbatim:
+
+| Path | Upstream |
+|------|----------|
+| `references/quality/cross-cutting/sql-injection-prevention.md` | `reference/cross-cutting/sql-injection-prevention.md` |
+| `references/quality/cross-cutting/xss-prevention.md` | `reference/cross-cutting/xss-prevention.md` |
+| `references/quality/cross-cutting/n-plus-one-queries.md` | `reference/cross-cutting/n-plus-one-queries.md` |
+| `references/quality/cross-cutting/error-handling-principles.md` | `reference/cross-cutting/error-handling-principles.md` |
+| `references/quality/cross-cutting/async-concurrency-patterns.md` | `reference/cross-cutting/async-concurrency-patterns.md` |
+| `references/quality/cross-cutting/common-bugs-checklist.md` | `reference/common-bugs-checklist.md` |
+| `references/quality/cross-cutting/code-quality-universal.md` | `reference/code-quality-universal.md` |
+| `references/quality/lang/python.md` | `reference/python.md` |
+| `references/quality/lang/typescript.md` | `reference/typescript.md` |
+| `references/quality/lang/go.md` | `reference/go.md` |
+| `scripts/pr_analyzer.py` | `scripts/pr-analyzer.py` (renamed, unchanged) |
+| `tests/test_pr_analyzer.py` | `scripts/test_pr_analyzer.py` (loader path adjusted) |
+
+The `agents/code-reviewer.md` four-phase workflow, five review dimensions, and
+severity-label mapping are distilled from the same repository's `SKILL.md`
+(ideas reimplemented in this plugin's format, not copied).
 
 ## Reimplemented Ideas (not vendored)
 

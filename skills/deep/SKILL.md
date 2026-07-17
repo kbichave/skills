@@ -161,7 +161,7 @@ All section-level discipline lives in `references/implement-protocol.md`:
 - Phase 5-6: review + quality gate (ruff + mypy + bandit + pytest --cov)
 - Phase 7: context chaining (`section_outcome` → `impl-progress.md`)
 - Phase 9: rollback (3-strike rule)
-- Phase 10: post-mortem — answer "what would have prevented the rework?". Architectural answer → suggest `Skill(improve-codebase-architecture)`. Spec-clarity answer → log under `## Spec gaps observed`. None → say so. Stop hook enforces.
+- Phase 10: post-mortem — answer "what would have prevented the rework?". Architectural answer → suggest `Skill(codebase-design)`. Spec-clarity answer → log under `## Spec gaps observed`. None → say so. Stop hook enforces.
 
 Reads from `.deepstate/state.json`.
 

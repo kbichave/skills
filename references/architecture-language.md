@@ -1,3 +1,7 @@
+> Inlined from the upstream `improve-codebase-architecture` skill (Matt Pocock, MIT — see NOTICE)
+> when the vendored copy was removed in favor of the global `codebase-design` skill.
+> This file is the plugin-local home of the shared architecture vocabulary.
+
 # Language
 
 Shared vocabulary for every suggestion this skill makes. Use these terms exactly — don't substitute "component," "service," "API," or "boundary." Consistent language is the whole point.

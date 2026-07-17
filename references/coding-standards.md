@@ -12,9 +12,9 @@ Read this file at the start of every section implementation. These standards app
 
 ## Vocabulary
 
-The architecture-audit prompts and the `improve-codebase-architecture`
-skill share a small vocabulary that this file uses without redefining
-it. The full definitions live in `skills/improve-codebase-architecture/LANGUAGE.md`.
+The architecture-audit prompts and the global `codebase-design` skill
+share a small vocabulary that this file uses without redefining
+it. The full definitions live in `references/architecture-language.md`.
 
 * **Module:** any unit with an interface and an implementation.
 * **Depth:** leverage at the interface — a deep module concentrates
@@ -26,7 +26,7 @@ it. The full definitions live in `skills/improve-codebase-architecture/LANGUAGE.
 
 ## TDD shape: tracer bullet, not horizontal slice
 
-Adopted from `skills/tdd/SKILL.md`. The rule beats the prose, so:
+Adopted from the global `tdd` skill (Matt Pocock; no longer vendored). The rule beats the prose, so:
 
 1. Write **one** failing test that exercises the smallest end-to-end
    slice of new behavior.

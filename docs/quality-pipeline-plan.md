@@ -205,9 +205,10 @@ freshness check (source-of-truth hash over packs) fails if an artifact is stale.
    pack frontmatter; emit active-context into blueprint.
 4. Build `lint/` adapters (py/ts/go, per-language thresholds); P6 gate consumes
    `active × languages`; retire the `coding-standards.md` pointer.
-5. New `code-reviewer` agent (multi-language; `python-code-reviewer` kept as
-   back-compat / python profile) with dead-code(3-layer, report-only)/metric/
-   tech-debt rubrics, pack-scoped.
+5. New `code-reviewer` agent (multi-language; fully absorbed
+   `python-code-reviewer` — legacy path routes to it with
+   `active_packs=["core"]`, `languages=["python"]`) with dead-code(3-layer,
+   report-only)/metric/tech-debt rubrics, pack-scoped.
 6. Wire `Skill(grill-me)` internal calls.
 7. Discovery: rule families as audit lenses in topic enumeration.
 8. Generated artifacts + freshness check. Update `NOTICE`, `CHANGELOG`,
@@ -236,4 +237,6 @@ passing today don't break on upgrade.
    `data` out for data-heavy repos?
 2. Freshness-hash mechanism details (what's hashed, where stored).
 3. Exact `task_types` vocabulary + how the spec/interview emits it.
-4. Whether `code-reviewer` fully replaces `python-code-reviewer` or wraps it.
+4. ~~Whether `code-reviewer` fully replaces `python-code-reviewer` or wraps it.~~
+   Resolved: fully replaces — `python-code-reviewer` deleted; its 7 criteria
+   live on as core-pack families + `references/quality/lang/python.md`.

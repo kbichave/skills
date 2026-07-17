@@ -1,50 +1,43 @@
 # Bundled Skills
 
-`deep-plan-enhanced` vendors a curated subset of
-[mattpocock/skills](https://github.com/mattpocock/skills) (MIT). Full
-attribution and the upstream license text live in
-[`NOTICE`](../NOTICE).
+The plugin previously vendored seven skills from
+[mattpocock/skills](https://github.com/mattpocock/skills) (MIT). Six were
+**removed** in favor of their globally installed equivalents — vendoring
+them alongside the global copies produced duplicate skill entries. Full
+attribution history lives in [`NOTICE`](../NOTICE).
 
-The seven vendored skills sit alongside `skills/deep/` and are
-auto-discovered by Claude Code — no extra registration is required.
+| Formerly vendored | Now resolved by (global skill) | Wired into `/deep` via |
+|---|---|---|
+| `grill-me` | `grilling` | `Skill(grilling)` in interview protocols; inline fallback walk in `references/interview-protocol.md` |
+| `tdd` | `tdd` | rules inlined in `references/coding-standards.md`, `agents/section-writer.md`, `agents/opus-plan-reviewer.md` |
+| `ubiquitous-language` | `domain-modeling` | always-on audit topic in `references/audit-topic-enumeration.md` |
+| `improve-codebase-architecture` | `codebase-design` | `Skill(codebase-design)` in `references/integration-protocol.md`; vocabulary inlined at `references/architecture-language.md` |
+| `obsidian-vault` | `obsidian-vault` | `Skill(obsidian-vault)` from the `vault-curator` subagent |
+| `write-a-skill` | `write-a-skill` | standalone meta-skill, no `/deep` wiring |
 
-| Skill | Auto-invoked by `/deep` | Manually invocable | Notes |
-|---|---|---|---|
-| `grill-me` | Yes — drives every interview round in `/deep plan` and `/deep discovery`. | `/grill-me` for ad-hoc plan stress-tests. | Sequential decision-tree walk with recommended answers. |
-| `tdd` | No — its principles feed `references/coding-standards.md` and `agents/section-writer.md`. | `/tdd` for standalone TDD work outside `/deep`. | Tracer-bullet cadence, anti-horizontal-slice. |
-| `ubiquitous-language` | Yes — added as an always-on audit topic during `/deep discovery`. | `/ubiquitous-language` for ad-hoc glossary extraction. | Output flows through `scripts/lib/glossary.py` and the vault curator. |
-| `improve-codebase-architecture` | Yes — `/deep plan` runs a lightweight audit and offers to fold a deepening into the plan; `/deep implement` warns when a section overlaps an audit candidate. | `/improve-codebase-architecture` for standalone audits. | Shares vocabulary with `references/coding-standards.md`. |
-| `obsidian-vault` | Yes — invoked by the `vault-curator` subagent at end of every mode. | `/obsidian-vault` for direct note management. | Backing store for the knowledge vault. |
-| `write-a-skill` | No. | `/write-a-skill` for extending the plugin with new skills. | Meta-skill. |
-| `zoom-out` | No. | `/zoom-out` for strategic step-back during long `/deep auto` runs. | Strategic reframing. |
+**Dependency note:** the `/deep` flows degrade gracefully when a global
+skill is missing — interview protocols carry an inline fallback walk, and
+the tdd/architecture rules are inlined in `references/`. Only the
+opportunistic `Skill(...)` invocations no-op without the global skills.
 
-## Slash commands
+## Still bundled
 
-Each vendored skill exposes its standard upstream slash command. The
-plugin does not rename them. If two skills share a name (the plugin's
-own `deep` skill and a user-installed one), Claude Code's resolution
-order is **project > plugin > user**.
+| Skill | Purpose |
+|---|---|
+| `deep` | The plugin's own discovery/plan/implement pipeline. |
+| `mp-zoom-out` | Strategic step-back prompt (Matt Pocock upstream `zoom-out`, renamed with the `mp-` prefix to mark provenance and avoid clashing with any global copy). |
+| `code-review` | Standalone entry point to the `code-reviewer` agent with context gathering and web-verified findings. |
 
 ## Cross-references in protocol files
 
-The vendored skills are also cited from existing `references/` files
-to keep `/deep`'s in-flow prompts sharp:
+Load-bearing content from the removed skills was inlined so the plugin
+stays self-contained:
 
-* `references/interview-protocol.md` and
-  `references/audit-interview-protocol.md` make the `grill-me`
-  sequential walk the default interview style.
-* `references/coding-standards.md` cites `tdd` for the tracer-bullet
-  rule and `request-refactor-plan` for tiniest-possible-commit shape.
-* `references/audit-topic-enumeration.md` adds `ubiquitous-language`
-  as an always-on topic.
-* `references/plan-writing.md` cites `improve-codebase-architecture`
-  and `tdd/deep-modules.md` for module-design-first guidance.
-* `references/audit-research-protocol.md` documents the
-  architecture-audit run and where its output lands.
-* `agents/section-writer.md` and `agents/opus-plan-reviewer.md` cite
-  `tdd` for cadence and `request-refactor-plan` for vertical-slice
-  integrity.
-
-These citations are surgical — no upstream content is copied into the
-references; the references point at the vendored `SKILL.md` files
-inside this plugin.
+* `references/architecture-language.md` — the module/depth/seam/deletion-test
+  vocabulary (formerly `improve-codebase-architecture/LANGUAGE.md`).
+* `references/coding-standards.md` — tracer-bullet TDD rules (formerly
+  `tdd/SKILL.md`).
+* `references/plan-writing.md` — deep-modules-first planning rules
+  (formerly `tdd/deep-modules.md`).
+* `references/interview-protocol.md` — the inline grill walk (mirrors the
+  upstream grill approach).

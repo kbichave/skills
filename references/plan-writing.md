@@ -76,8 +76,8 @@ LLMs instinctively write code when they see a feature request. This produces 25k
 
 ## Module Design Comes First
 
-Adopted from `skills/improve-codebase-architecture/SKILL.md` and
-`skills/tdd/deep-modules.md`. Before listing sections, sketch the
+Adopted from the global `codebase-design` and `tdd` skills (Matt Pocock;
+no longer vendored — see NOTICE). Before listing sections, sketch the
 **deep modules** the implementation introduces:
 
 * Each module has a *simple, stable* interface and a *substantial*

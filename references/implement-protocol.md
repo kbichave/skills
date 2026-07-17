@@ -22,7 +22,7 @@ Read prior `section_outcome` blocks from `impl-progress.md` before rating — ea
 - **8-10:** Proceed normally.
 - **5-7:** Proceed with caveats. Log concerns in `impl-findings.md`. Consider AMEND mutation per `plan-mutation-protocol.md`.
 - **1-4:** Do NOT proceed.
-  - Interactive: resolve the blocking unknowns by invoking `Skill(grill-me)`
+  - Interactive: resolve the blocking unknowns by invoking `Skill(grilling)`
     internally (one question at a time, each with a recommended answer) before
     re-rating — do not ask the user to run `/grill-me`.
   - Auto: log reason, apply SKIP or SPLIT mutation, move to next section.
@@ -50,11 +50,34 @@ After implementation, before review:
 
 ## Phase 5 — Review
 
-- Multi-language / non-Python / any target with resolved quality packs:
-  `agents/code-reviewer.md` (pack-scoped, rule-ID tagged, per-language thresholds,
-  report-only dead-code). Pass `active_packs` + `languages` from the blueprint.
-- Python-only (legacy / `--quality=legacy`): `agents/python-code-reviewer.md`
-  (7-criterion) remains for back-compat.
+### 5a — Context gathering (orchestrator, before spawning the reviewer)
+
+The reviewer subagent is headless — user interaction and MCP calls happen
+here, not inside the agent. Ask the user once per implement run
+(AskUserQuestion; auto mode skips straight to auto-discover):
+
+1. **Provide** — user pastes ticket text, spec notes, or constraints.
+2. **Skip** — review proceeds on the section spec alone (no penalty).
+3. **Auto-discover** — enumerate available MCPs and tooling, then pull
+   context: issue keys parsed from branch name / commit messages → issue
+   tracker MCP (e.g. Jira via Atlassian MCP) or `bd show`; PR description via
+   `gh pr view`; linked spec pages via Confluence MCP. Summarize into a
+   `review_context` block (≤40 lines). Missing MCPs are fine — use whatever
+   is available, note what was skipped.
+
+Write the outcome (or its absence) into the reviewer prompt file as
+`review_context`.
+
+### 5b — Review (subagent)
+
+- All targets, all languages: `agents/code-reviewer.md` (pack-scoped, rule-ID
+  tagged, per-language thresholds, four-phase workflow, consultable
+  cross-cutting/language references, report-only dead-code). Pass
+  `active_packs` + `languages` from the blueprint and `review_context` from 5a.
+- Python-only / `--quality=legacy`: same agent with
+  `active_packs=["core"]`, `languages=["python"]` — the retired
+  `python-code-reviewer`'s 7 criteria live on as core-pack rule families plus
+  `references/quality/lang/python.md`.
 - `agents/opus-plan-reviewer.md` reviews **plans**, not code — not a code reviewer.
 
 ## Phase 6 — Quality gate
@@ -121,7 +144,7 @@ If a section fails quality gates after 3 attempts (**3-strike rule**), consult t
 
 Before writing `impl-summary.md`, ask: **what would have prevented the rework that happened in this mode?**
 
-- If the answer is architectural (no good test seam, tangled callers, hidden coupling), append a `## Architectural follow-ups` section to `impl-summary.md` and suggest invoking `Skill(improve-codebase-architecture)` on the next session.
+- If the answer is architectural (no good test seam, tangled callers, hidden coupling), append a `## Architectural follow-ups` section to `impl-summary.md` and suggest invoking `Skill(codebase-design)` on the next session.
 - If the answer is spec clarity (the gate kept firing at 5-7), flag it in `impl-summary.md` under `## Spec gaps observed` so the next plan iteration tightens.
 - If the answer is "nothing — went clean", say so explicitly. Do not invent rework.
 

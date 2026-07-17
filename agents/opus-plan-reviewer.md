@@ -40,7 +40,8 @@ Evaluate the plan across these dimensions, prioritized by impact:
 
 **Vertical-slice integrity (Medium):** Does the plan break work into
 slices small enough that the program keeps working between commits?
-Adopted from `skills/tdd/SKILL.md` and `skills/request-refactor-plan/SKILL.md`.
+Adopted from the upstream `tdd` and `request-refactor-plan` skills
+(Matt Pocock; not vendored — see NOTICE).
 Flag sections that require multiple landing commits to leave the build
 green, or that imply a "big bang" merge. The implementer must be able
 to ship one slice at a time — if your review cannot point to the

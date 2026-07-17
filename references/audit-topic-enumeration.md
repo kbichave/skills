@@ -128,7 +128,8 @@ Every audit run includes a topic with `category: ubiquitous-language`.
 This is not gated on domain detection — it is cheap and the value
 compounds across runs. The topic glues to:
 
-* `skills/ubiquitous-language/SKILL.md` for the extraction approach
+* The global `domain-modeling` skill (successor to the formerly vendored
+  `ubiquitous-language`) for the extraction approach
 * `scripts/lib/glossary.py` (`extract_terms`, `diff_merge`) for the
   mechanical scan and merge
 * The `vault-curator` subagent for persistence (`<vault>/glossary/<slug>/`

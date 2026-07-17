@@ -7,6 +7,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed — Unified code reviewer (merged + enriched)
+- **`agents/code-reviewer.md` is now the sole code-review agent.**
+  `agents/python-code-reviewer.md` deleted; its 7 criteria live on as core-pack
+  rule families + `references/quality/lang/python.md`. `--quality=legacy`
+  routes to the merged agent with `active_packs=["core"]`,
+  `languages=["python"]`.
+- **Four-phase review workflow** (context → high-level → line-by-line →
+  summary), **five review dimensions → rule-family map**, optional `praise`
+  output, and constructive-feedback rules — distilled from
+  [awesome-skills/code-review-skill](https://github.com/awesome-skills/code-review-skill)
+  (MIT, see NOTICE).
+- **Claim verification**: the reviewer gained WebSearch/WebFetch and must
+  verify uncertain framework-behavior claims against current docs (cite URL)
+  or drop/downgrade the finding.
+- **Review context gathering** (implement-protocol Phase 5a): orchestrator
+  asks the user provide / skip / auto-discover; auto-discovery pulls ticket +
+  PR + spec context via available MCPs and passes `review_context` to the
+  reviewer.
+
+### Added — Review reference library + standalone skill
+- Vendored (MIT, rule-mapping headers added): 7 cross-cutting guides under
+  `references/quality/cross-cutting/` (SQL injection, XSS, N+1, error
+  handling, async/concurrency, common bugs, universal quality) and 3 language
+  guides under `references/quality/lang/` (python, typescript, go).
+- `scripts/pr_analyzer.py` + `tests/test_pr_analyzer.py` — diff triage for
+  large reviews (40 tests).
+- **`skills/code-review/`** — standalone user-invocable review skill: scope →
+  context gathering (incl. MCP auto-discovery) → pack resolution → reviewer
+  agent → claim verification → human-readable report.
+
+### Removed — mattpocock skill dedupe
+- Six vendored skills removed in favor of globally installed equivalents:
+  `grill-me`→`grilling`, `tdd`→`tdd`, `ubiquitous-language`→`domain-modeling`,
+  `improve-codebase-architecture`→`codebase-design`, `obsidian-vault`,
+  `write-a-skill`. Load-bearing content inlined first
+  (`references/architecture-language.md`). `skills/zoom-out` renamed
+  `skills/mp-zoom-out` to mark provenance. See `docs/skills-bundled.md`.
+
 ### Added — Quality pipeline (conditional rule packs, multi-language)
 - **Rule packs** under `references/quality/`: always-on `core` (ENG/SEC/TEST/ERR)
   plus triggered `service`, `delivery`, `perf`, `frontend`, `library`, `supply`,

@@ -16,7 +16,8 @@ You have seen what happens when a section says "see the full plan for context" �
 **Self-containment is the prime directive.** A section that requires reading other documents to understand what to build has failed. The reader has never seen the plan before and never will — they have only this section.
 
 **Implementation cadence: tracer bullet, not horizontal slice.** Adopted
-from `skills/tdd/SKILL.md`. The implementer must build one behavior
+from the global `tdd` skill (Matt Pocock; no longer vendored — see
+NOTICE). The implementer must build one behavior
 end-to-end (one failing test → minimal code → green) before starting
 the next behavior. The section MUST NOT instruct the implementer to
 write every test up front; that produces tests of imagined behavior

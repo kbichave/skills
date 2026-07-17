@@ -212,7 +212,7 @@ Legacy sessions that already exist inside project directories are detected via f
 
 | Agent | Purpose |
 |-------|---------|
-| `python-code-reviewer.md` | 7-criterion Python reviewer (anti-patterns, security, correctness, design, spec, types, docs) |
+| `code-reviewer.md` | Sole multi-language reviewer (Python/TS/Go): pack-scoped rule families, 4-phase workflow, cross-cutting + language reference library, report-only dead-code. Absorbed `python-code-reviewer` |
 | `opus-plan-reviewer.md` | Plan review fallback when external LLMs unavailable |
 | `audit-doc-writer.md` | Focused audit document generation per topic |
 | `section-writer.md` | Self-contained section content generation |
