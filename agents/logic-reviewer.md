@@ -30,13 +30,23 @@ every boundary.
   unit and sign mismatches, timezone/DST in date math.
 - **Concurrency-adjacent logic**: check-then-act races, non-atomic
   read-modify-write (flag; the core reviewer owns full CONC rules).
-- **Algorithm choice**: quadratic scan where a set/dict lookup does the same
-  job; needless re-sorting; wrong data structure for the access pattern
-  (report as `improvements` when behavior-preserving).
+- **Method & algorithm choice** (`LOGIC-METHOD`): wrong algorithm or data
+  structure for the problem — quadratic scan where a set/dict lookup does
+  the same job, linear search over sorted data, needless re-sorting, greedy
+  where the problem needs DP/exhaustive, regex parsing structured formats a
+  real parser exists for, hand-rolled retry/date/currency/comparison logic
+  where a stdlib or framework method is the established correct tool.
+  Produces-wrong-results → `issues`; works-but-worse → `improvements`.
 
 ## Method
 
-Pick the 2–3 most intricate changed functions and execute them mentally with
-hostile inputs: empty, one element, duplicates, negatives, boundaries,
-already-sorted, reversed. Any divergence between intent (names, docstrings,
-spec) and behavior is a finding.
+**Sweep every changed function/method — no sampling.** For each one:
+1. State its contract (from name, docstring, spec, call sites).
+2. Execute it mentally with hostile inputs: empty, one element, duplicates,
+   negatives, boundaries, already-sorted, reversed, max-size.
+3. Ask whether the approach itself is the correct method for that contract,
+   not just whether the code implements the approach faithfully.
+
+Any divergence between contract and behavior is a finding. Spend the deepest
+tracing on the most intricate functions, but every changed function gets
+steps 1–3 and appears in your `coverage.reviewed` accounting.

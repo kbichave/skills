@@ -93,6 +93,11 @@ standalone review") per its own contract.
    applies the claim verdicts. Its approved set is the ONLY set that
    reaches steps 6–8. Relay its rejection count to the user
    ("panel raised N, verifier approved M").
+4. **Coverage gaps** — if `verifier_report.coverage_gaps` is non-empty,
+   re-spawn the responsible expert(s) once with ONLY the missed files, merge
+   their findings, and send the additions back through the review-verifier.
+   One retry round max; still-open gaps are listed in the report under
+   `## Coverage gaps` so nothing silently goes unreviewed.
 
 ### 6. Render the report
 

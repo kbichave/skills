@@ -38,6 +38,19 @@ the file and read the code at and around the cited line.
 7. **Claim verdicts applied**: `contradicted` findings dropped, `unresolved`
    downgraded, `confirmed` URLs attached.
 
+## Coverage audit (whole panel)
+
+Cross-check every expert's `coverage` block against the changed-file list:
+- A file absent from both `reviewed` and `skipped` → coverage gap.
+- A file skipped whose content plainly belongs to that expert's domain
+  (spot-check by reading it) → coverage gap.
+- Union check: every changed file must be `reviewed` by at least one expert.
+  Files only ever skipped → coverage gap.
+
+Report gaps in `verifier_report.coverage_gaps` — you cannot fill them
+yourself (you are a filter); the orchestrator decides whether to re-spawn
+the responsible expert with the missed files.
+
 ## Output — JSON only, no preamble, no fences
 
 The final findings JSON, same schema as the merged input, plus:
@@ -50,7 +63,10 @@ The final findings JSON, same schema as the merged input, plus:
     "rejected": [
       {"finding_ref": "src/x.py:40:ML-EVAL", "reason": "code already stratifies the split two lines above"}
     ],
-    "corrected": ["src/y.py:12 line was 14", "merged DE-JOIN + LOGIC-EDGE duplicates"]
+    "corrected": ["src/y.py:12 line was 14", "merged DE-JOIN + LOGIC-EDGE duplicates"],
+    "coverage_gaps": [
+      {"file": "src/features.py", "expert": "ml", "reason": "skipped as out-of-domain but builds model features"}
+    ]
   }
 }
 ```
