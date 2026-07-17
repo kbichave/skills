@@ -88,7 +88,36 @@ Evaluate changed files only against the families the active packs provide:
 - **supply**: `SUPPLY-*`. **iac**: `IAC-*`. **llm**: `LLM-*`.
 
 Tag every issue with its `rule_id` (e.g. `SEC-003`). If a finding maps to no
-active rule, it is out of scope — drop it.
+active rule, it is out of scope — drop it (or, if it is a genuine
+better-way suggestion rather than a defect, route it to the
+`improvements` channel below).
+
+## Improvement suggestions (advisory channel)
+
+Separate from `issues` and exempt from the rule-family scope gate. Report
+concrete opportunities where the same behavior could be achieved in a
+clearly better way:
+
+- **Logic** — simplification, redundant branches, invariants that collapse
+  code, off-by-one-prone constructs replaced with safer equivalents.
+- **Architecture** — a boundary, composition, or dependency direction that
+  would make the change simpler or more extensible (judgment call, not a
+  violation).
+- **Idiomatic / advanced techniques** — language or stdlib features that
+  replace hand-rolled code: e.g. Python `functools`/`itertools`/dataclasses/
+  structural pattern matching/context managers; TS discriminated unions/
+  generics/`satisfies`/utility types; Go generics/`errors.Join`/iterators.
+
+Quality bar (all required):
+1. Concrete: name the technique AND sketch the replacement code (≤5 lines) —
+   "consider refactoring" is not a suggestion.
+2. Same behavior: the alternative must be behavior-preserving; anything
+   behavior-changing is an `issues` finding or out of scope.
+3. Net win stated: one sentence on why it is better (fewer states, less code,
+   type-safety, stdlib-tested path). If the current code is already fine,
+   say nothing — do not manufacture cleverness.
+4. Cap: ≤5 entries per review. Never affects `pass`. Never duplicated into
+   `issues`.
 
 ## Reference library (consult on demand)
 
@@ -176,6 +205,16 @@ Output ONLY valid JSON:
   "praise": [
     "Retry wrapper in src/api/client.py:88 is idempotency-guarded — exactly the CONC-003 shape."
   ],
+  "improvements": [
+    {
+      "file": "src/api/users.py",
+      "line": 51,
+      "current": "manual dict accumulation loop over rows",
+      "better": "counts = Counter(row.status for row in rows)",
+      "technique": "collections.Counter",
+      "why": "One stdlib-tested line replaces 6; no KeyError branch to maintain."
+    }
+  ],
   "dead_code": [
     {"file": "src/util.py", "line": 12, "symbol": "_old_helper", "confidence": 0.95, "action": "report-only", "rule_id": "ENG-007", "note": "private, single-file, no reflection — safe to delete"}
   ],
@@ -192,6 +231,8 @@ Output ONLY valid JSON:
 - **`pass`**: `true` iff zero `high` (BLOCK) issues.
 - **`praise`** (optional, ≤2 entries): patterns worth repeating — knowledge
   transfer, not flattery. Omit the key when empty.
+- **`improvements`** (optional, ≤5 entries): advisory better-way suggestions
+  per the improvement-suggestions channel. Omit the key when empty.
 - **`gates`**: per-tool `pass`/`fail`/`skipped`.
 - **`section_outcome`**: context chain the orchestrator appends to
   `impl-progress.md`; the next section's confidence gate reads it.
@@ -207,7 +248,8 @@ Output ONLY valid JSON:
 
 1. Be specific: file, line, concrete fix, every time. "Improve error handling"
    is not an issue; "missing `except DatabaseConnectionError` at `db.py:87`" is.
-2. Review only against **active packs** — never inactive families.
+2. Review only against **active packs** — never inactive families. Sole
+   exception: the `improvements` advisory channel, which is pack-independent.
 3. Tag every issue with its `rule_id`.
 4. Evidence-gate DRY/PERF/N+1 — no instance, no finding.
 5. Dead-code is report-only in v1; never delete exported/entrypoint symbols.

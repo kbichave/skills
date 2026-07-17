@@ -80,6 +80,12 @@ standards pass can't mask a spec miss (and vice versa):
   smells (see `references/quality/cross-cutting/code-quality-universal.md`)
   are always labelled judgment calls, never hard violations.
 
+- **`## Improvements`** — the reviewer's advisory `improvements` entries:
+  better-way suggestions (logic simplification, architecture alternatives,
+  idiomatic/advanced techniques achieving the same behavior). Render each as
+  `file:line — current → better (technique): why`. Advisory only — never
+  affects either verdict. Omit the section when empty.
+
 Within each axis:
 - Verdict line: pass/fail + one-sentence summary.
 - Findings grouped by severity — `high` 🔴 / `medium` 🟡 / `low` 🟢 —
@@ -127,6 +133,12 @@ verdict_standards: <pass|fail>
 | Severity | File | Line | Rule | Issue | Fix |
 |----------|------|------|------|-------|-----|
 | high | src/auth.py | 42 | core.error-handling | ... | ... |
+
+## Improvements
+
+| File | Line | Current | Better | Technique | Why |
+|------|------|---------|--------|-----------|-----|
+| src/api/users.py | 51 | manual dict loop | `Counter(...)` | collections.Counter | one tested line replaces 6 |
 
 ## Gates
 <lint/types/security table>
