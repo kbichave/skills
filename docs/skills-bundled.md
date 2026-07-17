@@ -27,6 +27,7 @@ opportunistic `Skill(...)` invocations no-op without the global skills.
 | `deep` | The plugin's own discovery/plan/implement pipeline. |
 | `mp-zoom-out` | Strategic step-back prompt (Matt Pocock upstream `zoom-out`, renamed with the `mp-` prefix to mark provenance and avoid clashing with any global copy). |
 | `code-review` | Standalone entry point to the `code-reviewer` agent with context gathering and web-verified findings. |
+| `humanizer` | Removes signs of AI-generated writing from prose (user's own skill, v2.5.1; global copy archived — plugin is now the single source). |
 
 ## Cross-references in protocol files
 

@@ -5,6 +5,13 @@ All notable changes to deep-plan will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [4.1.0] - 2026-07-17
+
+### Added
+- **`skills/humanizer/`** — user's humanizer skill (v2.5.1) moved into the
+  plugin as the single source; global `~/.claude/skills/humanizer` archived.
+  `skill-router` already routes prose outputs to it.
+
 ## [4.0.0] - 2026-07-17
 
 **Breaking:** `agents/python-code-reviewer.md` deleted (merged into
