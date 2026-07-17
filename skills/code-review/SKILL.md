@@ -85,3 +85,51 @@ Within each axis:
 - Dead-code report (report-only — never auto-delete).
 
 Offer to fix `high` findings; apply fixes only on user confirmation.
+
+### 7. Write the report file
+
+Always persist the full report to the reviewed repo, then echo the path in
+chat. Path: `.reviews/code-review-<branch>-<YYYY-MM-DD>.md` at the repo root
+(create `.reviews/` if missing; slugify the branch name; append `-2`, `-3`,
+… if the file already exists). If `.reviews/` is not in `.gitignore`, note
+that to the user — do not edit `.gitignore` unasked.
+
+File format:
+
+```markdown
+---
+repo: <repo name>
+branch: <branch>
+base: <base ref or "uncommitted">
+date: <YYYY-MM-DD>
+packs: [<active_packs>]
+languages: [<languages>]
+spec: <spec source or "none">
+verdict_spec: <pass|fail|n/a>
+verdict_standards: <pass|fail>
+---
+
+# Code Review — <branch> (<date>)
+
+## Spec
+<verdict line, then findings>
+
+## Standards
+<verdict line, then findings>
+
+## Findings table
+
+| Severity | File | Line | Rule | Issue | Fix |
+|----------|------|------|------|-------|-----|
+| high | src/auth.py | 42 | core.error-handling | ... | ... |
+
+## Gates
+<lint/types/security table>
+
+## Dead code
+<report-only list>
+```
+
+Every finding row carries the exact `file` path (repo-relative) and `line`
+from the reviewer JSON — never omit or approximate them. Findings fixed
+during step 6 stay in the table, marked `(fixed)` in the Fix column.
