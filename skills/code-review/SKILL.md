@@ -150,3 +150,29 @@ verdict_standards: <pass|fail>
 Every finding row carries the exact `file` path (repo-relative) and `line`
 from the reviewer JSON — never omit or approximate them. Findings fixed
 during step 6 stay in the table, marked `(fixed)` in the Fix column.
+
+### 8. Insert review markers in source
+
+After the report file is written, annotate the reviewed source files with
+greppable comment markers at each finding's line:
+
+- `issues` (high/medium, not yet fixed) →
+  `CODECHANGE(review): <rule_id> — <one-line fix>`
+- `improvements` and `low` issues →
+  `RECOMMENDATION(review): <technique> — <one-line why>`
+
+Placement rules:
+- Insert as a full-line comment directly **above** the flagged line, using
+  the file's comment syntax (`#` Python/shell, `//` TS/JS/Go, `<!-- -->`
+  HTML/MD). Match the flagged line's indentation.
+- Process each file **bottom-up** so earlier insertions don't shift later
+  line numbers.
+- Skip: findings already fixed in step 6, generated/vendored files, and any
+  line that already carries a `CODECHANGE(review)`/`RECOMMENDATION(review)`
+  marker (no duplicates on re-review).
+- Markers go only in files the review covered — never elsewhere.
+
+Append a `## Markers inserted` list (`file:line — marker text`) to the
+report file, and tell the user markers are greppable via
+`grep -rn "(review):" <paths>`. Markers are working annotations — the user
+removes them as they address each one; they are not meant to be committed.
