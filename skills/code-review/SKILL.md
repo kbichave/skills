@@ -67,7 +67,8 @@ parallel — one message, multiple Agent calls**. Every expert follows
 | `deep:stats-reviewer` | scipy.stats / statsmodels; A/B-test, experiment-analysis, metric-definition, or forecasting code |
 | `deep:mlops-reviewer` | Dockerfile / K8s manifests; Airflow / Dagster / Prefect; MLflow / W&B; model-serving or feature-store code; ML CI |
 | `deep:data-eng-reviewer` | `.sql` files, dbt models, Spark, pandas/polars ETL |
-| `deep:prompt-reviewer` | SKILL.md / agent definitions / hook prompts; LLM API calls; prompt templates |
+| `deep:skill-reviewer` | `**/SKILL.md`, `agents/*.md`, or hook-prompt files |
+| `deep:prompt-reviewer` | LLM/API prompts, prompt templates, inline model instructions in app code |
 
 Detect signals by extension + `grep -l` for the trigger imports across
 changed files. When in doubt, spawn — a no-findings expert returns cheaply.
@@ -211,21 +212,30 @@ finding and improvement, one decision each:
 
 ### Marker insertion (approved findings only)
 
-- `issues` (high/medium, approved) →
-  `CODECHANGE(review): <rule_id or tag> — <humanized one-line fix>`
-- `improvements` and `low` issues (approved) →
-  `RECOMMENDATION(review): <technique> — <humanized one-line why>`
+Build one approved-markers JSON payload and pipe it to the insertion script —
+do NOT do the line arithmetic yourself. The script handles bottom-up ordering,
+language-aware comment syntax, indentation, and idempotency deterministically:
 
-Placement rules:
-- Insert as a full-line comment directly **above** the flagged line, using
-  the file's comment syntax (`#` Python/shell, `//` TS/JS/Go, `<!-- -->`
-  HTML/MD). Match the flagged line's indentation.
-- Process each file **bottom-up** so earlier insertions don't shift later
-  line numbers.
-- Skip: findings already fixed in step 6, generated/vendored files, and any
-  line that already carries a `CODECHANGE(review)`/`RECOMMENDATION(review)`
-  marker (no duplicates on re-review).
-- Markers go only in files the review covered — never elsewhere.
+```bash
+echo '<payload>' | uv run --no-project \
+  ${DEEP_PLUGIN_ROOT}/scripts/checks/apply-review-markers.py
+```
+
+Payload — one entry per approved finding:
+```json
+{"markers": [
+  {"file": "src/api.py", "line": 34, "kind": "CODECHANGE",
+   "text": "<rule_id or tag> — <humanized one-line fix>"},
+  {"file": "src/api.py", "line": 51, "kind": "RECOMMENDATION",
+   "text": "<technique> — <humanized one-line why>"}
+]}
+```
+
+- `kind`: `CODECHANGE` for approved high/medium `issues`; `RECOMMENDATION` for
+  approved `improvements` and `low` issues.
+- Exclude: findings fixed in step 6, skipped findings, and generated/vendored
+  files. The script itself skips lines already carrying a `(review):` marker
+  (idempotent re-review) and reports `inserted`/`skipped` counts.
 
 Append a `## Markers inserted` list (`file:line — marker text — approved/
 edited`) plus a `## Skipped` list to the report file, and tell the user

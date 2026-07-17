@@ -5,6 +5,44 @@ All notable changes to deep-plan will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [5.1.0] - 2026-07-17
+
+Multi-expert code review, grounded in "Don't Ship Skills Without Evals".
+
+### Added
+- **Multi-expert review panel** for the `code-review` skill. The diff routes
+  to specialist reviewer subagents — `logic`, `architecture`, `ml`, `stats`,
+  `mlops`, `data-eng`, `prompt`, and `skill` — alongside the core
+  `code-reviewer`. All share one contract (`references/review-panel-protocol.md`)
+  with a coverage contract (every changed file reviewed or skipped-with-reason)
+  and a method-appropriateness dimension (`*-METHOD`).
+- **`skill-reviewer` agent** applying the Confluence rubric (description-as-
+  trigger, lean progressive-disclosure structure, directives over essays,
+  negative cases, no-ops, and eval coverage) to SKILL.md / agent files.
+- **Verification chain**: `claim-verifier` web-checks framework/statistical
+  claims against current docs; `review-verifier` re-reads the code, kills
+  phantom findings, dedupes across experts, and audits panel coverage — its
+  approved set is the only one that reaches the user.
+- **Advisory `improvements` channel** — pack-independent better-way
+  suggestions (logic, architecture, idiomatic/advanced techniques).
+- **`.reviews/` report file** with frontmatter, findings table (file, line,
+  rule/tag, expert), improvements, gates, and dead code.
+- **Humanized triage**: each finding's marker text is humanized, presented for
+  approve/skip/edit, and only approved comments are inserted as inline
+  `CODECHANGE`/`RECOMMENDATION` markers via the new
+  `scripts/checks/apply-review-markers.py` + `scripts/lib/comment_markers.py`
+  (deterministic bottom-up, language-aware, idempotent).
+- **Structural eval harness** — `tests/evals/code-review-cases.yaml` (golden /
+  negative / edge cases) + `tests/test_code_review_evals.py` +
+  `tests/test_comment_markers.py`, and `tests/evals/README.md` documenting the
+  quarterly ablation procedure. `pyyaml` added to dev deps.
+
+### Fixed
+- **SessionStart hooks** now run with `uv run --no-project`, so a session
+  started inside a uv project with an unresolvable `pyproject.toml` no longer
+  fails hook execution with "No solution found when resolving dependencies".
+- `pyproject.toml` version corrected from a stale `3.0.0` to match the plugin.
+
 ## [5.0.0] - 2026-07-17
 
 **Breaking:** plugin renamed `deep-plan-enhanced` → `deep`;

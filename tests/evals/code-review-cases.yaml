@@ -1,0 +1,125 @@
+# Eval prompt set for the code-review skill (per "Don't Ship Skills Without Evals").
+#
+# Two consumers:
+#  - tests/test_code_review_evals.py — structural checks on this case set +
+#    the panel agents/skill (CI-safe, no live model calls).
+#  - Live ablation runner (deferred; see tests/evals/README.md) — drives the
+#    real CLI (`claude -p "<prompt>"`) in a seeded git workspace and evaluates
+#    the `checks` below. Run multiple trials per case (nondeterministic).
+
+skill: code-review
+version: 1
+
+cases:
+  # --- golden happy paths (should_trigger: true) ---
+  - id: golden-diff-review
+    prompt: "Review my uncommitted changes"
+    should_trigger: true
+    checks: [asks_context_question, spawns_core_and_logic]
+
+  - id: golden-branch-review
+    prompt: "Can you code review this branch against main?"
+    should_trigger: true
+    checks: [asks_context_question, uses_git_diff_base]
+
+  - id: golden-ml-routing
+    prompt: "Review my changes"  # workspace seeds a diff touching train.py with sklearn imports
+    should_trigger: true
+    checks: [spawns_ml_reviewer, spawns_review_verifier_last]
+
+  - id: golden-sql-routing
+    prompt: "Review the dbt model changes on this branch"
+    should_trigger: true
+    checks: [spawns_data_eng_reviewer, writes_reviews_file]
+
+  - id: golden-pr-review
+    prompt: "Review PR #42 for quality issues"
+    should_trigger: true
+    checks: [asks_context_question, writes_reviews_file, triage_before_markers]
+
+  # --- negative / near-miss (should_trigger: false) ---
+  - id: neg-write-code
+    prompt: "Write a function that deduplicates a pandas dataframe"
+    should_trigger: false
+
+  - id: neg-fix-bug
+    prompt: "Fix the failing test in tests/test_loader.py"
+    should_trigger: false
+
+  - id: neg-prose-review
+    prompt: "Review my PRD draft in docs/prd.md and suggest improvements"
+    should_trigger: false
+
+  - id: neg-merge-conflict
+    prompt: "Help me resolve this merge conflict"
+    should_trigger: false
+
+  - id: neg-explain-code
+    prompt: "Explain what src/pipeline.py does"
+    should_trigger: false
+
+  # --- production edge cases ---
+  - id: edge-clean-tree
+    prompt: "Review my changes"  # workspace has clean tree
+    should_trigger: true
+    checks: [asks_for_base_when_clean]
+
+  - id: edge-bad-ref
+    prompt: "Review this branch against relaese"  # typo ref
+    should_trigger: true
+    checks: [fails_fast_bad_ref, no_agent_spawn_on_bad_ref]
+
+  - id: edge-context-in-invocation
+    prompt: "Review my diff against main. Context: JIRA DAI-123 — add retry with backoff to the ingest client, max 3 attempts."
+    should_trigger: true
+    checks: [skips_context_question_uses_provided]
+
+  - id: edge-skill-repo
+    prompt: "Review the changes to my SKILL.md files"
+    should_trigger: true
+    checks: [spawns_skill_reviewer]
+
+  - id: edge-prompt-template
+    prompt: "Review my changes"  # workspace seeds a diff editing an LLM system-prompt template string
+    should_trigger: true
+    checks: [spawns_prompt_reviewer]
+
+  - id: edge-marker-idempotent
+    prompt: "Review my changes"  # workspace file already contains a CODECHANGE(review) marker
+    should_trigger: true
+    checks: [no_duplicate_markers]
+
+# Deterministic check definitions (regex/exit-code against transcript + workspace).
+# ~90% deterministic; LLM-judge reserved for report quality only.
+checks:
+  asks_context_question: "AskUserQuestion call containing 'Provide' and 'Auto-discover' options"
+  spawns_core_and_logic: "Agent calls include deep:code-reviewer AND deep:logic-reviewer"
+  uses_git_diff_base: "transcript contains 'git diff main'"
+  spawns_ml_reviewer: "Agent calls include deep:ml-reviewer"
+  spawns_data_eng_reviewer: "Agent calls include deep:data-eng-reviewer"
+  spawns_skill_reviewer: "Agent calls include deep:skill-reviewer"
+  spawns_prompt_reviewer: "Agent calls include deep:prompt-reviewer"
+  spawns_review_verifier_last: "deep:review-verifier is the final Agent call"
+  writes_reviews_file: "file exists matching .reviews/code-review-*.md"
+  triage_before_markers: "AskUserQuestion approve/skip precedes any source-file edit"
+  asks_for_base_when_clean: "response asks for a base ref; no reviewer spawned"
+  fails_fast_bad_ref: "git rev-parse failure surfaced to user"
+  no_agent_spawn_on_bad_ref: "zero Agent tool calls"
+  skips_context_question_uses_provided: "no context AskUserQuestion; review_context contains 'DAI-123'"
+  no_duplicate_markers: "grep -c 'CODECHANGE(review)' on seeded line == 1 after run"
+
+llm_judge:
+  # Reserved for qualitative criteria deterministic checks cannot capture.
+  report_quality:
+    applies_to: [golden-pr-review, golden-ml-routing]
+    rubric:
+      - every finding row has repo-relative file path and integer line
+      - spec and standards verdicts reported on separate axes
+      - humanized marker text reads like a colleague's note, not agent output
+    output_schema: {pass: bool, grade: int, notes: str}
+
+ablation:
+  # Tip 8: rerun quarterly — compare panel-skill runs vs bare "review my code"
+  # with no skill installed. Retire or slim experts whose lift disappears.
+  cadence: quarterly
+  metric: verified-findings-per-review vs no-skill baseline, false-positive rate from verifier rejections

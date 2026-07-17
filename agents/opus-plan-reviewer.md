@@ -93,5 +93,5 @@ If you cannot state a prediction, the finding is a vibe — sharpen it (so the i
 
 1. Read the plan file at the path provided in the prompt
 2. Read any referenced codebase files if they exist (to verify plan claims)
-3. Review thoroughly using the dimensions above
+3. Review against every dimension above
 4. Output your review directly (written to a file by the parent process)
