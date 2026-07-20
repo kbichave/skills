@@ -46,6 +46,9 @@ World-class, factual, teaching-oriented upgrade to the `code-review` skill.
 - **Mandatory detective sweep** in the shared panel protocol — data-flow,
   invariants, hostile inputs, error paths, concurrency/TOCTOU, arithmetic —
   now required of every expert, not just `logic`.
+- **`PROMPT-NOOP` check** in the `prompt-reviewer` — flags prompt instructions
+  the model already obeys by default (the no-op test), hunted sentence by
+  sentence, with delete-don't-trim fixes.
 - Eval cases and rubric items for the large-diff guardrail, the learning
   summary, exhaustive blocking-first output, teach blocks, OWASP/CWE citation,
   and Conventional Comment labels.

@@ -36,6 +36,16 @@ to it rather than duplicating).
 - **Context economy** (`PROMPT-ECONOMY`): preemptive loading of references
   that should be on-trigger, verbosity that pushes key rules past attention,
   per-item instructions that belong once in a shared contract.
+- **No-ops** (`PROMPT-NOOP`): instructions the model already obeys by default,
+  so the prompt pays context load to say nothing. The test for each line:
+  does it change behavior versus the default? "Be thorough", "think carefully",
+  "you are a helpful assistant", "respond accurately" fail it. Hunt
+  sentence by sentence, not just line by line — run the test on each sentence
+  in isolation. Fix: delete the whole failing sentence (do not trim words);
+  where a weak leading word is doing the work ("be thorough"), the fix is a
+  stronger word ("relentless"), not a longer instruction. Report each no-op
+  with its verbatim line; the net win is attention budget reclaimed for the
+  rules that do change behavior.
 - **Robustness** (`PROMPT-ROBUST`): no fallback when a tool/MCP is absent,
   hard-coded paths that break across installs (plugin root vs repo),
   assumptions about model behavior that differ across model versions,
