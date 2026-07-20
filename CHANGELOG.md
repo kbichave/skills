@@ -5,6 +5,16 @@ All notable changes to deep-plan will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [5.3.0] - 2026-07-20
+
+### Added
+- **`no-op-remover` skill.** Finds and removes no-ops — instructions a model
+  already obeys by default — from instruction/prompt files (`SKILL.md`, agent
+  definitions, `CLAUDE.md`/`AGENTS.md`, prompt templates, docs). Resolves scope
+  (file / directory / repo / diff, or asks when invoked bare), detects no-ops
+  sentence by sentence, and applies delete/strengthen fixes only on user
+  approval. Based on Matt Pocock's no-op test.
+
 ## [5.2.0] - 2026-07-17
 
 World-class, factual, teaching-oriented upgrade to the `code-review` skill.

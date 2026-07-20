@@ -2,7 +2,7 @@
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "kbichave-skills",
   "description": "kbichave's pack of usable skills and plugins",
-  "version": "5.2.0",
+  "version": "5.3.0",
   "owner": {
     "name": "kbichave",
     "url": "https://github.com/kbichave"
@@ -11,7 +11,7 @@
     {
       "name": "deep",
       "description": "Unified discovery, planning, and implementation with STORM-inspired research coverage, strict Python quality gates, and session isolation",
-      "version": "5.2.0",
+      "version": "5.3.0",
       "author": {
         "name": "kbichave",
         "url": "https://github.com/kbichave"
