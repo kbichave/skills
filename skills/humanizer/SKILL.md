@@ -1,13 +1,16 @@
 ---
 name: humanizer
-version: 2.5.1
+version: 2.6.0
 description: |
   Remove signs of AI-generated writing from text. TRIGGER when user says "humanize",
-  "make this sound human", "remove AI writing", or asks to edit/review text to sound
-  more natural. Based on Wikipedia's "Signs of AI writing" guide. Detects and fixes:
-  inflated symbolism, promotional language, superficial -ing analyses, vague
-  attributions, em dash overuse, rule of three, AI vocabulary words, passive
-  voice, negative parallelisms, and filler phrases.
+  "make this sound human", "remove AI writing", "de-slop", or asks to edit/review text
+  to sound more natural. Also triggers on slide decks, roadmap docs, card headers and
+  chart labels, not only prose. Based on Wikipedia's "Signs of AI writing" plus the
+  stylometric findings in Reinhart et al. (PNAS 2025). Detects and fixes: inflated
+  symbolism, promotional language, superficial -ing analyses, vague attributions,
+  em dash overuse, rule of three and balanced doublets, verbless nominal decks,
+  bold label openers, AI vocabulary words, passive voice, negative parallelisms,
+  and filler phrases.
 license: MIT
 compatibility: claude-code opencode
 allowed-tools:
@@ -21,18 +24,34 @@ allowed-tools:
 
 # Humanizer: Remove AI Writing Patterns
 
-You are a writing editor that identifies and removes signs of AI-generated text to make writing sound more natural and human. This guide is based on Wikipedia's "Signs of AI writing" page, maintained by WikiProject AI Cleanup.
+This guide is based on Wikipedia's "Signs of AI writing" page, maintained by WikiProject AI Cleanup, plus the measured findings in Reinhart et al., "Do LLMs write like humans? Variation in grammatical and rhetorical styles," PNAS 122(8), 2025.
+
+## Why the tells cluster
+
+Most of the 33 patterns below are symptoms of one underlying habit. Reinhart et al. measured LLM output against human corpora on Biber's feature set and found instruction-tuned models sit far along the informational end of the involved-versus-informational dimension. They are noun-heavy and information-dense **even when prompted to write casually**. Nominalizations go up, verbs and hedges and asides go down, and clause length flattens toward a uniform middle.
+
+That is the root cause. Copula avoidance, verbless decks, nominalization, balanced parallelism and label openers are all ways of packing more nouns per clause and fewer finite verbs. Fixing them one at a time works, but it is faster to ask a single question of any suspect sentence:
+
+> Where did the verb go, and why is every clause the same length?
+
+Two consequences for how you edit:
+
+- **Prefer the finite verb.** If a sentence has no verb, or the verb is doing no work ("serves as", "represents", "constitutes"), that is usually the thing to fix first. Several other tells fall away once the verb is back.
+- **Rhythm is a measurable tell, not a matter of taste.** Uniform sentence length is the most reliable machine signature. See the Mechanical Scan below for the check.
 
 ## Your Task
 
 When given text to humanize:
 
-1. **Identify AI patterns** - Scan for the patterns listed below
-2. **Rewrite problematic sections** - Replace AI-isms with natural alternatives
-3. **Preserve meaning** - Keep the core message intact
-4. **Maintain voice** - Match the intended tone (formal, casual, technical, etc.)
-5. **Add soul** - Don't just remove bad patterns; inject actual personality
-6. **Do a final anti-AI pass** - Prompt: "What makes the below so obviously AI generated?" Answer briefly with remaining tells, then prompt: "Now make it not obviously AI generated." and revise
+1. **Check the surface** - Body prose, or one of the cases in Non-Prose Surfaces. Fragments are a defect in the first and correct in the second
+2. **Count before you read** - Run the Mechanical Scan and note the four numbers
+3. **Identify AI patterns** - Scan for the patterns listed below
+4. **Rewrite problematic sections** - Replace AI-isms with natural alternatives
+5. **Preserve meaning** - Keep the core message intact
+6. **Maintain voice** - Match the intended tone (formal, casual, technical, etc.)
+7. **Add soul** - Don't just remove bad patterns; inject actual personality
+8. **Do a final anti-AI pass** - Prompt: "What makes the below so obviously AI generated?" Answer briefly with remaining tells, then prompt: "Now make it not obviously AI generated." and revise
+9. **Count again** - Re-run the scan. Flat sentence-length deviation means the edit was cosmetic
 
 
 ## Voice Calibration (Optional)
@@ -58,7 +77,7 @@ If the user provides a writing sample (their own previous writing), analyze it b
 
 ## Default Personal Voice Profile (Kshitij)
 
-Unless the user provides a different sample or explicitly asks for formal/neutral output, default to this voice. It is the owner's natural typing style.
+Unless the user provides a different sample or explicitly asks for formal/neutral output, default to this voice.
 
 **Casing and punctuation:**
 - Use normal sentence capitalization. Capitalize the first letter of each sentence and after a period. Proper class names, acronyms, and tickers keep their own casing.
@@ -88,7 +107,7 @@ Unless the user provides a different sample or explicitly asks for formal/neutra
 
 ## PERSONALITY AND SOUL
 
-Avoiding AI patterns is only half the job. Sterile, voiceless writing is just as obvious as slop. Good writing has a human behind it.
+Avoiding AI patterns is only half the job. Sterile, voiceless writing is just as obvious as slop.
 
 ### Signs of soulless writing (even if technically "clean"):
 - Every sentence is the same length and structure
@@ -102,11 +121,11 @@ Avoiding AI patterns is only half the job. Sterile, voiceless writing is just as
 
 **Have opinions.** Don't just report facts - react to them. "I genuinely don't know how to feel about this" is more human than neutrally listing pros and cons.
 
-**Vary your rhythm.** Short punchy sentences. Then longer ones that take their time getting where they're going. Mix it up.
+**Vary your rhythm.** Short punchy sentences. Then longer ones that take their time getting where they're going.
 
 **Acknowledge complexity.** Real humans have mixed feelings. "This is impressive but also kind of unsettling" beats "This is impressive."
 
-**Use "I" when it fits.** First person isn't unprofessional - it's honest. "I keep coming back to..." or "Here's what gets me..." signals a real person thinking.
+**Use "I" when it fits.** "I keep coming back to..." or "Here's what gets me..." signals a real person thinking.
 
 **Let some mess in.** Perfect structure feels algorithmic. Tangents, asides, and half-formed thoughts are human.
 
@@ -226,6 +245,8 @@ Avoiding AI patterns is only half the job. Sterile, voiceless writing is just as
 **After:**
 > Gallery 825 is LAAA's exhibition space for contemporary art. The gallery has four rooms totaling 3,000 square feet.
 
+Related: this pattern covers replacing "is" with something fancier. For dropping the verb altogether, see #30.
+
 
 ### 9. Negative Parallelisms and Tailing Negations
 
@@ -253,6 +274,8 @@ Avoiding AI patterns is only half the job. Sterile, voiceless writing is just as
 
 **After:**
 > The event includes talks and panels. There's also time for informal networking between sessions.
+
+The three-part version is the loudest, but the underlying habit is matched clause shape at any length. See #31 for the two-part case, which slips past most readers and most detectors.
 
 
 ### 11. Elegant Variation (Synonym Cycling)
@@ -493,30 +516,173 @@ Avoiding AI patterns is only half the job. Sterile, voiceless writing is just as
 
 ---
 
+## NOMINAL STYLE PATTERNS
+
+These four are the 2.6.0 additions. They come from the noun-density finding described at the top, and they survive most cleanups because none of them use a flagged word. The sentences are plain. The shape is the problem.
+
+### 30. Verbless Nominal Decks and Tag Lines
+
+**Signs to watch:** A sentence with no finite verb, usually a noun phrase plus a trailing modifier. Common under headings, in card headers, in chart labels, and as the summary line under a title.
+
+**Problem:** Dropping the copula is a headline convention, and it is fine in a headline. LLMs carry it into body text, captions and bullet lines until every line reads like a brochure. Grammatically this is a nominal sentence with zero copula. It sounds authoritative because nothing is asserted, so nothing can be checked.
+
+Compare with #8. There the verb is replaced with something ornate. Here it is deleted.
+
+**Before:**
+> One roadmap covering merchandise and tobacco, on one calendar and one gate ladder.
+
+**After:**
+> Merchandise and tobacco are planned together, on the same calendar and the same gate ladder.
+
+**Before:**
+> A governed brand asset, versioned and testable.
+
+**After:**
+> We version the brand mapping and test it, and one team owns it.
+
+**When to leave it alone:** genuine headlines, deck standfirsts, chart labels and table cells, where a finite verb would be padding. See Non-Prose Surfaces below. Even there, do not let every label take the same shape.
+
+### 31. Balanced Doublets and Numeral Anaphora
+
+**Signs to watch:** Two clauses of matching length and shape joined by "and", often with a word repeated at the front of each: "one calendar and one gate ladder", "no model and no platform", "what we claim and what we can prove".
+
+**Problem:** #10 catches the three-part version. The two-part version does the same thing and reads as elegant rather than mechanical, so it survives editing. The giveaway is that the repetition is carrying the argument. If the point is that there is only one of something, an LLM will repeat "one" instead of saying why one matters.
+
+**Before:**
+> First value needs no model and no platform.
+
+**After:**
+> The first dollars come out of arithmetic on data we already have. Nothing has to be built.
+
+**Before:**
+> One roadmap, one calendar, one owner.
+
+**After:**
+> It is one roadmap now. Same calendar, and the same person signs off.
+
+**Fix:** keep at most one balanced pair per section, and break the symmetry when you keep it. Different lengths, different shapes, or turn the second half into its own sentence.
+
+### 32. Bold Label Openers
+
+**Signs to watch:** Most paragraphs starting with a bolded label and a period or colon. **Position.** **Read:** **Correction.** **Why:** **The finding that matters.**
+
+**Problem:** One or two are a useful signpost. Every paragraph is a tic, and it lets the writer skip transitions entirely, which is why models like it. The labels also inflate: ordinary observations get announced as findings, positions and corrections.
+
+This differs from #15 (boldface overuse), which is about emphasis inside sentences, and #16 (inline-header lists), which is about list items. This is about paragraph openers in running prose.
+
+**Before:**
+> **Position.** The engine is built in house.
+>
+> **Correction.** The earlier claim was wrong.
+
+**After:**
+> We build the engine in house.
+>
+> That reverses what we said in the last version, which was wrong about vendor coverage.
+
+**Fix:** keep labels where a reader genuinely scans for them, such as **Acceptance** or **Escalation** in a spec. Delete them where prose should carry the connection, and write the transition instead.
+
+### 33. Prose-to-Table Reflex
+
+**Signs to watch:** A three-column table where two sentences would do. Tables whose third column is commentary rather than data. Every section ending in a comparison grid.
+
+**Problem:** Tables look rigorous, so models reach for them to signal rigor. A table earns its place when a reader needs to look one row up, compare across rows, or scan for a value. If the cells are prose fragments, it is prose wearing a grid.
+
+**Before:**
+> | Aspect | Merchandise | Tobacco |
+> |---|---|---|
+> | Variation | Sparse | Abundant |
+> | Direction | Both ways | One way |
+> | Implication | Hard to measure | Easy to measure, hard to use |
+
+**After:**
+> Tobacco has plenty of price variation, unlike merchandise. It is nearly all in one direction, which is why it is still hard to use.
+
+**Fix:** keep the table when the cells are values, dates, owners or counts. Convert to prose when the cells are judgments.
+
+---
+
+## Non-Prose Surfaces
+
+The patterns above assume paragraphs. Much AI-flavored writing is not paragraphs, and blanket fixes make it worse. A chart label with a finite verb is padding, not humanity.
+
+Apply this instead, by surface:
+
+| Surface | Fragments allowed | What to fix instead |
+|---|---|---|
+| Headings, deck standfirsts | Yes | Repetition of shape across sibling headings. Significance inflation. |
+| Card and callout headers | Yes | Every header taking the form `adjective noun, qualifier`. Vary length and shape. |
+| Chart labels, bar tags, legends | Yes | Tags that assert importance rather than state content. Prefer a number, a date or a noun. |
+| Table cells | Yes | Judgment words where a value belongs. See #33. |
+| Bullet lists | Yes | Matched-length bullets. Real lists are ragged. Three bullets when there are two ideas. |
+| Body paragraphs | No | Everything above. Restore the finite verb. |
+| Commit messages, code comments | Yes | Leave conventional style alone. Do not humanize into prose. |
+
+Two rules that apply everywhere:
+
+1. **Vary shape across siblings.** Uniformity is the tell, not brevity. If six card headers are all noun-phrase-plus-comma-plus-qualifier, rewrite three of them into a different shape even if each one is fine alone.
+2. **Do not humanize into vagueness.** A tag that says `0.50 price changes per item-site-year` beats a tag that says `sparse variation, measured`. Specificity is the most human thing available.
+
+---
+
+## Mechanical Scan
+
+Do this before the subjective pass. A model grading its own prose is the weakest step in this skill, so start with things that can be counted.
+
+Grep for these. Any hit is a candidate, not a verdict:
+
+| What | Pattern |
+|---|---|
+| Em dashes | `—` |
+| Negative parallelism | `not just\|isn't just\|not only\|rather than a\|not a .*, but a` |
+| Copula avoidance | `serves as\|stands as\|functions as\|represents a\|marks a\|boasts\|features a` |
+| Superficial -ing tails | `, (underscoring\|highlighting\|reflecting\|emphasizing\|showcasing\|demonstrating\|contributing)` |
+| AI vocabulary | `delve\|tapestry\|pivotal\|intricate\|underscore\|meticulous\|seamless\|robust\|leverage\|crucial` |
+| Persuasive authority | `the real question\|at its core\|what really matters\|fundamentally,` |
+| Bold label openers | `^\*\*[A-Z][a-z]+[.:]\*\*` |
+| Curly quotes | `[’“”]` |
+| Numeral anaphora | `\bone \w+ and one \w+\|\bno \w+ and no \w+` |
+
+Then count four things by hand or by script:
+
+- **Mean words per sentence.** Over about 22 in body prose is dense.
+- **Standard deviation of sentence length.** This is the important one. Under about 6 means the rhythm is flat, which no amount of word-swapping will fix. Human writing mixes 4-word sentences with 40-word ones.
+- **Nominalization rate.** Words ending in `-tion, -ment, -ness, -ity, -ance` per 1,000 words. A spike means the verbs have been turned into nouns.
+- **Verbless line share.** Lines in body prose with no finite verb. In paragraphs this should be near zero.
+
+Report before and after numbers when you finish. If sentence-length deviation did not move, the rewrite was cosmetic.
+
+---
+
 ## Process
 
-1. Read the input text carefully
-2. Identify all instances of the patterns above
-3. Rewrite each problematic section
-4. Ensure the revised text:
+1. Read the input text in full before rewriting
+2. Decide which surface you are editing. Body prose, or one of the cases in Non-Prose Surfaces. This changes what counts as a defect
+3. Run the Mechanical Scan and record the four numbers. Do this before reading for style, so the counts are not coloured by what you expect to find
+4. Identify all instances of the patterns above
+5. Rewrite each problematic section
+6. Ensure the revised text:
    - Sounds natural when read aloud
-   - Varies sentence structure naturally
+   - Varies sentence length deliberately, not just structure
    - Uses specific details over vague claims
-   - Maintains appropriate tone for context
    - Uses simple constructions (is/are/has) where appropriate
-5. Present a draft humanized version
-6. Prompt: "What makes the below so obviously AI generated?"
-7. Answer briefly with the remaining tells (if any)
-8. Prompt: "Now make it not obviously AI generated."
-9. Present the final version (revised after the audit)
+   - Keeps a finite verb in every body-prose sentence
+7. Present a draft humanized version
+8. Prompt: "What makes the below so obviously AI generated?"
+9. Answer briefly with the remaining tells (if any)
+10. Prompt: "Now make it not obviously AI generated."
+11. Present the final version (revised after the audit)
+12. Re-run the Mechanical Scan. If sentence-length deviation did not move, go back to step 5, because the edit was cosmetic
 
 ## Output Format
 
 Provide:
-1. Draft rewrite
-2. "What makes the below so obviously AI generated?" (brief bullets)
-3. Final rewrite
-4. A brief summary of changes made (optional, if helpful)
+1. Scan numbers before
+2. Draft rewrite
+3. "What makes the below so obviously AI generated?" (brief bullets)
+4. Final rewrite
+5. Scan numbers after, next to the before numbers
+6. A brief summary of changes made (optional)
 
 
 ## Full Example
@@ -584,6 +750,10 @@ Provide:
 
 ## Reference
 
-This skill is based on [Wikipedia:Signs of AI writing](https://en.wikipedia.org/wiki/Wikipedia:Signs_of_AI_writing), maintained by WikiProject AI Cleanup. The patterns documented there come from observations of thousands of instances of AI-generated text on Wikipedia.
+Patterns 1 to 29 come from [Wikipedia:Signs of AI writing](https://en.wikipedia.org/wiki/Wikipedia:Signs_of_AI_writing), maintained by WikiProject AI Cleanup, drawn from thousands of observed instances of AI-generated text on Wikipedia.
+
+Patterns 30 to 33, the Non-Prose Surfaces section and the Mechanical Scan were added in 2.6.0. The noun-density argument behind them comes from Reinhart, Markey, Laudenbach, Pantusen, Yurko, Weinberg and Brown, ["Do LLMs write like humans? Variation in grammatical and rhetorical styles"](https://www.pnas.org/doi/10.1073/pnas.2422455122), PNAS 122(8), 2025, [preprint arXiv:2410.16107](https://arxiv.org/abs/2410.16107). They scored LLM and human corpora on Biber's feature set and found instruction-tuned models produce noun-heavy, information-dense text even when asked for informal registers.
+
+The sentence-length deviation check is the practical version of the same finding: models write clauses of uniform length, humans do not.
 
 Key insight from Wikipedia: "LLMs use statistical algorithms to guess what should come next. The result tends toward the most statistically likely result that applies to the widest variety of cases."

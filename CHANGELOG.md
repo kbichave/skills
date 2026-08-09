@@ -5,6 +5,38 @@ All notable changes to deep-plan will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [5.4.0] - 2026-08-09
+
+Nominal-style detection and a measurable audit for the `humanizer` skill (2.5.1 → 2.6.0).
+
+### Added
+- **Four patterns (#30-#33).** `Verbless Nominal Decks and Tag Lines` covers dropping
+  the copula entirely, which #8 missed because it only caught replacing `is` with
+  something ornate. `Balanced Doublets and Numeral Anaphora` covers the two-part case
+  of #10, which survives editing because it reads as elegant. `Bold Label Openers`
+  covers paragraphs that all begin `**Position.**` or `**Read:**`. `Prose-to-Table
+  Reflex` covers tables used to signal rigor where two sentences would do.
+- **`Non-Prose Surfaces` section.** Per-surface rules for headings, card headers, chart
+  labels, table cells, bullets and commit messages, because "restore the finite verb"
+  is wrong advice for a chart label. Fragments are a defect in body prose and correct
+  in a bar tag.
+- **`Mechanical Scan` section.** Nine greppable patterns plus four counted metrics
+  (mean sentence length, sentence-length standard deviation, nominalization rate,
+  verbless-line share), run before editing and again after. Flat deviation after a
+  rewrite means the edit was cosmetic. This replaces relying solely on the model's
+  own judgment of its own prose.
+- **`Why the tells cluster` section.** Grounds the pattern list in Reinhart et al.,
+  PNAS 122(8), 2025, which measured instruction-tuned models as noun-heavy and
+  information-dense even when prompted for informal registers. Most of the patterns
+  are symptoms of that one habit.
+
+### Changed
+- `Your Task` and `Process` now run scan, edit, audit, rescan, and both check which
+  surface is being edited before treating fragments as defects.
+- `Output Format` reports scan numbers before and after.
+- Patterns #8 and #10 cross-reference #30 and #31.
+- `Reference` cites the PNAS study alongside the Wikipedia guide.
+
 ## [5.3.0] - 2026-07-20
 
 ### Added
