@@ -4,7 +4,7 @@ Checks which research topics from `research-topics.yaml` have findings files, th
 
 ## Purpose
 
-Research agents cover their assigned topics but the assignment may have been imperfect, or agents may have produced empty/thin findings for some topics. This step guarantees the audit doesn't proceed to gap analysis with blind spots.
+Research agents cover their assigned topics but the assignment may have been imperfect, or agents may have produced empty/thin findings for some topics.
 
 ## Step 1: Run Coverage Check
 
@@ -34,7 +34,7 @@ For each missing topic ID, read its entry from `research-topics.yaml`:
 
 ## Step 3: Spawn Gap Agents
 
-For each researchable missing topic, spawn **one** `general-purpose` agent with WebSearch enabled. Each agent gets a focused prompt:
+For each researchable missing topic, spawn **one** `general-purpose` agent with WebSearch enabled. Each agent gets this prompt:
 
 ```
 Topic: {topic name}
@@ -77,7 +77,7 @@ After all gap agents complete:
 3. If `coverage_pct < 80` and there are still researchable missing topics: repeat from Step 3
 4. If `coverage_pct < 80` but all remaining missing topics are unresearchable: proceed anyway, note the gap in the coverage report
 
-**Hard limit:** Maximum 2 gap-filling rounds (to avoid infinite loops on genuinely undocumented systems).
+**Hard limit:** Maximum 2 gap-filling rounds.
 
 ## Step 5: Write Coverage Report
 
@@ -104,7 +104,7 @@ Coverage: {covered}/{total} topics ({pct}%)
 {Any observations about coverage quality, thin findings, or areas needing human judgment}
 ```
 
-Also generate `{planning_dir}/findings.md` as an **index** of all findings files (for backward compatibility with steps that expect a single findings.md):
+Also generate `{planning_dir}/findings.md` as an **index** of all findings files:
 
 ```markdown
 # Research Findings Index

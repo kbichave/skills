@@ -118,7 +118,7 @@ Adopted from the global `codebase-design` skill (formerly the vendored
    scope.
 
 In `/deep auto` mode the prompts above are skipped; the audit results
-are still written for later reference.
+are still written.
 
 ## 4. End-of-Mode wrap-up: vault-curator
 

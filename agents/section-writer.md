@@ -140,7 +140,7 @@ Every section MUST include an Eval Definitions block with two sub-sections:
 
 **Regression evals** — existing behaviors that must remain unchanged after this section is implemented. If the section has no integration points with existing code, write "No existing behavior affected."
 
-The implementer uses these to validate before closing the section. Capability evals map to new tests; regression evals map to running the existing test suite and verifying no failures.
+Capability evals map to new tests; regression evals map to running the existing test suite and verifying no failures.
 
 ### Rollback Strategy format
 

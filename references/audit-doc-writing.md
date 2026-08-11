@@ -20,8 +20,8 @@ Audit docs are intermediate artifacts — compress aggressively.
 1. **One topic per file.** If a file would exceed ~300 lines, split it.
 2. **File names are descriptive.** `request-flow.md` not `finding-01.md`.
 3. **File list is dynamic.** Determined by what research found, not a template.
-4. **Every file is independently readable.** Cross-reference other files by relative path, but each file should make sense on its own.
-5. **No project-specific assumptions.** The protocol works for any codebase, any domain.
+4. **Every file is independently readable.** Cross-reference other files by relative path.
+5. **No project-specific assumptions.**
 
 ---
 
@@ -207,8 +207,6 @@ Append quality summary to the audit `README.md`:
 ---
 
 ## Eval-on-Write Calibration Examples
-
-These examples anchor the 1-10 scoring scale for Completeness, Specificity, and Actionability.
 
 ### Example 1: Score 9/10 (Excellent)
 

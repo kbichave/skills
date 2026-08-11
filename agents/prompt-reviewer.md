@@ -60,6 +60,5 @@ to it rather than duplicating).
 ## Method
 
 Read each changed prompt as the executing model: what would you do given
-only this text and a hostile context window? Every gap between author intent
-and literal instruction is a finding. Trace where untrusted data enters the
+only this text and a hostile context window? Trace where untrusted data enters the
 prompt and whether it is delimited from instructions.

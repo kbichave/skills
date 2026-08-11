@@ -57,7 +57,7 @@ Evidence: [data from analysis-data.yaml]
 Challenge: [why this premise may be wrong and what it means]
 ```
 
-**Only challenge premises with evidence.** Speculation without data is noise, not a challenge.
+**Only challenge premises with evidence.** Do not speculate — no data, no challenge.
 
 If `analysis-data.yaml` is missing, skip this step and note: "No empirical data available for evidence-based challenges."
 
@@ -180,7 +180,7 @@ Look at findings.md for:
 - Infrastructure patterns more modern than what's deployed
 - Capabilities that ALL competitors have (table stakes the user may not realize they need)
 
-Suggest the 2-4 most impactful ones. Don't overwhelm — pick the ones where the delta between current state and best practice is largest.
+Suggest the 2-4 with the largest delta between current state and best practice.
 
 ---
 
@@ -229,7 +229,7 @@ These are the things you SHOULD ask — they require human judgment:
 - **Users:** "Who actually uses this system today? Who will use it after the changes?"
 - **Risk tolerance:** "Are you comfortable with breaking changes, or does everything need to be backward-compatible?"
 
-Only ask these if they haven't already been answered by the user's earlier responses.
+Skip any already answered by the user's earlier responses.
 
 ---
 

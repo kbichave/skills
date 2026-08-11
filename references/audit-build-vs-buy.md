@@ -11,8 +11,6 @@ For every capability gap identified in the audit, search for:
 2. Managed services / SaaS
 3. Framework-native features already available but not used
 
-Only recommend building custom when existing solutions genuinely don't fit.
-
 ---
 
 ## Research Protocol Per Capability
@@ -21,7 +19,7 @@ For each capability in the build-vs-buy list from step 6:
 
 ### 1. Search for Existing Solutions
 
-**Early-exit rule: Stop searching when you have 2-4 viable options with verified names and version numbers.** Don't exhaustively search every category — search until you have enough to make a well-reasoned recommendation.
+**Early-exit rule: Stop searching when you have 2-4 viable options with verified names and version numbers.**
 
 ```
 Search categories (use CURRENT YEAR in all queries, search in priority order):
@@ -98,8 +96,6 @@ For every viable option found (aim for 2-4 options + build-custom):
 - [ ] Monthly downloads: {count or "not available"}
 - [ ] Search queries documented in "Search Queries Used" section
 ```
-
-If any checkbox cannot be confirmed, the package MUST be labeled **UNVERIFIED** in its heading.
 
 ### 3. Evaluate Build Custom
 
@@ -220,5 +216,5 @@ After generating all build-vs-buy files:
 1. **Are package names real?** Verify at least the top recommendation exists (WebSearch check)
 2. **Are version numbers current?** Don't cite a 2-year-old version if a newer one exists
 3. **Are stars/downloads plausible?** Cross-check if numbers seem off
-4. **Is the recommendation justified?** Would a skeptical engineer agree with the reasoning?
+4. **Is the recommendation justified?** Recommendation text names at least one concrete factor (feature match, effort, license, maintenance).
 5. **Does the phase spec reference this file?** Cross-link must exist

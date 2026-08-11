@@ -23,7 +23,7 @@
 
 ## 代码复用审查
 
-Before accepting new code, search the existing codebase for reusable utilities.
+Before accepting new code, you MUST search the existing codebase for reusable utilities and cite any reusable symbol found.
 
 ### 搜索现有工具函数
 

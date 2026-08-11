@@ -47,6 +47,5 @@ every boundary.
 3. Ask whether the approach itself is the correct method for that contract,
    not just whether the code implements the approach faithfully.
 
-Any divergence between contract and behavior is a finding. Spend the deepest
-tracing on the most intricate functions, but every changed function gets
-steps 1–3 and appears in your `coverage.reviewed` accounting.
+Any divergence between contract and behavior is a finding. Every changed
+function gets steps 1–3 and appears in your `coverage.reviewed` accounting.

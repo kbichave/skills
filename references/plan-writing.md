@@ -2,7 +2,7 @@
 
 ## Output Compression
 
-All intermediate artifacts use compressed prose. Token budget is the primary constraint.
+All intermediate artifacts use compressed prose.
 
 **Rules (apply to claude-spec.md, claude-research.md, claude-plan.md):**
 - Fragments OK. Drop section-intro sentences ("This section describes..." → just the content).
@@ -32,7 +32,7 @@ Then free-form sections for requirements and context. This saves ~40% vs prose i
 
 ## What is the Implementation Plan?
 
-The implementation plan (`claude-plan.md`) is the central artifact of deep-plan. It's a self-contained prose document that describes **what** to build, **why**, and **how** - in enough detail that an engineer or LLM can implement it without guessing.
+The implementation plan (`claude-plan.md`) is the central artifact of deep-plan. It's a self-contained prose document that describes **what** to build, **why**, and **how**.
 
 The plan is a **blueprint**, not a **building**. You describe the architecture; the implementer (human or `deep-implement`) writes the code. If it has code in it, it shouldn't amount to more than function stubs and docstrings.
 
@@ -48,7 +48,7 @@ Before writing the plan, these files will be in `{planning_dir}`:
 | `claude-research.md` | Codebase patterns, web research findings (if research was done) | Inform architecture decisions, follow existing conventions |
 | `claude-interview.md` | Q&A transcript from stakeholder interview | Clarify ambiguities, understand priorities and constraints |
 
-**Read all three files before writing.** The plan should synthesize these inputs, not ignore them.
+**Read all three files before writing.**
 
 ---
 
@@ -65,8 +65,6 @@ The plan must be **fully self-contained**. An engineer or LLM with NO prior cont
 - The interview conversation
 - The research findings
 - Any context from this session
-
-**Do NOT write for yourself.** You already know everything - the plan is for someone who doesn't.
 
 ---
 
@@ -171,7 +169,7 @@ def test_json_ld_extraction():
 
 ## Synthesizing Inputs
 
-Your job is to transform the inputs into a coherent plan:
+Transform inputs into a coherent plan:
 
 **From claude-spec.md:**
 - Extract the core requirements
@@ -188,17 +186,13 @@ Your job is to transform the inputs into a coherent plan:
 - Respect stated priorities
 - Address concerns that were raised
 
-**Resolve conflicts:** If inputs disagree, use your judgment and document the decision.
+**Resolve conflicts:** If inputs disagree, document the chosen resolution and the rejected alternative in the plan's Key Decisions.
 
 ---
 
 ## Anti-Goals
 
 Every plan MUST include an **Anti-Goals** section (typically section 2, after Background). Anti-goals define what the implementation explicitly will NOT do. They prevent scope creep and give the implementer clear boundaries.
-
-### Why Anti-Goals Matter
-
-Without anti-goals, implementers (human or LLM) fill ambiguity with assumptions -- usually by building more than needed. Anti-goals transform implicit scope into explicit decisions.
 
 ### Format
 
@@ -226,5 +220,5 @@ The Anti-Goals section should be a bullet list. Each item starts with **"Do NOT"
 
 ### Minimum Count
 
-Every plan should have at least 3 anti-goals. If you cannot think of 3, you have not thought carefully enough about what the system should NOT do. Re-read the spec and interview for scope temptations.
+Every plan must have at least 3 anti-goals.
 

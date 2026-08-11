@@ -43,12 +43,10 @@ diff must be non-empty. A bad ref or empty diff dies here, not inside a
 sub-agent.
 
 **Size guardrail.** Measure the diff (`git diff <base> --shortstat`). Defect
-detection collapses past ~400 changed LOC (SmartBear); a review that big is
-worth splitting. If the diff exceeds ~400 LOC, tell the user, and offer to
+detection collapses past ~400 changed LOC (SmartBear). If the diff exceeds ~400 LOC, tell the user, and offer to
 either (a) scope the review to a subset of files/commits now, or (b) proceed
 but run in paced passes so no region gets a shallow read. Proceed whole only
-on the user's say-so. Never silently give a 2000-line diff the same one-shot
-attention as a 100-line one.
+on the user's say-so.
 
 ### 2. Context gathering
 
@@ -68,8 +66,7 @@ Otherwise ask (AskUserQuestion):
    3. A PRD/spec file under `docs/`, `specs/`, or the planning dir matching
       the branch/feature name.
    4. Nothing found → proceed spec-less; the report notes "no spec available".
-   Summarize into a `review_context` block (≤40 lines). Use whatever is
-   available; note what was skipped.
+   Summarize into a `review_context` block (≤40 lines). Note what was skipped.
 
 ### 3. Resolve packs + languages
 
@@ -161,8 +158,7 @@ standards pass can't mask a spec miss (and vice versa):
     concept to read up on), chosen from the themes, not generic advice.
   - **Strengths** — pull the panel's `praise` here as positive
     reinforcement: what the author did well and should keep doing.
-  This section is what turns a gate into a mentor. Always render it (even a
-  clean review gets a strengths note); it never affects a verdict.
+  Always render it (even a clean review gets a strengths note); it never affects a verdict.
 
 Within each axis:
 - Verdict line: pass/fail + one-sentence summary.
@@ -280,8 +276,7 @@ externalized comment lines are humanized.
 **Socratic mode (optional, ask once up front).** Offer the user a teaching
 voice: instead of dictating each fix, phrase the externalized comment as a
 guiding question that leads the author to the fix themselves — "what happens
-here when `items` is empty?" rather than "add an empty check". Research on
-mentorship shows discovered fixes stick; dictated ones create dependency.
+here when `items` is empty?" rather than "add an empty check".
 When enabled, the humanized comment for each `medium`/`low` finding becomes a
 question paired with the `teach.why`; keep `high`/blocking findings direct
 (no riddles on security). Default off — many users want the direct fix. The

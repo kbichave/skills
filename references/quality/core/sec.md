@@ -4,7 +4,7 @@ Always-on. All `SEC-*` BLOCKs are **non-overridable** (decision Q8).
 
 Every rule carries its **OWASP Top 10 (2021)** category and **CWE** id so
 findings cite the canonical taxonomy (e.g. `SEC-003 → A03:Injection / CWE-89`).
-Include the code in the finding `tag` or `teach.principle`. Reviewers should
+Include the code in the finding `tag` or `teach.principle`. Reviewers MUST
 sweep the diff against the OWASP Top 10 and the CWE Top 25 most-dangerous
 weaknesses, not just the rules enumerated here — an uncovered weakness is a
 `SEC-000` finding pointing at its CWE.

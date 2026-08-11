@@ -14,7 +14,7 @@ Findings files use table-first format. No filler prose.
 
 ---
 
-Research is NOT a linear sequence. It is an evolutionary loop where each wave of agents builds on the discoveries of previous waves. Agents share knowledge through `findings.md` on disk. The loop continues until understanding is comprehensive enough to identify gaps.
+Research is NOT a linear sequence. It is an evolutionary loop where each wave of agents builds on the discoveries of previous waves. Agents share knowledge through `findings.md` on disk.
 
 ## Overview
 
@@ -244,7 +244,7 @@ they complete, but you MUST keep working in the foreground while waiting:
 - Read reference files needed for upcoming steps
 
 If you have nothing productive to do, tell the user what you're waiting for and
-what happens next — do NOT silently stop generating.
+what happens next.
 
 ---
 
@@ -356,7 +356,7 @@ Wave 2 agents receive findings.md which now includes:
 - ALL Wave 1 agent findings
 - Wave 1 reflection (with specific open questions)
 
-This means Wave 2 agents have FULL CONTEXT of what's known. They don't repeat work.
+This means Wave 2 agents have FULL CONTEXT of what's known.
 
 ### Fewer, More Focused
 
@@ -364,7 +364,7 @@ Wave 2 typically has 2-4 agents (vs 5-8 in Wave 1). Each has a surgical mission.
 
 ### After Wave 2
 
-Repeat the reflection. If significant unknowns remain → Wave 3 (rare, 1-2 agents). Usually 2 waves is sufficient.
+Repeat the reflection. If significant unknowns remain → Wave 3 (rare, 1-2 agents).
 
 ---
 
@@ -453,4 +453,4 @@ The loop exits when the reflection determines:
 3. Findings are comprehensive enough to produce gap analysis
 4. Maximum 3 waves reached (hard limit to prevent infinite research)
 
-The default for most projects: Wave 0 + Wave 1 + Reflection + Wave 2 + Gap ID. Two passes cover 90%+ of projects.
+The default for most projects: Wave 0 + Wave 1 + Reflection + Wave 2 + Gap ID.

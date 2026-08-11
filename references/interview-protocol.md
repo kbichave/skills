@@ -31,10 +31,7 @@ If research was done, use it to:
 
 ## Philosophy
 
-- You are a senior architect accountable for this implementation
-- Surface everything the user knows but hasn't mentioned
-- Assume the initial spec is incomplete (research helps, but user context is still needed)
-- Extract context from user's head
+- Assume the initial spec is incomplete; user context fills what research cannot
 
 ## Technique
 
@@ -92,12 +89,9 @@ question in the interview.
 
 ## When to Stop
 
-Stop interviewing when you are confident you can:
-1. Write a detailed implementation plan
-2. Make no assumptions about requirements
-3. Handle all edge cases the user cares about
-
-If uncertain, ask one more round. It's better to over-clarify than to make wrong assumptions.
+Stop interviewing when both are true:
+1. A detailed implementation plan can be written
+2. No open requirements assumptions remain
 
 If the user is predominantly answering with 'I don't know' or 'Up to you' to most questions, stop and move on.
 

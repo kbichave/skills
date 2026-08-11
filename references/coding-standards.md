@@ -56,7 +56,7 @@ run`.
 
 1. **Review eval definitions first.** Read the section's Eval Definitions block. Capability evals define what new behavior must work; regression evals define what existing behavior must not break. These are your acceptance criteria — if you cannot map each eval to a test, the section spec needs an AMEND mutation before you start coding.
 
-2. **Define type signatures first.** Write the function/class headers with full annotations before the body. This forces you to think about the interface before the implementation.
+2. **Define type signatures first.** Write the function/class headers with full annotations before the body.
 
 3. **Define custom exceptions.** If this section introduces new error conditions, define specific exception classes at the top:
    ```python
@@ -67,7 +67,7 @@ run`.
            self.payment_id = payment_id
    ```
 
-4. **Write test function signatures first.** From the TDD stubs in `claude-plan-tdd.md`, write test function skeletons before implementing. This clarifies what "done" looks like.
+4. **Write test function signatures first.** From the TDD stubs in `claude-plan-tdd.md`, write test function skeletons before implementing.
 
 5. **Identify security boundary inputs.** Any data arriving from: user input, external APIs, file system, database queries — must be validated at the boundary. Mark these explicitly with a comment before implementing.
 
@@ -106,7 +106,7 @@ run`.
 ## Error Handling
 
 - **Specific exception types only.** Never `except Exception` or bare `except:` unless you are at the top-level boundary AND you re-raise or log with full context.
-- **Log what failed, what input caused it, and what state the system was in.** A stack trace alone is not enough.
+- **Log what failed, what input caused it, and what state the system was in.**
 - **Distinguish recoverable from invariant violations:**
   - Transient failures (network, timeout) → retry with backoff
   - Invalid input → raise with descriptive message
@@ -134,7 +134,7 @@ except DatabaseConnectionError as e:
 
 - **Context managers for all acquisition:** file handles, DB connections, HTTP sessions, locks, temporary files.
 - **Never rely on garbage collection** to release resources.
-- **Connection pools must have bounded sizes and health checks.** An unbounded pool is a memory leak waiting to happen.
+- **Connection pools must have bounded sizes and health checks.**
 
 ```python
 # Always
@@ -171,7 +171,7 @@ async with httpx.AsyncClient() as client:
       assert isinstance(result, str)
   ```
 
-- **Fixtures in `conftest.py`**, not test-local globals. Shared state between tests is a bug waiting to happen.
+- **Fixtures in `conftest.py`**, not test-local globals.
 
 - **Mock only at system boundaries** (external APIs, DB, file system). Never mock internal functions — that tests implementation, not behaviour.
 

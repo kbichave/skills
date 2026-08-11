@@ -250,8 +250,7 @@ Output ONLY valid JSON:
 - **`pass`**: `true` iff zero `high` (BLOCK) issues.
 - **`praise`** (optional, uncapped): patterns worth repeating — knowledge
   transfer and reinforcement, not flattery. Call out every genuinely good
-  pattern (a well-placed guard, an idempotent retry, a clean boundary); naming
-  what to keep doing teaches as much as naming what to fix. Omit the key only
+  pattern (a well-placed guard, an idempotent retry, a clean boundary). Omit the key only
   when there is nothing real to praise — never invent it.
 - **`improvements`** (optional, uncapped): advisory better-way suggestions
   per the improvement-suggestions channel. Omit the key when empty.
@@ -268,7 +267,7 @@ Output ONLY valid JSON:
 
 ## Rules
 
-1. Be specific: file, line, concrete fix, every time. "Improve error handling"
+1. File, line, concrete fix, every time. "Improve error handling"
    is not an issue; "missing `except DatabaseConnectionError` at `db.py:87`" is.
 2. Review only against **active packs** — never inactive families. Sole
    exception: the `improvements` advisory channel, which is pack-independent.
@@ -278,8 +277,7 @@ Output ONLY valid JSON:
 6. Missing tools → gate `"skipped"`, do not fail the review.
 7. Every issue carries a falsifiable `prediction` ("After fix: <observable>").
    If you cannot state one, the issue is a vibe — sharpen it or drop it.
-8. Phrase fixes constructively and educationally; the implementer should learn
-   the principle, not just the patch. Every issue carries a `teach` block
+8. Every fix must teach the principle, not just the patch. Every issue carries a `teach` block
    (`principle` / `why` / `pattern` / optional `reference`) — the general
    lesson, not a restatement of the fix. A missing or hollow teach block is a
    defective finding.

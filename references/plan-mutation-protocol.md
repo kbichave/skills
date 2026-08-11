@@ -111,7 +111,7 @@ Each mutation field serves a specific purpose:
 
 1. **Never mutate silently.** Every mutation must include all four fields.
 2. **Validate the dependency graph after every mutation.** Circular dependencies = broken plan.
-3. **Prefer AMEND over SPLIT** if the change is small. Don't create unnecessary sections.
+3. **Prefer AMEND over SPLIT** if the change is small.
 4. **Mutations in auto mode:** Log and proceed. In interactive mode: inform the user before executing.
 5. **Mutations are one-way.** Do not "un-split" or "un-skip" — if you need to reverse a mutation, create a new INSERT or AMEND.
-6. **Reason quality is enforced.** A mutation with "Reason: too complex" will be flagged during final verification. Be specific — cite confidence scores, line estimates, or section outcome deviations.
+6. **Reason quality is enforced.** A mutation with "Reason: too complex" will be flagged during final verification. Cite confidence scores, line estimates, or section outcome deviations.

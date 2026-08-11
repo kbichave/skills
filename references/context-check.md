@@ -61,7 +61,6 @@ uv run {plugin_root}/scripts/checks/check-context-decision.py \
 **Why we don't recommend manual /compact:**
 - Same instruction-loss risk as auto-compact
 - No additional benefit over letting auto-compact happen naturally
-- If you're going to interrupt, `/clear` + re-run is cleaner
 
 ## When to Run Context Checks
 

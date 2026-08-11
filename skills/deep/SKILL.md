@@ -34,8 +34,6 @@ Pick mode by question:
 
 Also accepts inline text or no argument — see **Resolve Input**.
 
-The load-bearing step in each mode is where most of the value lives. Spend disproportionate effort there. Other steps are mechanical.
-
 ---
 
 ## First Actions

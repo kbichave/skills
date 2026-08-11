@@ -4,7 +4,7 @@ Generate content for section `{SECTION_NAME}` (filename: `{SECTION_FILENAME}`).
 
 ## Context Files
 
-Read these files first to understand the full implementation plan:
+Read these files first:
 
 1. `{PLANNING_DIR}/claude-plan.md` - Full implementation plan
 2. `{PLANNING_DIR}/claude-plan-tdd.md` - Test stubs for each section
@@ -13,7 +13,7 @@ Read these files first to understand the full implementation plan:
 ## Your Section
 
 In `index.md`, locate the `<!-- SECTION_MANIFEST ... -->` block. Find the entry
-for `{SECTION_NAME}` to understand what this section should contain.
+for `{SECTION_NAME}`.
 
 ## Output
 
@@ -51,6 +51,5 @@ The section content must be **completely self-contained**. An implementer should
 ## Important Notes
 
 - Extract ONLY the content relevant to your assigned section
-- The section should be implementable in isolation (given its dependencies are met)
-- Be thorough - better to include too much context than too little
+- Err toward over-inclusion: when unsure whether context is relevant, include it rather than omit it.
 - Preserve code formatting and indentation exactly as shown in the source files

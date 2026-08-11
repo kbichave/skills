@@ -10,7 +10,7 @@ Triggered when the `/deep` skill detects that the argument is:
 
 ## Step 1: Gather Project Context
 
-Read the following without launching a subagent — this is fast, inline work:
+Read the following without launching a subagent:
 
 ```bash
 git log --oneline -30          # recent activity and direction
@@ -22,7 +22,7 @@ Then read (if they exist):
 - `.claude/CLAUDE.md`
 - `README.md` or `README.rst`
 
-Then glob the top-level structure and read up to 5 key entry-point files (e.g. `main.py`, `app.py`, `src/`, `pyproject.toml`, `package.json`). Do not read more than 5 files — this is orientation, not deep research.
+Then glob the top-level structure and read up to 5 key entry-point files (e.g. `main.py`, `app.py`, `src/`, `pyproject.toml`, `package.json`). Do not read more than 5 files.
 
 ## Step 2: Synthesize the Spec File
 
@@ -92,7 +92,7 @@ Pass the synthesized file path as `initial_file` to `setup-session.py`. The rest
 
 ## Rules
 
-1. **Never ask the user clarifying questions before synthesizing.** Synthesize first, then confirm. This is faster and gives the user something concrete to react to.
-2. **Do not read more than 5 source files during context gathering.** This step should complete in seconds, not minutes.
+1. **Never ask the user clarifying questions before synthesizing.** Synthesize first, then confirm.
+2. **Do not read more than 5 source files during context gathering.**
 3. **The spec must be opinionated.** Don't fill it with "TBD" or "depends on requirements." Make a reasonable interpretation and flag it in Open Questions if uncertain.
-4. **The spec is not the plan.** It captures intent and scope — not implementation details. Those come from the planning step that follows.
+4. **The spec is not the plan.** It captures intent and scope — not implementation details.

@@ -210,5 +210,3 @@ After generating phases:
 3. Cross-check dependencies: "Can P03 really start before P02 finishes?"
 4. Check for gaps: "Is there a gap in the audit that no phase addresses?"
 5. If issues found: revise phases (reorder, merge, split, add)
-
-Phases are not final until they pass this cross-check.

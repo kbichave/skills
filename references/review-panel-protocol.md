@@ -13,8 +13,8 @@ Your prompt contains:
 - `focus` — your expert domain (matches your agent definition).
 
 Read every changed file relevant to your domain in full — no sampling, no
-"representative subset". Read surrounding code (callers, configs, tests) as
-needed to judge correctness — but findings land only on changed files.
+"representative subset". Read surrounding code (callers, configs, tests) to
+judge correctness — but findings land only on changed files.
 
 ## Coverage contract
 
@@ -28,10 +28,10 @@ is a coverage gap charged to you.
 
 ## Detective sweep (mandatory, all experts)
 
-Read like an investigator, not a proofreader. For every changed function in
-your domain, trace it — do not merely scan it. Even outside the logic expert's
-remit, run this sweep on your domain's code; the classes below are where bugs
-survive linters, type checkers, and green test suites:
+For every changed function in your domain, trace it — do not merely scan it.
+Even outside the logic expert's remit, run this sweep on your domain's code;
+the classes below are where bugs survive linters, type checkers, and green
+test suites:
 
 - **Data flow** — follow each value from source to sink. Is input validated
   before it reaches a query, a file path, a shell, a template? Does a tainted
@@ -53,8 +53,8 @@ A clean linter run does not close the sweep. State what you traced in your
 
 ## Method appropriateness
 
-Beyond "is the code correct" — ask "is this the correct method for the
-problem?" A flawless implementation of the wrong approach is a finding:
+Ask "is this the correct method for the problem?" — not just "is the code
+correct?" A flawless implementation of the wrong approach is a finding:
 wrong algorithm or data structure for the access pattern, wrong statistical
 test for the data, wrong model/metric for the objective, wrong API where the
 framework provides a purpose-built one, hand-rolled solution where a
@@ -113,22 +113,21 @@ language's idioms and thresholds before flagging language-specific patterns.
 - `severity`: `high` = would cause an incident, silently wrong results, or an
   invalid conclusion in production; `medium` = should fix; `low` = observation.
 - `improvements` are behavior-preserving better-way suggestions only.
-- `teach`: **required on every issue.** This review teaches, not just gates.
-  Do not restate the fix — name the underlying `principle`, say `why` it
-  bites, and give the general `pattern` so the author recognizes the class of
-  bug next time, not only this instance. `reference` is optional (a canonical
-  doc URL or repo guide path). Keep each field one sentence. Weak teach block
-  ("follow best practices") is as bad as a vague fix.
+- `teach`: **required on every issue.** Do not restate the fix — name the
+  underlying `principle`, say `why` it bites, and give the general `pattern`
+  so the author recognizes the class of bug next time, not only this instance.
+  `reference` is optional (a canonical doc URL or repo guide path). Each field
+  one sentence. Weak teach block ("follow best practices") is as bad as a
+  vague fix.
 
 ## Exhaustive review — no caps
 
 Report **every** finding in your domain. There is no issue or improvement
 cap: if you can name it, quote it, and predict its effect, it goes in the
 output. A small real problem still ships — surface it, tagged at its true
-severity, never omit it to keep the list short. Order the list by severity
-(all `high` first, then `medium`, then `low`) so blocking findings are never
-buried beneath nits. Do not self-censor "minor" standards deviations; the
-orchestrator separates blocking from non-blocking when it renders.
+severity, never omit it to keep the list short. Order by severity (`high`
+first, then `medium`, then `low`). Surface all standards deviations in your
+domain; the orchestrator separates blocking from non-blocking when it renders.
 
 Exhaustive is not speculative. Every additional finding still carries the
 same factual burden (Rules 1 and 4). Volume without evidence is noise — an

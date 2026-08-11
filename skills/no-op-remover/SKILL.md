@@ -87,8 +87,8 @@ isolation**, not just each line — no-ops hide mid-paragraph. For every hit
 record: `file:line`, the verbatim sentence, the fix (delete, or the stronger
 replacement word), and one clause on why it changes no behavior.
 
-Be aggressive but honest: only flag a line you can argue the model already
-obeys. A line you are unsure about is not a no-op — leave it.
+Flag every line you can argue the model already obeys. A line you are unsure
+about is not a no-op — leave it.
 
 ### 4. Triage — propose, apply on approval
 

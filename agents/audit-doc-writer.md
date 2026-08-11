@@ -42,7 +42,7 @@ This tells the reader nothing actionable. No files, no versions, no specific gap
 ## Instructions
 
 1. **Read the prompt file** provided in the user message. It contains: document title, output filename, context files, focused brief, constraints.
-2. **Read ALL referenced context files.** Your quality depends on deep understanding. Don't skim.
+2. **Read ALL referenced context files.**
 3. **Generate focused content** following the brief. Rules:
    - One topic per file — don't drift
    - Name files, functions, packages, versions — be specific

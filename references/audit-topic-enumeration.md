@@ -4,7 +4,7 @@ Generates the research coverage manifest (`research-topics.yaml`) that acts as t
 
 ## Purpose
 
-Without a topic contract, research agents write what they find interesting rather than what the audit needs. STORM research showed that outline-first enumeration improves topic breadth coverage by 25%. This step is that outline.
+Without a topic contract, research agents write what they find interesting rather than what the audit needs. This step is that outline.
 
 ## Step 1: Read scan-summary.md
 
@@ -38,7 +38,7 @@ Extract empirical signals and generate targeted questions:
 - Cap at 8 total empirical questions (stop after cap even if more signals fire)
 - Process signals in priority order above
 - Tag every empirical question with `source: empirical`
-- Thresholds are guidance, not hard rules — use judgment for borderline cases
+- Thresholds are guidance, not hard rules
 
 ## Step 3: Detect Project Domain
 
@@ -105,7 +105,7 @@ and add a coverage topic per family (tag `source: quality-lens`):
 3. Generate topic questions from the loaded perspectives — each perspective's questions feed into Step 5's manifest building
 4. If the perspective file is missing, fall back to `{plugin_root}/references/perspectives/default.md`
 
-The `default.md` file contains the original Security Auditor, New Engineer, and Product Manager perspectives, so projects that don't match a specific domain get identical behavior to the previous version.
+The `default.md` file contains the Security Auditor, New Engineer, and Product Manager perspectives.
 
 ## Step 5: Build the Manifest
 
@@ -204,5 +204,5 @@ topics:
 ## Rules
 
 1. **Do not skip categories** — every category should have at least one topic unless the project genuinely has nothing in that area (e.g. a CLI tool has no deployment category — mark it explicitly as N/A in metadata).
-2. **Questions must be specific and answerable** — not "How does security work?" but "What input validation exists at API boundaries?".
-3. **Priority is about gap-finding impact**, not importance to the project. Security topics are often high priority even for small projects because they're commonly missed.
+2. **Questions must be specific** — not "How does security work?" but "What input validation exists at API boundaries?".
+3. **Priority is about gap-finding impact**, not importance to the project.

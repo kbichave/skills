@@ -51,7 +51,7 @@ The script outputs JSON with `prompt_files` - an array of paths to the prompt fi
 
 ### 3. Launch Parallel Task Subagents
 
-**IMPORTANT:** Launch ALL Task calls in a single message to run them in parallel.
+Launch ALL Task calls in a single message to run them in parallel.
 
 For each prompt file path in the `prompt_files` array, make a Task call:
 - `subagent_type`: "section-writer"
@@ -115,7 +115,7 @@ uv run {plugin_root}/scripts/checks/check-sections.py --planning-dir "<planning_
 
 ## Section File Requirements
 
-Each section file must be **completely self-contained**. The implementer should be able to read only that section file, create a task list, and start implementing immediately without referencing any other documents.
+Each section file must be **completely self-contained**: the implementer reads only that section file, creates a task list, and implements without referencing any other documents.
 
 ## Debugging
 

@@ -31,7 +31,7 @@ All commands operate within the target repository root. Git is assumed available
 
 **Young repo handling:** If the first commit is less than 6 months old, replace `--since="6 months"` with full history. Record `git_window: "full history"`.
 
-**If repo age check times out:** Default to full history (safer).
+**If repo age check times out:** Default to full history.
 
 **Test file detection patterns:**
 - Python: `test_*.py`, `*_test.py`
@@ -87,7 +87,7 @@ Skip if `language_detected` is `unknown`. For polyglot repos, run tools for up t
 
 ### Parsing Flexibility
 
-Try JSON parsing first. Fall back to line counting. Fall back to `total_issues: <line count>`. Truncate raw output to 100KB before parsing. Never crash on unexpected output.
+Try JSON parsing first. Fall back to line counting. Fall back to `total_issues: <line count>`. Truncate raw output to 100KB before parsing.
 
 ---
 

@@ -128,8 +128,6 @@ Before proceeding past Phase A, check for discovery/phase mismatch:
 
 **Action on mismatch:** Fall back to `references/research-protocol.md`. Close research steps with reason "Discovery topics don't match this phase's scope — using standard research protocol."
 
-This prevents a stale or mismatched discovery from producing irrelevant research context.
-
 ---
 
 ## Interview Passthrough

@@ -63,12 +63,10 @@ Write `<planning_dir>/claude-plan-tdd.md` with:
 # Test: parse_company_page logs warning when <50% fields populated
 ```
 
-NOT full pytest functions with assertions, fixtures, and mocking. The implementer writes the actual test code.
+NOT full pytest functions with assertions, fixtures, and mocking.
 
 ## Usage in Step 18
 
 Step 18 (Split Into Sections) uses both files:
 - `claude-plan.md` - The implementation details
 - `claude-plan-tdd.md` - The tests to write first
-
-Each implementation section includes both what to implement AND what tests to write before implementing.

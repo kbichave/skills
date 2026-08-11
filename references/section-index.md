@@ -91,7 +91,7 @@ END_MANIFEST -->
 
 ### Dependency Syntax (`depends_on:`)
 
-Sections can declare dependencies on other sections using the `depends_on:` suffix. This is used by the dependency tracker to determine which sections are ready for implementation.
+Sections can declare dependencies on other sections using the `depends_on:` suffix.
 
 **Format:**
 
@@ -126,14 +126,9 @@ In this example:
 - `section-04-api` becomes ready only when BOTH `section-02-config` AND `section-03-parser` are complete
 - `section-05-integration` waits for `section-04-api`
 
-**Backward compatibility:** Manifests without any `depends_on:` suffixes continue to work exactly as before. The dependency syntax is purely additive.
+**Backward compatibility:** Manifests without any `depends_on:` suffixes continue to work exactly as before.
 
 ### Validation
-
-Scripts parse the SECTION_MANIFEST block to:
-- Track which sections are defined
-- Detect completion progress
-- Determine next section to write
 
 If the manifest is invalid (missing, malformed, or has errors), `check-sections.py` returns `state: "invalid_index"` with error details.
 
@@ -143,9 +138,6 @@ After the manifest block, include an **Execution Order** (which sections run in 
 
 ## Guidelines
 
-- **Natural boundaries**: Split by component, layer, feature, or phase
-- **Focused sections**: One logical unit of work each
-- **Parallelization**: Consider which sections can run independently
 - **Dependency direction**: Earlier sections should not depend on later sections
 
 ## Minimal Example

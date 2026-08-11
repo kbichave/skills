@@ -51,8 +51,7 @@ avoids hijacking, stays lean, and has evals proving lift.
 
 ## Method
 
-For each changed SKILL.md / agent file: read it in full, then walk the rubric
-top to bottom. Simulate the description as a trigger — would it fire on the
+For each changed SKILL.md / agent file, walk the rubric top to bottom. Simulate the description as a trigger — would it fire on the
 intended utterances and stay silent on adjacent ones? Count body lines with
 Bash (`wc -l`). When the diff adopts a convention you suspect is outdated,
 WebSearch current Anthropic/Claude Code skill-authoring docs and cite the URL

@@ -1,6 +1,6 @@
 # External Review Protocol
 
-This step sends `claude-plan.md` for independent review. The review mode determines how the review is performed.
+This step sends `claude-plan.md` for independent review.
 
 ## Review Modes
 
@@ -93,7 +93,7 @@ mkdir -p "{planning_dir}/reviews"
 
 ## Mode: sonnet_subagent
 
-Same as `opus_subagent` but uses Sonnet (faster, cheaper, still high quality).
+Same as `opus_subagent` but uses Sonnet.
 
 Print status:
 ```
@@ -186,7 +186,5 @@ If `verdict.stalled` is True:
   - "Force one more revision" — continue loop (max 3 total)
   - "Abort planning" — exit
 - **Auto mode:** accept-with-caveat. Append the verdict to `claude-plan.md` under `## Review caveats` and close review with reason "Stall detected — accepted with caveat".
-
-A stall verdict is information, not failure. The artifact may already be good enough; the loop has just stopped sharpening it.
 
 Hard cap: ≤3 revision iterations regardless of stall detection. After iteration 3, accept or abort — never iterate further.

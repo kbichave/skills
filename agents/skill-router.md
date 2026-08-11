@@ -91,7 +91,7 @@ print(json.dumps([to_dict(m) for m in matches], indent=2))
 "
 ```
 
-Treat the helper's output as the candidate list. Apply the philosophy above to decide auto vs. prompted vs. skipped, then return the JSON output.
+Treat the helper's output as the candidate list.
 
 ## Boundary rules
 
@@ -103,6 +103,6 @@ Treat the helper's output as the candidate list. Apply the philosophy above to d
 
 ## Anti-patterns
 
-* **Auto-invoke everything HIGH-looking:** the side-effect demotion exists for a reason. Read the rule again.
+* **Auto-invoke everything HIGH-looking:** the side-effect demotion exists for a reason — re-read the `SIDE_EFFECT_SKILLS` list before promoting a match.
 * **Spam the user with prompts:** if more than three MEDIUM matches surface in one hook point, collapse them into a single multi-select `AskUserQuestion` with one question per skill, rather than four sequential prompts.
-* **Forget the log:** even SKIPPED skills go into `findings/skills-considered.md`. The transparency is more valuable than the brevity.
+* **Forget the log:** even SKIPPED skills go into `findings/skills-considered.md`.

@@ -19,8 +19,6 @@ IF claude-research.md does not exist:
   Run full research per steps 6-7 below.
 ```
 
-This prevents full re-research on session resume.
-
 ---
 
 ## Overview
@@ -121,7 +119,7 @@ Note these preferences in `claude-research.md`.
 
 ### Critical Pattern: Subagents Return Results, Parent Writes Files
 
-**DO NOT** have subagents write to files directly. This is important because:
+**DO NOT** have subagents write to files directly.
 
 1. **Avoids race conditions** - Parallel subagents writing to the same file would overwrite each other
 2. **Context isolation** - Subagents keep verbose output in their own context, returning only summaries
@@ -203,9 +201,7 @@ Wait for both to complete, then proceed to combining results.
 
 ### 7.4 Combine Results and Write File
 
-After collecting results from all subagents, combine them into `<planning_dir>/claude-research.md`.
-
-Structure the file however makes sense for the findings. The goal is to capture useful research that will inform the implementation plan - there's no required format.
+After collecting results from all subagents, combine them into `<planning_dir>/claude-research.md`. No required format — structure around findings.
 
 ### 7.5 Throwaway scratch (optional)
 
@@ -223,7 +219,7 @@ write_scratch_artifact(
 )
 ```
 
-Lands under `{planning_dir}/scratch/` with a THROWAWAY header. Auto-deleted at mode end by the Stop hook. Use this aggressively — clutter in `findings/` and `claude-research.md` is durable; scratch is not.
+Lands under `{planning_dir}/scratch/` with a THROWAWAY header. Auto-deleted at mode end by the Stop hook. Prefer scratch over leaving exploratory content in `findings/` or `claude-research.md` — those are durable; scratch is not.
 
 Do NOT use scratch for:
 - Anything referenced by `claude-plan.md` / `claude-spec.md` / `findings/`
