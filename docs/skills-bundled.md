@@ -43,7 +43,6 @@ Resolved from the user's `~/.claude/skills/` if present:
 | `domain-modeling` | always-on audit topic in `references/audit-topic-enumeration.md` |
 | `codebase-design` | `Skill(codebase-design)` in `references/integration-protocol.md`; vocabulary inlined at `references/architecture-language.md` |
 | `obsidian-vault` | `Skill(obsidian-vault)` from the `vault-curator` subagent |
-| `write-a-skill` | standalone meta-skill, no `/deep` wiring |
 
 **Dependency note:** the `/deep` flows degrade gracefully when a skill is
 missing — interview protocols carry an inline fallback walk, and the

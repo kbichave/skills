@@ -20,6 +20,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   `disable-model-invocation: true` and a one-line body, "Run a `/grilling` session", so
   installing it only added a second name for a skill already installed. `/grilling` is the
   entry point.
+- **`write-a-skill` from the opportunistic global-skill tables** in `README.md` and
+  `docs/skills-bundled.md`. Upstream deleted the skill; `writing-for-agents` covers the same
+  ground and is now installed directly.
 
 ### Fixed
 - **Stale `Skill(grill-me)` references.** `docs/quality-pipeline-plan.md` (5 places) and

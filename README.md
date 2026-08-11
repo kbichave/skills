@@ -282,7 +282,6 @@ This plugin vendors a curated subset of [mattpocock/skills](https://github.com/m
 | `domain-modeling` | Domain glossary extraction. Always-on topic in `/deep discovery`. |
 | `codebase-design` | Shallow-vs-deep module audit. Auto-prompts during `/deep plan` and `/deep implement`. |
 | `obsidian-vault` | Note management. Backing store for the knowledge vault below. |
-| `write-a-skill` | Standalone meta-skill for extending the plugin. |
 
 See [`docs/skills-bundled.md`](docs/skills-bundled.md) for the full table including when each is auto-invoked vs. manually invocable.
 
