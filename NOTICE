@@ -15,8 +15,8 @@ upstream names, recording provenance and content hashes in
 | Skill | Upstream path |
 |-------|---------------|
 | `grilling` | `skills/productivity/grilling/` |
-| `grill-me` | `skills/productivity/grill-me/` |
 | `handoff` | `skills/productivity/handoff/` |
+| `writing-for-agents` | `skills/productivity/writing-for-agents/` |
 
 Seven previously vendored skills (`grill-me`, `tdd`,
 `ubiquitous-language`, `improve-codebase-architecture`,
@@ -29,6 +29,10 @@ content was inlined before removal:
 `improve-codebase-architecture/LANGUAGE.md`) and the TDD/module rules
 already inlined in `references/coding-standards.md` and
 `references/plan-writing.md`. See `docs/skills-bundled.md`.
+
+`grill-me` is also no longer installed: upstream reduced it to a stub
+whose whole body is "Run a `/grilling` session", so installing it added
+a second name for a skill already in the set.
 
 ## Vendored Review References
 

@@ -271,8 +271,8 @@ This plugin vendors a curated subset of [mattpocock/skills](https://github.com/m
 | Skill | Use |
 |-------|-----|
 | `grilling` | Sequential decision-tree interview with recommended answers. Default style for `/deep plan` interviews. |
-| `grill-me` | Standalone grill entry point. |
 | `handoff` | Session-handoff summary skill. |
+| `writing-for-agents` | Rules for documents agents consume (skills, `AGENTS.md`, `CLAUDE.md`): context pointers, information hierarchy, progressive disclosure. |
 
 **Global skills `/deep` invokes opportunistically (inline fallbacks when missing):**
 
@@ -308,7 +308,7 @@ Between major workflow phases, `/deep` consults a `skill-router` subagent that e
 - [STORM](https://arxiv.org/abs/2402.14207) by Stanford — outline-first research enumeration for coverage breadth
 - [Deep-Research-skills](https://github.com/Weizhena/Deep-Research-skills) by Weizhena — research skill patterns for discovery agents
 - [python-skills](https://github.com/wdm0006/python-skills) by wdm0006 — Python coding standards and advanced quality gates
-- [mattpocock/skills](https://github.com/mattpocock/skills) by Matt Pocock — grilling / grill-me / handoff installed verbatim from upstream by `scripts/checks/install-mattpocock-skills.py` (MIT License, see [`NOTICE`](NOTICE))
+- [mattpocock/skills](https://github.com/mattpocock/skills) by Matt Pocock — grilling / handoff / writing-for-agents installed verbatim from upstream by `scripts/checks/install-mattpocock-skills.py` (MIT License, see [`NOTICE`](NOTICE))
 
 ## License
 

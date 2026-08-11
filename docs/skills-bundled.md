@@ -30,8 +30,8 @@ Downloads these skills verbatim from
 | Skill | Wired into `/deep` via |
 |---|---|
 | `grilling` | `Skill(grilling)` in interview protocols; inline fallback walk in `references/interview-protocol.md` |
-| `grill-me` | standalone grill entry point, no direct `/deep` wiring |
 | `handoff` | standalone session-handoff skill, no direct `/deep` wiring |
+| `writing-for-agents` | reference for authoring skills / `AGENTS.md` / `CLAUDE.md`; pairs with the plugin's `no-op-remover`, no direct `/deep` wiring |
 
 ## Global skills `/deep` invokes opportunistically
 

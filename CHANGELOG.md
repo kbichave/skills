@@ -5,6 +5,27 @@ All notable changes to deep-plan will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [5.4.1] - 2026-08-11
+
+### Added
+- **`writing-for-agents` in the mattpocock install set.** `scripts/checks/install-mattpocock-skills.py`
+  now installs `skills/productivity/writing-for-agents/` alongside `grilling` and `handoff`.
+  It is the upstream reference for authoring documents an agent consumes (skills,
+  `AGENTS.md`, `CLAUDE.md`), covering context pointers, the information hierarchy, and progressive
+  disclosure, the vocabulary the plugin's `no-op-remover` and `skill-reviewer` already assume.
+  `README.md`, `NOTICE`, and `docs/skills-bundled.md` updated to match.
+
+### Removed
+- **`grill-me` from the install set.** Upstream reduced it to a stub with
+  `disable-model-invocation: true` and a one-line body, "Run a `/grilling` session", so
+  installing it only added a second name for a skill already installed. `/grilling` is the
+  entry point.
+
+### Fixed
+- **Stale `Skill(grill-me)` references.** `docs/quality-pipeline-plan.md` (5 places) and
+  `references/implement-protocol.md` now name `Skill(grilling)`, which is what the protocols
+  have actually invoked since 5.0.
+
 ## [5.4.0] - 2026-08-09
 
 Nominal-style detection and a measurable audit for the `humanizer` skill (2.5.1 → 2.6.0).

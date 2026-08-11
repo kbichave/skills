@@ -15,7 +15,7 @@ Per-section execution discipline for `/deep implement` mode.
 | Codebase context | Can you locate the files and modules this section integrates with? |
 | Scope | Single-pass implementable (<500 lines of changes)? |
 
-Read prior `section_outcome` blocks from `impl-progress.md` before rating — earlier deviations change the calculus.
+Read prior `section_outcome` blocks from `impl-progress.md` before rating.
 
 **Score interpretation:**
 
@@ -24,10 +24,8 @@ Read prior `section_outcome` blocks from `impl-progress.md` before rating — ea
 - **1-4:** Do NOT proceed.
   - Interactive: resolve the blocking unknowns by invoking `Skill(grilling)`
     internally (one question at a time, each with a recommended answer) before
-    re-rating — do not ask the user to run `/grill-me`.
+    re-rating — do not ask the user to run `/grilling`.
   - Auto: log reason, apply SKIP or SPLIT mutation, move to next section.
-
-Treat the gate as load-bearing. Cheap to do, prevents the worst class of bugs (implementing against a stale dependency interface).
 
 ## Phase 2 — Read spec + standards
 
@@ -127,8 +125,6 @@ Next section's confidence gate (Phase 1) reads these to assess:
 - Whether dependency interfaces actually match what the section spec assumed
 - Whether spec deviations invalidate the current section's approach
 - Whether an AMEND mutation is needed before proceeding
-
-This prevents drift — later sections account for how earlier sections landed, not just what was planned.
 
 ## Phase 8 — Close + mutate if needed
 

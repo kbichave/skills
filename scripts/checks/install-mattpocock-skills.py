@@ -9,8 +9,8 @@ Usage:
     uv run scripts/checks/install-mattpocock-skills.py [skill ...]
 
 With no arguments installs the default set the /deep flows depend on:
-grill-me, grilling, handoff. Re-running updates existing installs to the
-current upstream content.
+grilling, handoff, writing-for-agents. Re-running updates existing
+installs to the current upstream content.
 """
 
 from __future__ import annotations
@@ -24,7 +24,7 @@ import tempfile
 from pathlib import Path
 
 UPSTREAM = "https://github.com/mattpocock/skills"
-DEFAULT_SKILLS = ["grill-me", "grilling", "handoff"]
+DEFAULT_SKILLS = ["grilling", "handoff", "writing-for-agents"]
 SKILLS_DIR = Path.home() / ".claude" / "skills"
 LOCK_FILE = SKILLS_DIR / "skills-lock.json"
 

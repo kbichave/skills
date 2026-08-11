@@ -27,7 +27,7 @@ relevant rule packs loaded per session, and invoked as **internal pipeline steps
   do not copy their skill files (coupled to an L3-worker + hex-graph MCP
   framework). MIT attribution in `NOTICE`.
 - **D4 Internal** — capabilities are pipeline steps the orchestrator invokes,
-  including `Skill(grill-me)` from plan/discovery. Not slash commands users run.
+  including `Skill(grilling)` from plan/discovery. Not slash commands users run.
 - **D5 Scope** — full catalog v1; adapters for python / typescript / go.
 - **Packs (Q5)** — grouped: `core`, `service`, `frontend`, `library`, `delivery`,
   `perf`, plus `supply`, `iac`, `llm`. Each family is a sub-file inside its pack.
@@ -49,7 +49,7 @@ relevant rule packs loaded per session, and invoked as **internal pipeline steps
 | Phase | Existing hook | Added |
 | --- | --- | --- |
 | Discovery | topic enumeration | rule families as audit lenses |
-| Plan | Premise-Challenge interview | `Skill(grill-me)` internal; pack resolution → blueprint |
+| Plan | Premise-Challenge interview | `Skill(grilling)` internal; pack resolution → blueprint |
 | Implement P2 | reads `references/coding-standards.md` | = `core` pack; load active packs for target |
 | Implement P5 | review (`python-code-reviewer`) | new multi-lang `code-reviewer` |
 | Implement P6 | gate `ruff+mypy+bandit+pytest≥85%` (Python-first) | per-pack × per-language adapter gate |
@@ -58,7 +58,7 @@ relevant rule packs loaded per session, and invoked as **internal pipeline steps
 **Dedup.** Have: confidence gate, TDD, interview, review hook, vault, `Skill()`
 mechanism, `coding-standards.md` (Python). Net-new: rule families beyond core,
 `pack_router.py` (detection + matching), multi-language adapters, multi-lang
-`code-reviewer`, dead-code/metric/tech-debt rubrics, `Skill(grill-me)` wiring.
+`code-reviewer`, dead-code/metric/tech-debt rubrics, `Skill(grilling)` wiring.
 
 Note: `opus-plan-reviewer` reviews *plans*, not code — it is not the multi-language
 code reviewer; `code-reviewer` is a new agent.
@@ -174,7 +174,7 @@ detected languages`. New language = add `lint/<lang>/` + rows; rules unchanged.
 
 ## 5. Internal invocation (D4)
 
-- `Skill(grill-me)` — plan premise challenge + low-confidence implement gate.
+- `Skill(grilling)` — plan premise challenge + low-confidence implement gate.
 - dead-code / tech-debt / metric checks — implement P5 review + P6 gate via
   `code-reviewer`, pack-scoped; per-section on changed files + phase-end sweep,
   budget-capped.
@@ -209,7 +209,7 @@ freshness check (source-of-truth hash over packs) fails if an artifact is stale.
    `python-code-reviewer` — legacy path routes to it with
    `active_packs=["core"]`, `languages=["python"]`) with dead-code(3-layer,
    report-only)/metric/tech-debt rubrics, pack-scoped.
-6. Wire `Skill(grill-me)` internal calls.
+6. Wire `Skill(grilling)` internal calls.
 7. Discovery: rule families as audit lenses in topic enumeration.
 8. Generated artifacts + freshness check. Update `NOTICE`, `CHANGELOG`,
    `docs/skill-routing.md`.
