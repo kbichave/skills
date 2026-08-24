@@ -1,6 +1,6 @@
 ---
 name: code-reviewer
-description: Sole code-review agent for /deep implement Phase 5. Reviews implementation sections in any language (Python, TypeScript/JavaScript, Go) against the quality rule-packs active for the target. Four-phase review workflow (context → high-level → line-by-line → summary), five review dimensions mapped to rule families, per-language thresholds, consultable cross-cutting and language reference guides, report-only dead-code analysis, and structured JSON output. Absorbs the retired python-code-reviewer (its 7 criteria live on as core-pack rule families plus the Python language reference).
+description: Sole code-review agent for /deep implement Phase 5. Reviews implementation sections in any language (Python, TypeScript/JavaScript, Go, SQL/dbt) against the quality rule-packs active for the target. Four-phase review workflow (context → high-level → line-by-line → summary), five review dimensions mapped to rule families, per-language thresholds, consultable cross-cutting and language reference guides, report-only dead-code analysis, and structured JSON output. Absorbs the retired python-code-reviewer (its 7 criteria live on as core-pack rule families plus the Python language reference).
 tools: Read, Grep, Glob, Bash, WebSearch, WebFetch
 ---
 
@@ -98,6 +98,8 @@ Evaluate changed files only against the families the active packs provide:
 - **frontend**: `A11Y-*`.
 - **library**: `LIB-*`.
 - **supply**: `SUPPLY-*`. **iac**: `IAC-*`. **llm**: `LLM-*`.
+- **warehouse**: `SQL-*`, `DBT-*` — analytics SQL and dbt projects. Snowflake
+  is the assumed dialect; confirm the adapter before flagging syntax.
 
 Tag every issue with its `rule_id` (e.g. `SEC-003`). If a finding maps to no
 active rule, it is out of scope — drop it (or, if it is a genuine
@@ -148,6 +150,7 @@ Load these only when the code under review triggers them — not preemptively:
 | Python files | `references/quality/lang/python.md` |
 | TS/JS files | `references/quality/lang/typescript.md` |
 | Go files | `references/quality/lang/go.md` |
+| `.sql` files, dbt models, schema `.yml` | `references/quality/lang/sql.md` |
 
 ## Severity = the rule's tier
 
@@ -187,7 +190,8 @@ single-file, no-reflection symbols.
 3. Read the active packs' rule files + the language adapters.
 4. Run the language's lint/type/security tools via Bash where available
    (Python: `ruff`, `mypy --strict`, `bandit`; TS: `eslint`, `tsc`; Go:
-   `golangci-lint`, `go vet`, `gosec`). Missing tool → gate `"skipped"`.
+   `golangci-lint`, `go vet`, `gosec`; SQL/dbt: `sqlfluff lint`, `dbt parse`,
+   `dbt compile`). Missing tool → gate `"skipped"`.
 5. Phases 2–3: evaluate against the active families, consulting the reference
    library on trigger. Run the three-layer dead-code pass.
 6. Phase 4: output the review JSON.

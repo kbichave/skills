@@ -5,6 +5,30 @@ All notable changes to deep-plan will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [5.6.1] - 2026-08-24
+
+### Fixed
+- **The `warehouse` pack was invisible to the core reviewer.** `code-reviewer.md`
+  listed active rule families ending at `supply`/`iac`/`llm` with no `warehouse`
+  entry, and named only python/typescript/go in its reference table. Since its
+  Rule 2 drops findings that map to no active family, `/deep implement` Phase 5
+  silently reviewed dbt code against nothing, even though `pack_router` correctly
+  activated the pack. Adds the `SQL-*`/`DBT-*` family, the `lang/sql.md` trigger row,
+  SQL to the description, and `sqlfluff`/`dbt parse`/`dbt compile` to the tool step.
+- **Warehouse rule ids were being put in the wrong JSON field.** `data-eng-reviewer`
+  was told to cite pack rule ids in `tag` "in place of a `DE-*` tag", but the
+  orchestrator groups specialist findings by a fixed tag whitelist, so a `SQL-001`
+  finding matched no group and would not render. Rule ids now travel in `rule_id`
+  alongside the expert's own `DE-*` tag, which is what `code-reviewer` already did.
+- **The core reviewer and `data-eng-reviewer` both enforced every warehouse rule**
+  on the same lines. The split is now stated: core does the mechanical rule-id pass,
+  the specialist owns findings needing grain, upstream timing, or cross-model context.
+- **Eval cases still asserted the old in-repo report path.** Three cases in
+  `code-review-cases.yaml` checked for `.reviews/code-review-*.md`, which 5.6.0
+  removed, so the suite would have pulled the regression back in. Updated to the
+  `~/.claude/code-reviews/` path, plus a new `no_repo_artifacts` check asserting a
+  review leaves no untracked file in the reviewed repo.
+
 ## [5.6.0] - 2026-08-24
 
 ### Added

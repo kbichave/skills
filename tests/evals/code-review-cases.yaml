@@ -30,7 +30,7 @@ cases:
   - id: golden-sql-routing
     prompt: "Review the dbt model changes on this branch"
     should_trigger: true
-    checks: [spawns_data_eng_reviewer, writes_reviews_file]
+    checks: [spawns_data_eng_reviewer, writes_reviews_file, no_repo_artifacts]
 
   - id: golden-pr-review
     prompt: "Review PR #42 for quality issues"
@@ -110,7 +110,8 @@ checks:
   spawns_skill_reviewer: "Agent calls include deep:skill-reviewer"
   spawns_prompt_reviewer: "Agent calls include deep:prompt-reviewer"
   spawns_review_verifier_last: "deep:review-verifier is the final Agent call"
-  writes_reviews_file: "file exists matching .reviews/code-review-*.md"
+  writes_reviews_file: "file exists matching ~/.claude/code-reviews/<owner>__<repo>/<YYYY-MM-DD>-*.md"
+  no_repo_artifacts: "git status --porcelain in the reviewed repo lists no new untracked file after the run"
   triage_before_markers: "AskUserQuestion approve/skip precedes any source-file edit"
   asks_for_base_when_clean: "response asks for a base ref; no reviewer spawned"
   fails_fast_bad_ref: "git rev-parse failure surfaced to user"
@@ -118,7 +119,7 @@ checks:
   skips_context_question_uses_provided: "no context AskUserQuestion; review_context contains 'DAI-123'"
   no_duplicate_markers: "grep -c 'CODECHANGE(review)' on seeded line == 1 after run"
   warns_large_diff: "response warns the diff exceeds ~400 LOC and offers to split or run paced passes"
-  learning_summary_present: "the .reviews/ report contains a '## Learning summary' section with recurring-themes or what-to-study content"
+  learning_summary_present: "the report file contains a '## Learning summary' section with recurring-themes or what-to-study content"
 
 llm_judge:
   # Reserved for qualitative criteria deterministic checks cannot capture.

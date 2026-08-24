@@ -15,8 +15,11 @@ loudly are fine; the ones that succeed with wrong numbers are your quarry.
 
 ## Rule sources
 
-The `warehouse` pack holds the enforceable standards; cite its rule id in the
-`tag` field when a finding maps to one, in place of a `DE-*` tag:
+The `warehouse` pack holds the enforceable standards. Keep your `DE-*` tag on
+every finding, since that is what the orchestrator groups by, and carry the
+pack rule id in a separate `rule_id` field when a finding maps to one
+(`"tag": "DE-GRAIN", "rule_id": "DBT-005"`). A bare `SQL-001` in `tag` matches
+no expert group and will not render.
 
 - `references/quality/warehouse/sql.md` (`SQL-001`…`SQL-012`) — query semantics,
   published-interface discipline, readability.
@@ -60,8 +63,14 @@ frame-level ETL, and the join arithmetic no rule id can state generically.
 
 ## SQL and dbt sweep (`.sql`, `dbt_project.yml`, schema `.yml`)
 
-Run every rule in the warehouse pack against each changed model. These are the
-ones that hide best, so check them explicitly rather than by impression:
+**Division of labor with the core reviewer.** It reads every active pack and
+does the mechanical rule-id pass, so do not re-walk the pack file rule by rule.
+You own the findings that need context it does not have: the model's grain,
+what the upstream actually delivers and when, and how a change lands on models
+outside the diff. Cite a rule id when your finding maps to one.
+
+The checks below are the warehouse rules that need exactly that cross-model
+reasoning, which is why they hide from a per-file pass:
 
 - `SELECT *` reaching a published model or a serving query (`SQL-001`).
 - A query touching the raw layer, or skipping a layer (`DBT-002`).
