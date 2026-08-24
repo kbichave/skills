@@ -90,7 +90,7 @@ parallel — one message, multiple Agent calls**. Every expert follows
 | `deep:ml-reviewer` | torch / tensorflow / sklearn / xgboost / lightgbm / transformers imports; training/eval scripts; `.ipynb` |
 | `deep:stats-reviewer` | scipy.stats / statsmodels; A/B-test, experiment-analysis, metric-definition, or forecasting code |
 | `deep:mlops-reviewer` | Dockerfile / K8s manifests; Airflow / Dagster / Prefect; MLflow / W&B; model-serving or feature-store code; ML CI |
-| `deep:data-eng-reviewer` | `.sql` files, dbt models, Spark, pandas/polars ETL |
+| `deep:data-eng-reviewer` | `.sql` files, `dbt_project.yml`, dbt schema `.yml` under `models/`, `macros/`, `seeds/`, `snapshots/`, Spark, pandas/polars ETL |
 | `deep:skill-reviewer` | `**/SKILL.md`, `agents/*.md`, or hook-prompt files |
 | `deep:prompt-reviewer` | LLM/API prompts, prompt templates, inline model instructions in app code |
 
@@ -107,11 +107,16 @@ standalone review") per its own contract.
 
 1. **Merge** all expert JSONs into one findings set. Keep each finding's
    `expert` tag. Do not dedupe or rerank yourself — the verifiers own that.
-2. **`deep:claim-verifier`** — spawn if any finding has
-   `needs_verification: true` or any `high` finding cites neither tool
-   output nor a documentation URL. It web-verifies each claim against
-   current official docs and returns confirmed/contradicted/unresolved
-   verdicts with sources. Skip only when nothing qualifies.
+2. **`deep:claim-verifier`** — the panel's ONLY network stage, and the reason
+   experts are told not to web-search. Spawn if any finding has
+   `needs_verification: true`, or a `high` finding cites neither tool output
+   nor a documentation URL, or a finding rests on a SQL-dialect behavior
+   (Snowflake and friends) or a version/deprecation/"newer API exists" claim,
+   which is where a training cutoff misleads. It batches duplicate claims,
+   skips anything already proven by local tool output, and returns
+   confirmed/contradicted/unresolved verdicts with sources. Skip the stage
+   entirely when nothing qualifies; do not spawn it "to be safe", since it is
+   latency every other stage waits on.
 3. **`deep:review-verifier`** — ALWAYS spawn, always last. It re-reads the
    actual code for every finding, kills phantoms, fixes wrong file:line
    refs, merges duplicate findings across experts, normalizes severity, and
@@ -184,7 +189,7 @@ so severity and intent read at a glance. Mapping:
 | `low` issue / nit | `nitpick (non-blocking):` |
 | improvement | `suggestion (non-blocking):` |
 | praise | `praise:` |
-| Socratic-mode finding | `question:` |
+| unresolved question (panel could not confirm intent) | `question:` |
 
 `blocking` findings are the ones that fail a verdict; everything else is
 `non-blocking`. The internal `.reviews/` table keeps `rule_id`/severity; the
@@ -273,14 +278,29 @@ output as the comment that markers (step 8 triage) and PR posts (step 9) use.
 The `.reviews/` report and chat keep the precise original wording; only the
 externalized comment lines are humanized.
 
-**Socratic mode (optional, ask once up front).** Offer the user a teaching
-voice: instead of dictating each fix, phrase the externalized comment as a
-guiding question that leads the author to the fix themselves — "what happens
-here when `items` is empty?" rather than "add an empty check".
-When enabled, the humanized comment for each `medium`/`low` finding becomes a
-question paired with the `teach.why`; keep `high`/blocking findings direct
-(no riddles on security). Default off — many users want the direct fix. The
-`.reviews/` file always keeps the direct wording regardless.
+**Comment voice.** Severity sets the register, and the humanizer applies it:
+
+- **Blocking (`high`)**: direct and unhedged. State the defect, then the fix.
+  No riddles on correctness or security, no softening a real bug into a
+  suggestion.
+- **Non-blocking (`medium`/`low`/improvements)**: phrase as a question that
+  carries its own reasoning, so the author can answer with a constraint you
+  did not know about. "Any reason not to `X` here?" / "Could this use `Y`?" /
+  "Why the second `COALESCE`, can this return NULL?" A reviewer who cannot be
+  wrong is not reviewing. Pair the question with `teach.why` in one line.
+  Never stack hedges: one "I think" or one question mark, not both plus
+  "maybe".
+
+**Cite the source.** Where a finding's `teach.reference` holds a canonical URL
+(language docs, framework docs, the vendor's SQL reference, a rule-pack guide
+path), append it to the externalized comment as a bare link. A claim about what
+a library or dialect does carries its citation; an unsourced assertion of
+framework behavior is the class of finding the claim-verifier exists to catch.
+
+**Direct mode (opt-out, ask once up front).** Some users want the fix stated,
+not asked. When chosen, non-blocking comments become imperatives and only the
+citation rule above still applies. The `.reviews/` file keeps the direct
+wording either way; voice applies to externalized comments only.
 
 Then walk the user through every unfixed finding and improvement, one
 decision each:
@@ -345,6 +365,28 @@ review **as the user's own** via `gh pr review` / `gh pr comment`.
   `` `dbt_project.yml` ``, `` `LT02` ``, `` `{% for kpi %}` ``). Use fenced
   ```` ``` ```` blocks for multi-line snippets or suggested diffs. GitHub
   renders Markdown — never post code as bare prose.
+
+**Suggestion blocks are the default vehicle for a concrete fix.** Where the
+fix is a rewrite of the commented lines, post a GitHub ```` ```suggestion ````
+block instead of describing the change in prose. The author applies it in one
+click, and a block that does not compile is visibly wrong in a way prose is
+not.
+
+````
+```suggestion
+    JOIN dim_site USING (site_id)
+```
+````
+
+- The block must contain the **complete replacement** for every line the
+  comment spans, at the correct indentation. Anchor a multi-line fix with
+  `--line`/`--start-line` on the review API so the span matches.
+- Deleting lines is an empty suggestion block.
+- Prose is for the *why* and stays short; the block carries the *what*. A
+  hedged question plus a suggestion block is the normal shape for a
+  non-blocking finding.
+- Skip the block where the fix is not a local line rewrite (add a test,
+  restructure a module, change a materialization strategy). Describe those.
 - Strip finding machinery from the visible text: no `rule_id`/tag codes,
   no `[expert]` labels, no severity emoji dumps. Lead with the verdict and
   the blocking issues in plain prose.

@@ -30,7 +30,8 @@ relevant rule packs loaded per session, and invoked as **internal pipeline steps
   including `Skill(grilling)` from plan/discovery. Not slash commands users run.
 - **D5 Scope** — full catalog v1; adapters for python / typescript / go.
 - **Packs (Q5)** — grouped: `core`, `service`, `frontend`, `library`, `delivery`,
-  `perf`, plus `supply`, `iac`, `llm`. Each family is a sub-file inside its pack.
+  `perf`, plus `supply`, `iac`, `llm`, `warehouse`. Each family is a sub-file
+  inside its pack.
 - **Cadence (Q6)** — resolve once at plan, freeze into blueprint; cheap drift
   re-check at implement start.
 - **Coverage (Q7)** — `TEST-002` = diff coverage ≥85% on changed lines; separate

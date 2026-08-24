@@ -5,6 +5,56 @@ All notable changes to deep-plan will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [5.5.0] - 2026-08-24
+
+### Added
+- **`warehouse` quality pack.** The pack system had no SQL or dbt coverage at all:
+  no pack declared a `.sql` glob, and nothing under `references/quality/` mentioned
+  dbt, Snowflake, or jinja. `references/quality/warehouse/` adds `SQL-001`…`SQL-012`
+  (published-interface discipline, `NOT IN` against nullable subqueries, pass-through
+  CTEs, boolean round-trips, `GROUP BY` ordinals, redundant wrappers) and
+  `DBT-001`…`DBT-014` (`ref()`/layer discipline, `is_incremental()` guards,
+  `unique_key` ordering for partition pruning, materialization justification, schema
+  tests and column docs, idempotent warehouse DDL).
+- **`references/quality/lang/sql.md`.** The fourth language guide alongside python,
+  typescript, and go, which `review-panel-protocol.md` already told experts to consult.
+  Holds the rewrite for every warehouse rule plus a Dialect section: Snowflake is the
+  assumed default, with the BigQuery/Postgres/DuckDB divergences called out.
+- **SQL and dbt signals in `pack_router`.** `.sql` maps to a `sql` language, a
+  `dbt_project.yml` marks the target as a `data` project, and `dbt`/`snowflake`/
+  `bigquery` spec keywords infer the `data` project and `data-model` task types.
+
+### Changed
+- **`data-eng-reviewer` defers to the pack.** Cites `SQL-*`/`DBT-*` rule ids instead of
+  restating them, and gains what no rule id can state generically: lookback windows
+  against real upstream arrival lag (`DE-LATEBOUND`), contract drift on columns read
+  positionally or by wildcard (`DE-CONTRACT`), and mandatory dialect identification
+  before any syntax finding.
+- **`claim-verifier` covers two more claim classes.** SQL-dialect behavior (engine
+  semantics, not general SQL) and version/deprecation/"newer API exists" currency
+  claims, the two places a training cutoff misleads most. Its brief now states the
+  five triggers exhaustively, so the panel's only network stage is not spawned
+  defensively.
+- **Review voice.** Severity sets the register: blocking findings stay direct, while
+  non-blocking findings and improvements are phrased as questions carrying their own
+  reasoning, so an author can answer with a constraint the reviewer did not know.
+  Findings carrying a `teach.reference` cite it. GitHub suggestion blocks are now the
+  default vehicle for a concrete line-level fix on a PR. The old opt-in Socratic mode
+  is replaced by an opt-out direct mode.
+- **`code-review` routes dbt schema files.** The `data-eng-reviewer` spawn row now
+  names `dbt_project.yml`, schema `.yml` under `models/`, `macros/`, `seeds/`, and
+  `snapshots/`, which previously matched no expert.
+- **Humanizer default voice profile de-personalized.** The named personal profile is
+  now a generic Default Voice Profile; the style rules are unchanged.
+
+### Fixed
+- **`pack_router` leaked the enclosing repo's diff into every target.** `_git_changed`
+  ran `git diff --name-only HEAD` from the target directory, which reports the whole
+  repository's changes whenever the target is a subdirectory. Adding `--relative -- .`
+  confines it to the target, fixing pack over-activation (a dirty `agents/` directory
+  activated the `llm` pack on unrelated targets) and making subdirectory targets
+  resolve honestly. Regression test added.
+
 ## [5.4.1] - 2026-08-11
 
 ### Added

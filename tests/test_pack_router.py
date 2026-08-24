@@ -78,6 +78,24 @@ RESOLUTION_CASES = [
 ]
 
 
+def test_detect_languages_recognizes_sql():
+    signals = pack_router.detect_signals(TARGETS_DIR / "dbt_warehouse")
+    assert "sql" in signals.languages
+
+
+def test_dbt_project_file_marks_target_as_data():
+    signals = pack_router.detect_signals(TARGETS_DIR / "dbt_warehouse")
+    assert "data" in signals.project_types
+
+
+def test_changed_globs_do_not_leak_from_the_enclosing_repo():
+    """A target inside a dirty repo must not inherit that repo's diff."""
+    signals = pack_router.detect_signals(TARGETS_DIR / "py_backend")
+    assert all(path.startswith(("src/", "pyproject")) for path in signals.changed_globs), (
+        f"changed_globs leaked paths from outside the target: {signals.changed_globs}"
+    )
+
+
 @pytest.mark.parametrize("target, spec, expected", RESOLUTION_CASES)
 def test_resolve_packs_for_target(target: str, spec: str, expected: set[str]):
     signals = pack_router.detect_signals(TARGETS_DIR / target, spec_text=spec)
@@ -98,7 +116,18 @@ REAL_PACKS = Path(__file__).parent.parent / "references" / "quality"
 def test_real_packs_all_parse():
     packs = pack_router.discover_packs(REAL_PACKS)
     names = {p["name"] for p in packs}
-    assert {"core", "service", "delivery", "frontend", "library", "perf", "supply", "iac", "llm"} <= names
+    assert {
+        "core",
+        "service",
+        "delivery",
+        "frontend",
+        "library",
+        "perf",
+        "supply",
+        "iac",
+        "llm",
+        "warehouse",
+    } <= names
     for p in packs:
         assert p["name"]
         assert p["provides_rules"], f"{p['name']} has no provides_rules"
@@ -118,3 +147,19 @@ def test_real_packs_ts_frontend_resolves_frontend_not_service():
     )
     resolution = pack_router.resolve_packs(signals, REAL_PACKS)
     assert set(resolution.active_packs) == {"core", "frontend"}
+
+
+def test_real_packs_dbt_target_resolves_warehouse():
+    signals = pack_router.detect_signals(
+        TARGETS_DIR / "dbt_warehouse", spec_text="Add an incremental model for daily site margin."
+    )
+    resolution = pack_router.resolve_packs(signals, REAL_PACKS)
+    assert set(resolution.active_packs) == {"core", "warehouse"}
+
+
+def test_real_packs_python_backend_does_not_resolve_warehouse():
+    signals = pack_router.detect_signals(
+        TARGETS_DIR / "py_backend", spec_text="Add a refund endpoint to the payments API."
+    )
+    resolution = pack_router.resolve_packs(signals, REAL_PACKS)
+    assert "warehouse" not in resolution.active_packs

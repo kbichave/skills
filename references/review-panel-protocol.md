@@ -64,7 +64,7 @@ Behavior-preserving method swaps go in `improvements`; method choices that
 produce wrong or invalid results go in `issues`.
 
 When reviewing a language with a reference guide under
-`references/quality/lang/` (python, typescript, go), consult it for that
+`references/quality/lang/` (python, typescript, go, sql), consult it for that
 language's idioms and thresholds before flagging language-specific patterns.
 
 ## Output — JSON only, no preamble, no fences
@@ -148,9 +148,14 @@ guesses.
 4. No phantom bugs: quote the **verbatim** offending code (not a paraphrase)
    in `issue`, copied exactly from the file. The review-verifier re-reads the
    code and deletes anything whose quoted snippet it cannot find or confirm.
-5. Uncertain about a framework/library/statistical claim? Report it and set
-   `"needs_verification": true` on the issue — the claim-verifier will check
-   it against current docs in one centralized pass. Do not web-search
-   yourself (latency/cost stays bounded by centralizing web checks).
+5. Uncertain about a framework, library, API, statistical, SQL-dialect, or
+   architectural-tooling claim, or about a version, deprecation, or "there is
+   a newer way to do this"? Report it and set `"needs_verification": true` on
+   the issue — the claim-verifier checks it against current docs in one
+   centralized pass. Do not web-search yourself (latency/cost stays bounded by
+   centralizing web checks). Version and engine-behavior claims are where a
+   training cutoff misleads, so flag those rather than asserting; everything
+   you can settle from local tools or the repo's own lockfile, settle yourself
+   rather than spending the network stage on it.
 6. Nothing in your domain touched by the diff → return
    `{"expert": "<id>", "summary": "no findings — <why>", "issues": [], "improvements": []}`.

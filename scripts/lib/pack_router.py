@@ -50,6 +50,7 @@ _EXT_LANG = {
     ".js": "javascript",
     ".jsx": "javascript",
     ".go": "go",
+    ".sql": "sql",
 }
 
 _SKIP_DIRS = {".git", "node_modules", ".venv", "venv", "__pycache__", "dist", "build", ".beads", ".mypy_cache"}
@@ -63,6 +64,7 @@ _SPEC_LANG = {
     "python": ("python", "fastapi", "django", "flask", "pytest"),
     "typescript": ("typescript", "react", "node", "next.js", "nestjs"),
     "go": ("golang", " go ", "goroutine"),
+    "sql": ("dbt", "snowflake", "bigquery", "data warehouse"),
 }
 _SPEC_PROJECT = {
     "backend": ("backend", "service", "api", "endpoint", "fastapi", "rest", "microservice"),
@@ -71,6 +73,7 @@ _SPEC_PROJECT = {
     "library": ("library", "sdk", "package", "publish"),
     "infra": ("docker", "terraform", "kubernetes", "k8s", "helm", "infra"),
     "llm": ("prompt", "agent", "llm", "tool call", "tool-call"),
+    "data": ("dbt", "snowflake", "bigquery", "data warehouse", "analytics model"),
 }
 _SPEC_TASK = {
     "add-endpoint": ("endpoint", "route", "handler"),
@@ -84,6 +87,7 @@ _SPEC_TASK = {
     "change-prompt": ("prompt",),
     "infra": ("docker", "terraform", "kubernetes", "k8s", "deploy"),
     "release": ("release", "publish", "semver"),
+    "data-model": ("dbt model", "incremental model", "warehouse model", "analytics model"),
 }
 
 
@@ -223,6 +227,8 @@ def _detect_project_types(target_root: Path, languages: set[str]) -> set[str]:
         types.add("frontend")
     if (target_root / "go.mod").exists():
         types.add("backend")
+    if (target_root / "dbt_project.yml").exists():
+        types.add("data")
     # directory markers
     for marker, ptype in (("api", "backend"), ("routes", "backend"), ("controllers", "backend"), ("components", "frontend")):
         if any(p.name == marker and p.is_dir() for p in target_root.rglob(marker) if not any(s in p.parts for s in _SKIP_DIRS)):
@@ -241,9 +247,11 @@ def _infer_from_spec(spec_text: str) -> tuple[set[str], set[str], set[str]]:
 
 
 def _git_changed(target_root: Path) -> list[str]:
+    # `--relative -- .` confines the diff to target_root; without it, git reports
+    # the whole repository's changes whenever target_root is a subdirectory.
     try:
         out = subprocess.run(
-            ["git", "-C", str(target_root), "diff", "--name-only", "HEAD"],
+            ["git", "-C", str(target_root), "diff", "--name-only", "--relative", "HEAD", "--", "."],
             capture_output=True,
             text=True,
             timeout=10,
