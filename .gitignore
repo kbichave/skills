@@ -13,3 +13,9 @@ planning
 .dolt/
 *.db
 .beads-credential-key
+
+# Per-machine Claude Code settings: absolute paths + local permission grants
+.claude/settings.local.json
+
+# code-review skill working artifacts, never committed
+.reviews/
