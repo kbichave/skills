@@ -5,6 +5,45 @@ All notable changes to deep-plan will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [5.6.0] - 2026-08-24
+
+### Added
+- **`code-review` resolves authorship and runs read-only on other people's code.**
+  A new step 1b compares `gh api user` and the PR author (or the diff's commit
+  authors) against `git config user.email` to set `review_mode`. On the user's own
+  work nothing changes. On someone else's branch or PR the skill becomes a
+  pre-review for posting to GitHub: no fixes, no `CODECHANGE`/`RECOMMENDATION`
+  markers, no staging, committing, or pushing, and no write-mode formatters. Gates
+  still run in check-only form. Ambiguous authorship asks rather than assuming, since
+  an unwanted edit to a colleague's branch costs far more than a skipped fix.
+- **PR posting becomes the deliverable in reviewer mode**, offered rather than
+  waiting to be asked, with per-comment confirmation unchanged. Line-level fixes
+  travel as suggestion blocks, which is how a change reaches an author without
+  touching their branch. Posting is the only write reviewer mode performs, and it
+  targets the PR conversation; merging, closing, and pushing to the head branch are
+  out of scope.
+- **Reports record `mode` and `code_author`**, so a report says whose code was
+  reviewed and under which rules.
+
+### Changed
+- **Context auto-discovery searches what is actually connected.** It now checks the
+  live tool list rather than assuming a server exists, extracts the ticket key from
+  the branch name (more reliable than commit messages), reads prior review rounds on
+  the PR so the panel does not re-raise points a human already settled, and follows
+  linked wiki/SharePoint/roadmap documents through the Confluence, M365, and Airfocus
+  MCPs. Explicit links only, with the search bounded, since every round-trip is
+  latency before the panel starts. The `review_context` block now records which
+  sources answered, which were unavailable, and which were skipped, so a report can
+  distinguish "no spec exists" from "the wiki was not connected".
+- **Review reports moved out of the reviewed repo.** They were written to
+  `.reviews/` at the repo root, so every review left an untracked file to ignore
+  or accidentally commit, and the skill had to check `.gitignore` each run. Reports
+  now go to `~/.claude/code-reviews/<owner>__<repo>/<YYYY-MM-DD>-<pr-N|branch>.md`,
+  keyed by owner and repo so same-named repos across orgs do not collide, and dated
+  so an old review is findable without knowing a session id. `$DEEP_REVIEWS_DIR`
+  overrides the root. Nothing this skill writes lands in the repo any more, and the
+  `.gitignore` step is gone.
+
 ## [5.5.0] - 2026-08-24
 
 ### Added

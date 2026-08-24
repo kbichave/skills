@@ -46,6 +46,14 @@ Navigation hub for `references/`. SKILL.md maps each workflow step to a file; th
 
 All section-level discipline in `implement-protocol.md`. Phases 1-10 with explicit gates. **Phase 1 confidence gate is load-bearing** — cheap, prevents the worst class of bugs.
 
+## Code review
+
+| File | Loaded by |
+|---|---|
+| `review-panel-protocol.md` | Every panel expert — input, output JSON, detective sweep, rules |
+| `code-review-context.md` | `code-review` step 2 when the user picks Auto-discover |
+| `quality/` | Rule packs the core reviewer enforces; `quality/lang/` for per-language idioms |
+
 ## Anti-patterns reference
 
 | File | Purpose |

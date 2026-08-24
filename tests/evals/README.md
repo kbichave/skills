@@ -26,7 +26,8 @@ The live runner (not yet built) drives the real CLI per the doc:
   describes in its comment).
 - Run `claude -p "<prompt>"` and capture transcript + exit code.
 - Evaluate the case's `checks` (deterministic: Agent-spawn set, AskUserQuestion
-  presence, `.reviews/` file, marker idempotency) against the transcript.
+  presence, report file under `~/.claude/code-reviews/`, marker idempotency)
+  against the transcript.
 - `should_trigger: false` cases assert the skill did NOT fire (anti-hijack).
 - Run multiple trials per case — agent behavior is nondeterministic; a single
   pass/fail is not enough signal.

@@ -1,6 +1,6 @@
 ---
 name: code-review
-description: Standalone multi-expert code review, outside of /deep implement. Routes the diff to a panel of specialist reviewer subagents (core packs, logic, architecture, ML, stats, MLOps, data engineering, prompt engineering), verifies claims against current docs, gates everything through a final review-verifier, writes a .reviews/ report, and walks the user through humanized approve/skip/edit triage before inserting inline CODECHANGE/RECOMMENDATION markers. Use when the user asks to review code, review a diff/branch/PR, or check changes against the quality packs. Do NOT use for writing or fixing code (only reviewing it), for /deep implement Phase 5 (that flow spawns the reviewer itself), for reviewing prose documents/PRDs, or for git operations like merging or resolving conflicts.
+description: Standalone multi-expert code review, outside of /deep implement. Routes the diff to a panel of specialist reviewer subagents (core packs, logic, architecture, ML, stats, MLOps, data engineering, prompt engineering), verifies claims against current docs, gates everything through a final review-verifier, and writes a dated report under ~/.claude/code-reviews/ (never inside the repo). Detects whose code it is: on the user's own work it offers fixes and inserts inline CODECHANGE/RECOMMENDATION markers, while on someone else's branch or PR it runs read-only as a pre-review and delivers the findings as GitHub PR comments instead. Use when the user asks to review code, review a diff/branch/PR, pre-review a teammate's PR before commenting, or check changes against the quality packs. Do NOT use for writing or fixing code (only reviewing it), for /deep implement Phase 5 (that flow spawns the reviewer itself), for reviewing prose documents/PRDs, or for git operations like merging or resolving conflicts.
 ---
 
 # Code Review (standalone, expert panel)
@@ -21,10 +21,10 @@ agent panel, or a model produced it. The output is the user's own review.
   names, no `rule_id`/tag codes, no "Automated/AI/generated" wording.
 - **Marker text** in source: neutral `CODECHANGE(review):` /
   `RECOMMENDATION(review):` only — no AI/skill/plugin/agent words.
-- **`.reviews/` file**: local working artifact, never committed. Ensure it is
-  `.gitignore`d before writing; if not ignored, tell the user and offer to add
-  it — do not commit it. It may name experts/packs for the user's own use, but
-  it must never enter git history or any shared surface.
+- **Report file**: written outside the repo (see step 7), so it cannot be
+  staged, committed, or need a `.gitignore` entry. It may name experts/packs
+  for the user's own use; it must never be copied into the repo or any shared
+  surface.
 - If the user later commits the reviewed code, the diff carries no evidence a
   tool touched it.
 
@@ -48,6 +48,49 @@ either (a) scope the review to a subset of files/commits now, or (b) proceed
 but run in paced passes so no region gets a shallow read. Proceed whole only
 on the user's say-so.
 
+### 1b. Authorship — sets `review_mode` (do this before step 2)
+
+Who wrote the code decides whether this run may touch the working tree. Resolve
+it from git/`gh`, do not guess:
+
+```bash
+gh api user --jq .login                      # the reviewer
+gh pr view <n> --json author,headRefName     # PR author, when reviewing a PR
+git log <base>..HEAD --format='%ae' | sort -u   # authors in the diff
+git config user.email
+```
+
+- **`review_mode: author`** — the diff is the user's own work (uncommitted
+  changes, their own branch, or a PR they opened). Full flow: fixes, local
+  markers, optional PR post.
+- **`review_mode: reviewer`** — the diff is someone else's (a PR opened by
+  another login, or commit authors that do not include the user). **Pre-review
+  for posting to GitHub. The working tree is read-only.**
+
+Ambiguous or no `gh`/remote (authors are mixed, a shared branch, a fork with no
+PR yet): ask via AskUserQuestion. Never default to `author`; an unwanted edit to
+someone else's branch is expensive and a skipped fix is not.
+
+State the resolved mode in chat before spawning the panel.
+
+**Reviewer mode is read-only. In it, this skill MUST NOT:**
+- edit, fix, or reformat any reviewed file, including "obvious" one-line fixes,
+- insert `CODECHANGE` / `RECOMMENDATION` markers (step 8 marker insertion is
+  skipped entirely),
+- stage, commit, amend, rebase, push, or create a branch,
+- run a formatter or codemod that writes to the tree.
+
+Read-only tooling is still expected: linters, type checkers, and tests in
+report-only mode, plus `dbt compile`/`parse`. If a gate needs a write
+(a formatter's `--fix`, a codegen step), run its check-only form or skip it and
+say so in the report.
+
+Findings still go somewhere. In reviewer mode the deliverables are the
+report file and, on the user's confirmation, GitHub PR comments (step 9),
+which becomes the primary output rather than an optional extra. Where a fix is a
+line rewrite, it belongs in a suggestion block on the PR, which is how you hand
+a change to an author without editing their branch.
+
 ### 2. Context gathering
 
 **Mandatory gate — do not spawn the panel without completing this step.**
@@ -58,15 +101,11 @@ the skill); in that case use it as `review_context` and say so.
 Otherwise ask (AskUserQuestion):
 1. **Provide** — user pastes ticket text, spec, or constraints.
 2. **Skip** — review the code on its own terms.
-3. **Auto-discover** — enumerate available MCPs and tooling, then pull
-   context. Spec-source search order:
-   1. Issue references in commit messages (`#123`, `Closes #45`, issue keys)
-      → issue tracker (Jira via Atlassian MCP, or `bd show`).
-   2. PR description via `gh pr view`; linked specs via Confluence MCP.
-   3. A PRD/spec file under `docs/`, `specs/`, or the planning dir matching
-      the branch/feature name.
-   4. Nothing found → proceed spec-less; the report notes "no spec available".
-   Summarize into a `review_context` block (≤40 lines). Note what was skipped.
+3. **Auto-discover** — pull context from whatever is actually connected:
+   ticket key (branch name first), the PR and its prior review rounds, then
+   linked wiki/SharePoint/roadmap docs, then an in-repo spec. Follow
+   `references/code-review-context.md` for the full search order, the MCP
+   checks, and the `review_context` output shape.
 
 ### 3. Resolve packs + languages
 
@@ -192,18 +231,39 @@ so severity and intent read at a glance. Mapping:
 | unresolved question (panel could not confirm intent) | `question:` |
 
 `blocking` findings are the ones that fail a verdict; everything else is
-`non-blocking`. The internal `.reviews/` table keeps `rule_id`/severity; the
+`non-blocking`. The internal report table keeps `rule_id`/severity; the
 label is for the human-facing surfaces.
 
-Offer to fix `high` findings; apply fixes only on user confirmation.
+**Author mode only:** offer to fix `high` findings, and apply fixes only on
+user confirmation. In reviewer mode, offer nothing and change nothing; the fix
+travels to the author as a suggestion block on the PR.
 
 ### 7. Write the report file
 
-Always persist the full report to the reviewed repo, then echo the path in
-chat. Path: `.reviews/code-review-<branch>-<YYYY-MM-DD>.md` at the repo root
-(create `.reviews/` if missing; slugify the branch name; append `-2`, `-3`,
-… if the file already exists). If `.reviews/` is not in `.gitignore`, note
-that to the user — do not edit `.gitignore` unasked.
+Always persist the full report, then echo the absolute path in chat.
+
+**Reports live outside the reviewed repo.** Writing them into the working tree
+means every review adds an untracked file the user must ignore, or worse,
+accidentally commits. Nothing this skill produces belongs in the repo.
+
+```
+~/.claude/code-reviews/<owner>__<repo>/<YYYY-MM-DD>-<pr-N|branch-slug>.md
+```
+
+- `<owner>__<repo>` from the `origin` remote (`kbichave__skills`), so same-named
+  repos under different orgs do not collide. No remote: use the directory name.
+- `pr-<N>` when reviewing a PR, otherwise the slugified branch. Reviewing
+  uncommitted work on a detached HEAD: use `working-tree`.
+- Same target reviewed twice in a day: append `-2`, `-3`, ….
+- `mkdir -p` the directory; it is outside every repo, so nothing is staged and
+  no `.gitignore` entry is ever needed.
+- Honor `$DEEP_REVIEWS_DIR` as the root when set, for users who want reviews
+  somewhere else (a synced notes folder, a scratch disk). Do not point it inside
+  a repo.
+
+Dated filenames under a per-repo directory are what makes an old review
+findable later; a session id in the path is not something a human can search
+for.
 
 File format:
 
@@ -213,6 +273,8 @@ repo: <repo name>
 branch: <branch>
 base: <base ref or "uncommitted">
 date: <YYYY-MM-DD>
+mode: <author|reviewer>
+code_author: <login or email of whose code this is>
 packs: [<active_packs>]
 languages: [<languages>]
 panel: [<experts spawned>]
@@ -275,7 +337,7 @@ approved set, invoke the `deep:humanizer` skill here on every approved
 finding + improvement, producing a one-line `humanized_comment` per finding.
 Feed the humanizer the raw `issue`/`fix` (or `better`/`why`) text; keep its
 output as the comment that markers (step 8 triage) and PR posts (step 9) use.
-The `.reviews/` report and chat keep the precise original wording; only the
+The report file and chat keep the precise original wording; only the
 externalized comment lines are humanized.
 
 **Comment voice.** Severity sets the register, and the humanizer applies it:
@@ -299,11 +361,15 @@ framework behavior is the class of finding the claim-verifier exists to catch.
 
 **Direct mode (opt-out, ask once up front).** Some users want the fix stated,
 not asked. When chosen, non-blocking comments become imperatives and only the
-citation rule above still applies. The `.reviews/` file keeps the direct
+citation rule above still applies. The report file keeps the direct
 wording either way; voice applies to externalized comments only.
 
-Then walk the user through every unfixed finding and improvement, one
-decision each:
+**Reviewer mode skips the rest of step 8.** Local markers annotate the author's
+working tree, which is not yours. Humanize the findings, write the report, then
+go straight to step 9 and triage each finding as a PR comment instead.
+
+Then (author mode) walk the user through every unfixed finding and improvement,
+one decision each:
 
 1. **Present** findings via AskUserQuestion — batch up to 4 per call,
    ordered high → medium → low → improvements. Each question shows
@@ -314,7 +380,7 @@ decision each:
      insert the marker with the user's text.
 2. **Insert markers for approved findings only** (rules below).
 
-### Marker insertion (approved findings only)
+### Marker insertion (author mode, approved findings only)
 
 Build one approved-markers JSON payload and pipe it to the insertion script —
 do NOT do the line arithmetic yourself. The script handles bottom-up ordering,
@@ -347,16 +413,26 @@ markers are greppable via `grep -rn "(review):" <paths>`. Markers are
 working annotations — the user removes them as they address each one; they
 are not meant to be committed.
 
-### 9. Posting to a GitHub PR (only when reviewing a PR AND the user asks to post)
+### 9. Posting to a GitHub PR
+
+**Reviewer mode: this is the deliverable**, so offer it rather than waiting to
+be asked. The user still confirms before anything posts, and still confirms
+each inline comment.
+**Author mode:** only when reviewing a PR AND the user asks to post.
 
 Confirm before posting — a PR comment is visible to others. Then post the
 review **as the user's own** via `gh pr review` / `gh pr comment`.
+
+Posting comments is the only write reviewer mode performs, and it targets the
+PR conversation, never the branch. Do not push a commit to the head branch, and
+do not use `gh pr merge`, `gh pr close`, or a review action beyond
+comment/approve/request-changes that the user chose.
 
 **Voice — post as if the user reviewed it themselves:**
 - NO tool/bot attribution. Never write "Automated", "multi-expert review",
   "/deep:code-review", "generated by", or any agent/panel branding.
 - NO pipeline stats in the PR. "Panel raised N → verifier approved M",
-  expert names, and coverage counts stay in chat and the `.reviews/` file —
+  expert names, and coverage counts stay in chat and the report file —
   they never appear in the PR.
 - First person, direct, humanized (reuse the step-8 humanized text). Read
   like a colleague's review, not a report.
@@ -406,5 +482,5 @@ posted, or vice versa.
 - Only approved-and-confirmed findings — never the raw panel set. Batch into
   a single `gh pr review` submission where possible, not N separate comments.
 
-The `.reviews/` file and chat still carry the full machinery for the user;
+The report file and chat still carry the full machinery for the user;
 the PR sees only the human-voiced result.
