@@ -5,6 +5,35 @@ All notable changes to deep-plan will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [5.13.0] - 2026-08-30
+
+Playbook Stage 5, first half: `REVIEW.md` as a per-repo policy overlay.
+
+### Added
+- **`scripts/lib/review_policy.py` + `REVIEW.template.md`.** A repo can now
+  declare what is never worth a finding (`src/generated/**`), which rule IDs
+  something else already enforces, and how many nits reach a human.
+
+  It is an **overlay, not a replacement**. The packs answer *what counts as a
+  defect* — hundreds of rules with stable IDs, plugin-owned and shared across
+  repos. `REVIEW.md` answers *how this repo wants review reported*, which is
+  per-repo and unknowable to the plugin. Collapsing one into the other would
+  fork the rule corpus into every repo and destroy rule-ID stability.
+
+  **The nit cap resolves a real conflict, by applying at externalization rather
+  than detection.** `review-panel-protocol.md` refuses caps in three places, and
+  it is right to: the panel's exhaustiveness is what makes the verifier's
+  precision math meaningful and the report a real audit artifact. So the cap
+  trims only what reaches chat and the PR, blocking and important findings are
+  never capped, and the remainder is summarized as a count pointing at the full
+  report. The playbook's "summarize the rest as a count" is satisfied exactly,
+  with nothing traded away. A test asserts the caller's finding list is never
+  shrunk.
+
+  Parsing is deliberately forgiving — this file is hand-edited by a tech lead,
+  and a parser that rejects it over a heading typo just gets the feature turned
+  off. An unreadable or absent policy is the default policy.
+
 ## [5.12.0] - 2026-08-30
 
 Playbook Stage 3, remainder: diff-vs-plan alignment and the `CLAUDE.md` loop.

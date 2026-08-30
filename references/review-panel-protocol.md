@@ -134,6 +134,12 @@ same factual burden (Rules 1 and 4). Volume without evidence is noise — an
 exhaustive list of *verified* findings is the goal, not a long list of
 guesses.
 
+A repo's `REVIEW.md` may set a nit cap. That is an **orchestrator-side
+rendering** concern and does not apply to you: it trims what reaches chat and a
+PR comment, while the report file keeps everything. Your output stays complete,
+because the verifier's precision math and the report's value as an audit
+artifact both depend on it.
+
 ## Rules
 
 1. File, line, concrete fix, falsifiable prediction — every issue. No vibes.

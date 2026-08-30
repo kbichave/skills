@@ -212,6 +212,13 @@ Within each axis:
   long nit list can never bury a real bug. The count may be large; that is the
   point of exhaustive mode. Each finding as `file:line — issue → fix
   (rule_id or tag) [expert]`, with verification sources where used.
+- **The report file is always complete.** A repo's `REVIEW.md` nit cap applies
+  only to the chat render and PR comments, never to this file and never to
+  detection. Load it with `lib.review_policy.load(repo_root)`; use
+  `filter_findings` to drop paths and rules the repo excluded, and
+  `externalize` when rendering to chat or a PR — it caps nits only, never
+  blocking or important findings, and returns a count plus a pointer to the
+  full report for the remainder.
 - Praise entries, if any.
 - Gates table (lint/types/security).
 - Dead-code report (report-only — never auto-delete).
