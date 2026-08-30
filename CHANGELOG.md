@@ -5,6 +5,46 @@ All notable changes to deep-plan will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [5.15.0] - 2026-08-30
+
+Conditional autonomy. `/deep auto` now advances on green and halts otherwise,
+and `/deep implement` gains a `--auto` of its own.
+
+Prompted by comparing against gsd-core, whose autonomous mode states the rule
+plainly: *"the only difference from manual execution is that `passed`
+verification advances automatically — you are not prompted between phases unless
+a decision is required."* Ours skipped the checkpoint whether or not anything was
+wrong.
+
+### Added
+- **`scripts/lib/verification.py`** — a machine-readable status per section:
+  `passed`, `gaps_found`, or `human_needed`. The distinction between the last
+  two is deliberate: `gaps_found` is "this is broken", `human_needed` is "I
+  should not be the one deciding this", and those want different responses from
+  a person. Three strikes classifies as `human_needed` because repeated failure
+  is a signal the run cannot get there alone, not a defect to retry.
+- **`scripts/lib/handoff.py`** — the needs-human queue. Phase 1 skipping a
+  low-confidence section and Phase 9 rolling one back both escalate *to the
+  user* in interactive mode; in auto there is no user, so the escalation used to
+  evaporate and the run reported success over work it had silently dropped.
+- **`scripts/checks/auto-gate.py`** — `check` (exit 0 advance / exit 1 halt),
+  `record`, `status`, `handoff`. Recording a non-passing section files it in the
+  handoff queue automatically, so a run cannot finish while quietly holding a
+  failure.
+- **`/deep implement --auto`** — every section unattended, without the
+  multi-phase chain `/deep auto` adds. The three behaviours it changes were
+  already specified in `implement-protocol.md`; what was missing was a way to
+  ask for them on their own, and somewhere for the skips to go.
+
+### Changed
+- The workflow loop no longer closes human checkpoints with
+  `"Auto mode: skipped"` unconditionally. It closes with
+  `"Auto mode: advanced on green"` or refuses and reports
+  `"Auto mode: halted — <cause>"`.
+- **An unrecorded section counts as `human_needed`, not as passing.** Absence of
+  evidence is the usual way an autonomous run convinces itself everything is
+  fine, so a section that skips the recording step blocks its own phase.
+
 ## [5.14.0] - 2026-08-30
 
 Playbook Stage 2: policy moves from review time to spec time.

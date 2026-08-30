@@ -25,7 +25,11 @@ Read prior `section_outcome` blocks from `impl-progress.md` before rating.
   - Interactive: resolve the blocking unknowns by invoking `Skill(grilling)`
     internally (one question at a time, each with a recommended answer) before
     re-rating — do not ask the user to run `/grilling`.
-  - Auto: log reason, apply SKIP or SPLIT mutation, move to next section.
+  - Auto (`--auto` or `--workflow auto`): log reason, apply SKIP or SPLIT
+    mutation, record the skip, and move to the next section:
+    `auto-gate.py --planning-dir D record --section S --gates-passed false
+    --detail "confidence 1-4"`. Never leave a skipped section unrecorded — an
+    unrecorded section counts as `human_needed` and halts the phase.
 
 ## Phase 2 — Read spec + standards
 
@@ -113,6 +117,19 @@ plan = build_gate(active_packs, languages, Path("lint"), mode=mode)
 - New always-on `SEC-*`/`ENG-*` BLOCKs ship as WARN for one release before
   flipping to BLOCK. See `docs/quality-pipeline-plan.md`.
 
+**Record the outcome** once the gate resolves, in every mode:
+
+```bash
+python3 ${DEEP_PLUGIN_ROOT}/scripts/checks/auto-gate.py \
+  --planning-dir "${planning_dir}" record \
+  --section "<section>" --gates-passed <true|false> \
+  [--blocking-findings N] [--strikes N] [--detail "..."]
+```
+
+`passed` needs green gates, zero blocking review findings and no strikes.
+This status is the only thing `/deep auto` routes on, so a section that skips
+the recording step blocks its own phase.
+
 ## Phase 7 — Context chaining
 
 After review passes, append `section_outcome` to `impl-progress.md` under `## Section Outcomes`:
@@ -147,7 +164,10 @@ Next section's confidence gate (Phase 1) reads these to assess:
 
 If a section fails quality gates after 3 attempts (**3-strike rule**), consult the section's **Rollback Strategy** to undo changes cleanly before moving on.
 
-- Same error 3 times → ask user (interactive) or log and continue with rollback (auto)
+- Same error 3 times → ask user (interactive), or in auto: roll back, record
+  `auto-gate.py ... record --section S --gates-passed false --strikes 3`, and
+  continue. Three strikes classifies as `human_needed`, so the phase will halt
+  at its checkpoint rather than advancing over the failure.
 
 ## Phase 10 — Post-mortem (terminal step)
 

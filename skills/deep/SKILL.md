@@ -21,7 +21,7 @@ Pick mode by question:
 /deep intent "the price board lags the rack"         → intent.md
 /deep discovery @path [--depth=quick|standard|deep]  → audit + phase specs
 /deep plan @spec.md [--from-prd @prd.md | --from-adr @adrs/ | --from-intent @intent.md]  → blueprint
-/deep implement [@dir]                               → execute sections
+/deep implement [@dir] [--auto]                      → execute sections
 /deep auto @phases/                                  → end-to-end
 ```
 
@@ -91,9 +91,12 @@ For `implement`: skip setup-session. Use `@path` (or its parent), else `~/.claud
 
 ```
 1. tracker.ready() → next unblocked step
-2. Auto mode: if step is human-interactive (user-review,
-   context-check-pre-review, context-check-pre-split),
-   auto-close with reason "Auto mode: skipped" and repeat
+2. Auto mode, human-interactive step (user-review,
+   context-check-pre-review, context-check-pre-split):
+   run auto-gate.py check.
+     exit 0 → close with its close_reason, repeat
+     exit 1 → do NOT close. Report the failing sections
+              and stop this phase.
 3. Read step's reference file (index below)
 4. Execute step
 5. tracker.close(issue_id, reason)
@@ -101,6 +104,19 @@ For `implement`: skip setup-session. Use `@path` (or its parent), else `~/.claud
    run implement for that phase before next phase
 7. Repeat until all closed
 ```
+
+**Advance on green, halt otherwise.** Step 2 used to close every checkpoint with
+"Auto mode: skipped" regardless of what had happened, so a run continued past
+phases it should have stopped at. It now consults recorded verification status:
+
+```bash
+python3 ${DEEP_PLUGIN_ROOT}/scripts/checks/auto-gate.py \
+  --planning-dir "${planning_dir}" check --expected-sections <N>
+```
+
+A section that never recorded a result counts as `human_needed`, not as passing.
+Absence of evidence is the usual way an autonomous run convinces itself
+everything is fine.
 
 ---
 
@@ -195,6 +211,46 @@ All section-level discipline lives in `references/implement-protocol.md`:
 - Phase 10: post-mortem — answer "what would have prevented the rework?". Architectural answer → suggest `Skill(codebase-design)`. Spec-clarity answer → log under `## Spec gaps observed`. None → say so. Stop hook enforces.
 
 Reads from `.deepstate/state.json`.
+
+**Record every section's outcome after Phase 6**, in both interactive and auto
+mode. This is what `/deep auto` routes on, and an unrecorded section counts as
+`human_needed`:
+
+```bash
+python3 ${DEEP_PLUGIN_ROOT}/scripts/checks/auto-gate.py \
+  --planning-dir "${planning_dir}" record \
+  --section "<section>" --gates-passed <true|false> \
+  [--blocking-findings N] [--strikes N] [--detail "..."]
+```
+
+A non-passing section is added to the needs-human queue automatically.
+
+#### `--auto` (implement only)
+
+Runs every section without stopping to ask, without the multi-phase chain that
+`/deep auto` adds. Use it when the blueprint is solid and you intend to review
+the whole result at the end.
+
+It changes three behaviours, all already specified in
+`references/implement-protocol.md`:
+
+| Phase | Interactive | `--auto` |
+|---|---|---|
+| 1, confidence 1-4 | `Skill(grilling)` to resolve, then re-rate | Log, SKIP or SPLIT, record `low_confidence`, next section |
+| 5a, review context | Ask provide / skip / auto-discover | Straight to auto-discover |
+| 9, three strikes | Ask the user | Roll back, record `three_strikes`, next section |
+
+**It skips sections; it does not skip reporting them.** Every skip lands in the
+needs-human queue, and the run summary must end with:
+
+```bash
+python3 ${DEEP_PLUGIN_ROOT}/scripts/checks/auto-gate.py \
+  --planning-dir "${planning_dir}" handoff
+```
+
+Append that output to `impl-summary.md`. A `--auto` run that reports success
+while silently holding skipped sections is the failure mode this exists to
+prevent.
 
 A `PreToolUse` hook blocks credential writes and pauses on paths the target repo
 declared protected. It needs no invocation. When it fires, the message names the

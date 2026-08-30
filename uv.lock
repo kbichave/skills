@@ -267,7 +267,7 @@ wheels = [
 
 [[package]]
 name = "deep-plan"
-version = "5.14.0"
+version = "5.15.0"
 source = { virtual = "." }
 dependencies = [
     { name = "google-genai" },

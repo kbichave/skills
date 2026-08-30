@@ -7,6 +7,7 @@ A Claude Code plugin for discovering, planning, and implementing complex systems
 /deep discovery @path               → system audit + phase specs
 /deep plan @spec.md                 → implementation blueprint
 /deep implement [@plan-dir/]        → execute sections
+/deep implement --auto              → all sections unattended, no phase chain
 /deep auto @phases/                 → autonomous end-to-end (multi-phase plan + implement)
 ```
 
@@ -57,7 +58,7 @@ input the next one expects.
 | 1 | `/deep intent "…"` | You have a problem, not a solution | `intent.md` — the problem in the originator's words |
 | 2 | `/deep discovery @path` | You don't yet know what to build | Audit docs + `phasing-overview.md` (the phase list and its dependency graph) |
 | 3 | `/deep plan @spec.md` | You know the phase; you need the blueprint | `claude-spec.md`, `claude-plan.md`, `sections/` |
-| 4 | `/deep implement` | The blueprint exists | Code and tests, section by section, behind quality gates |
+| 4 | `/deep implement` (add `--auto` to run unattended) | The blueprint exists | Code and tests, section by section, behind quality gates |
 | 5 | `/deep:code-review` | Before you open the PR | A report under `~/.claude/code-reviews/` |
 
 **Steps 3 and 4 are the loop.** One phase at a time: plan it, build it, then plan
@@ -90,19 +91,21 @@ Skipping is normal and expected:
 
 ### How much runs without you
 
-`/deep auto` chains plan → implement across every phase in the dependency graph
-without stopping. It is genuinely unattended: the human checkpoints
-(`user-review`, and the two context checks) are auto-closed with the reason
-`"Auto mode: skipped"`.
+`/deep auto` chains plan → implement across every phase in the dependency graph,
+unattended while the work is clean.
 
-**Be aware of what that trades away.** The gates are skipped unconditionally, not
-conditionally on the work being clean — so `/deep auto` will carry on past a
-phase it should have stopped at. Use it when the phases are well specified and
-you intend to review the whole result at the end. Use `/deep plan` +
-`/deep implement` per phase when you want the checkpoints to mean something.
+**It advances on green and halts otherwise.** Each section records a
+verification status after the quality gate; a phase whose sections all `passed`
+closes its checkpoint automatically, and anything else stops the phase with
+`Auto mode: halted — <cause>`. A section that never recorded a result counts as
+`human_needed`, not as passing, because absence of evidence is how an autonomous
+run talks itself into believing everything is fine.
 
-Making that conditional — advance on green, halt on a failed gate or an
-exhausted retry — is tracked and not yet built.
+`/deep implement --auto` is the narrower version: every section, unattended, no
+multi-phase chain. It skips sections it cannot do — low confidence, three
+strikes — but every skip lands in a needs-human queue that the run summary must
+print. A `--auto` run that reports success while quietly holding skipped
+sections is the failure this is built to prevent.
 
 ## What's Inside
 
