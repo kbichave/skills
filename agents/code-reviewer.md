@@ -40,9 +40,13 @@ You receive a prompt file path. Read it for:
 - The section specification path (what was to be implemented).
 - The changed files.
 - The planning directory.
-- **`active_packs`** and **`languages`** (frozen in the blueprint by
-  `pack_router` at plan time). If absent, default to `["core"]` and infer
-  languages from file extensions.
+- **`active_packs`** and **`languages`** (resolved by `pack_router` before you
+  are spawned — see `references/implement-protocol.md` Phase 6). If absent,
+  resolve them yourself with `detect_signals` + `resolve_packs` against the
+  target root rather than falling straight through to `["core"]`; infer
+  languages from file extensions only as a last resort. Say which packs you
+  used in your output — a dbt or frontend target reviewed under `core` alone
+  means the routing failed and the findings are incomplete.
 - **`review_context`** (optional): user-provided or MCP-discovered context —
   ticket text, PR description, linked specs, constraints. Gathered by the
   orchestrator before you are spawned (see `references/implement-protocol.md`

@@ -75,6 +75,8 @@ class DeepStateTracker:
             "description": description,
             "depends_on": deps,
             "closed_reason": None,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "closed_at": None,
         }
         state["issues"][issue_id] = issue
         self._save(state)
@@ -109,6 +111,7 @@ class DeepStateTracker:
             raise ValueError(f"Issue '{issue_id}' is already closed")
         issue["status"] = "closed"
         issue["closed_reason"] = reason
+        issue["closed_at"] = datetime.now(timezone.utc).isoformat()
         self._save(state)
         return {"id": issue_id, **issue}
 
@@ -271,7 +274,9 @@ class MetricsCollector:
         """Format metrics as a markdown table for summary output."""
         d = self._data
         wc = d.get("wall_clock_seconds")
-        time_str = f"{wc // 60}m {wc % 60}s" if wc else "N/A"
+        # `is not None`, not truthiness: a sub-minute session finalizes to 0,
+        # which is a measurement, not a missing one.
+        time_str = f"{wc // 60}m {wc % 60}s" if wc is not None else "N/A"
         rp = d.get("research_gate_pass", 0)
         rf = d.get("research_gate_fail", 0)
         rt = rp + rf

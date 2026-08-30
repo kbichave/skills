@@ -161,6 +161,21 @@ Legacy sessions that already exist inside project directories are detected via f
 | **Stop** | Agent tries to exit | Requires implementation summary; blocks exit if sections incomplete |
 | **SubagentStop** | Section/audit-doc writer finishes | Extracts content and writes file to disk |
 
+## AI-Native SDLC Alignment
+
+The plugin is being aligned with Anthropic's [AI-Native SDLC Playbook](https://claude.com/blog/the-ai-native-sdlc-playbook), which describes six looped stages. `/deep plan` and `/deep implement` remain the engine for Stages 1-3; the work is building the harness around them.
+
+| Stage | Playbook artifact | `/deep` surface | Status |
+|-------|-------------------|-----------------|--------|
+| **1. Plan** | `intent.md` | `auto-spec-synthesis` → `claude-spec.md` | Spec synthesis ships; a distinct `intent.md` in the originator's own words does not |
+| **2. Design** | `spec.md` | `/deep plan` collapses requirements + design into one session | Ships, and ahead of the playbook here. Policy is applied at review time, not yet at spec time |
+| **3. Build** | `plan.md`, `CLAUDE.md`, skills, blocking hooks | `/deep implement`, 13 rule packs, `skill-router` | Plan artifacts exceed the playbook. Blocking hooks and `CLAUDE.md` generation are not built |
+| **4. Test** | Feedback loops, continuous evals | TDD protocol, composed quality gate, `tests/evals/` | Eval harness and ablation protocol exist; they are not continuous and do not gate merges |
+| **5. Deploy** | `REVIEW.md`, approval gates, CI/CD | `deep:code-review` panel, authorship detection | Review *quality* is the plugin's strongest asset; the *automation* around it is absent |
+| **6. Maintain** | Control bands, findings → Stage 1 | Context monitor, metrics, beads triage | The threshold-and-debounce engine exists for context; there are no control bands or cross-session metrics |
+
+**Deliberate non-goals.** A plugin cannot ship managed settings (that is a root-owned MDM path), so approval gates ship as a hook plus a deployable template. The plugin gates deploys; it is not a deployer. Chat-based on-call (`@claude` in Slack or Teams) is out of scope.
+
 ## Architecture
 
 ### State Management
@@ -228,10 +243,12 @@ Legacy sessions that already exist inside project directories are detected via f
 ## Tests
 
 ```bash
-uv run pytest tests/ -q
+uv run --extra dev pytest -q
 ```
 
-437 tests covering deepstate tracker, beads sync, workflow factory, session setup, section generation, hook behavior, research topic store, skill structure, integration lifecycle, and transcript parsing.
+800 tests covering the deepstate tracker, beads sync, workflow factory, session setup, section generation, hook behavior, research topic store, pack routing, quality gates, skill structure, integration lifecycle, and transcript parsing.
+
+CI (`.github/workflows/tests.yml`) runs the suite on Python 3.11, 3.12 and 3.13 for every push and pull request. Tests marked `requires_bd` self-skip when the `bd` CLI is absent. A second advisory job runs `ruff` without blocking the build.
 
 ## What's Different From the Originals
 

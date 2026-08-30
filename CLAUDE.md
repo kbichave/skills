@@ -50,18 +50,58 @@ bd close <id>         # Complete work
 
 ## Build & Test
 
-_Add your build and test commands here_
-
 ```bash
-# Example:
-# npm install
-# npm test
+uv run --extra dev pytest          # full suite, ~800 tests, ~22s
+uv run --extra dev pytest tests/test_pack_router.py -q   # one file
+uvx ruff check scripts tests       # advisory: ~243 pre-existing violations
 ```
+
+Python 3.11+. CI (`.github/workflows/tests.yml`) runs pytest on 3.11/3.12/3.13
+as a blocking job and ruff as an advisory one.
+
+**Verification before "done":** the suite must be green. Tests marked
+`requires_bd` self-skip when the `bd` CLI is absent, which is how CI passes
+without beads installed. Never add a test that fails without `bd`.
 
 ## Architecture Overview
 
-_Add a brief overview of your project architecture_
+A Claude Code plugin, not an application. Almost all behaviour is prose that a
+model reads; Python exists to do the things a model should not be trusted to do
+by hand (resolve, validate, count, persist).
+
+| Directory | Holds |
+|---|---|
+| `skills/` | `deep` (discovery/plan/implement/auto), `code-review`, `humanizer`, `no-op-remover` |
+| `references/` | On-demand protocol files loaded by SKILL.md; see `INDEX.md` |
+| `references/quality/` | 13 rule packs (core, service, warehouse, llm, iac …) + `lang/` guides |
+| `agents/` | Subagent definitions, mostly the code-review panel |
+| `scripts/lib/` | The real logic: `pack_router`, `quality_gate`, `deepstate`, `beads_sync` |
+| `scripts/checks/` | CLI entry points the skill invokes |
+| `scripts/hooks/` | Hook handlers wired in `hooks/hooks.json` |
+| `lint/<lang>/adapter.json` | Maps packs to that language's linters and thresholds |
+
+Session state never lands in the target repo. It goes to
+`~/.claude/marketplace/deep-plan-enhanced/sessions/<slug>/<prefix>/.deepstate/`.
+Code-review reports go to `~/.claude/code-reviews/`. Treat this as an invariant:
+writing into a user's working tree needs an explicit opt-in flag.
 
 ## Conventions & Patterns
 
-_Add your project-specific conventions here_
+- **Stdlib only in `scripts/lib/` and `scripts/hooks/`.** The two runtime deps
+  (`google-genai`, `openai`) are for external plan review and belong nowhere else.
+- **Hooks use `python3`, not `uv run`.** A per-tool-call hook cannot afford the
+  150-300 ms uv startup.
+- **Hooks fail open.** A crashed hook must never block the user's edit. Wrap the
+  body and swallow, the way `impl-post-tool-use.py` does.
+- **Never print stray stdout from a hook** — it breaks Claude Code's hook parser.
+  This has bitten this repo before; the warning lives in the hook docstrings.
+- **Atomic writes for state**: write `.tmp`, then `os.rename`. See
+  `DeepStateTracker._save`.
+- **New BLOCK rules ship as WARN for one release** before flipping. See
+  `docs/quality-pipeline-plan.md`.
+- **Rule IDs are the vocabulary.** Findings reference `SEC-003`, `SQL-007`,
+  `DBT-011` — never a prose restatement of the rule.
+- **Don't add a pack resolver.** There is exactly one: `scripts/lib/pack_router.py`.
+  Anything needing pack context calls it rather than re-deriving signals.
+- Thresholds this repo holds itself to: complexity ≤10, function ≤50 lines,
+  params ≤4, nesting ≤3 (`references/coding-standards.md`).

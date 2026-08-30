@@ -71,7 +71,9 @@ Write the outcome (or its absence) into the reviewer prompt file as
 - All targets, all languages: `agents/code-reviewer.md` (pack-scoped, rule-ID
   tagged, per-language thresholds, four-phase workflow, consultable
   cross-cutting/language references, report-only dead-code). Pass
-  `active_packs` + `languages` from the blueprint and `review_context` from 5a.
+  `active_packs` + `languages` resolved in Phase 6 below, and `review_context`
+  from 5a. Resolve before spawning the reviewer — passing a bare `["core"]`
+  silently reviews SQL, dbt, frontend and IaC code against nothing.
 - Python-only / `--quality=legacy`: same agent with
   `active_packs=["core"]`, `languages=["python"]` — the retired
   `python-code-reviewer`'s 7 criteria live on as core-pack rule families plus
@@ -80,19 +82,30 @@ Write the outcome (or its absence) into the reviewer prompt file as
 
 ## Phase 6 — Quality gate
 
-The gate is composed from the quality packs active for this target (frozen in the
-blueprint at plan time) and the target's detected languages:
+The gate is composed from the quality packs active for this target and the
+target's detected languages. **Resolve them here — run this, do not assume a
+caller supplied them:**
 
 ```python
+from pathlib import Path
 from lib.pack_router import resolve_quality_mode, resolve_packs, detect_signals
 from lib.quality_gate import build_gate
+
+signals = detect_signals(Path(target_root), spec_text=<spec/section text>)
+resolution = resolve_packs(signals, Path(plugin_root) / "references" / "quality")
+active_packs, languages = list(resolution.active_packs), list(signals.languages)
+
 mode = resolve_quality_mode(cli_value=<--quality flag or None>)
 plan = build_gate(active_packs, languages, Path("lint"), mode=mode)
 # run plan.commands; enforce diff coverage >= plan.diff_coverage_min on changed lines
 ```
 
-- `active_packs` come from the blueprint (resolved by `pack_router` at plan time);
-  re-check drift at implement start.
+- Resolve once at the start of the implement run and reuse for every section;
+  re-resolve if the section adds a language or project type the first pass
+  could not see.
+- Report the resolved set to the user (`active packs: core, warehouse`). A run
+  that resolves to `core` alone on a dbt or frontend target is a routing bug,
+  not a quiet default.
 - Diff coverage ≥85% on **changed lines**; whole-suite coverage must not drop;
   generated/vendored files exempt.
 - `--quality=legacy` returns the fixed gate `ruff` + `mypy --strict` + `bandit -r`

@@ -23,7 +23,7 @@ from lib.config import (
     get_or_create_session_config,
     save_session_config,
 )
-from lib.deepstate import DeepStateTracker
+from lib.deepstate import DeepStateTracker, MetricsCollector
 from lib.beads_sync import BeadsSyncTracker, detect_beads
 from lib.workflow import create_plan_workflow, create_discovery_workflow, create_autonomous_workflow
 
@@ -416,6 +416,14 @@ def setup_session(
     # Store epic reference in config
     session_config["deepstate_epic_id"] = epic_title
     save_session_config(planning_dir, session_config)
+
+    # Open the metrics file so the session has somewhere to record into.
+    # Best-effort: metrics are diagnostics, never a reason to fail setup.
+    try:
+        metrics = MetricsCollector(state_dir=state_dir)
+        metrics.record("workflow", workflow)
+    except Exception:
+        pass
 
     # Write active session marker
     marker_file = Path.home() / ".claude" / ".deep-plan-active"

@@ -425,8 +425,14 @@ review **as the user's own** via `gh pr review` / `gh pr comment`.
 
 Posting comments is the only write reviewer mode performs, and it targets the
 PR conversation, never the branch. Do not push a commit to the head branch, and
-do not use `gh pr merge`, `gh pr close`, or a review action beyond
-comment/approve/request-changes that the user chose.
+do not use `gh pr merge`, `gh pr close`, or a review action beyond the
+comment/request-changes/approve set below that the user chose.
+
+**Never `--approve` in author mode.** Separation of duties: whoever wrote the
+code does not approve it, and in author mode the code is the user's own. Post
+comments and request-changes there; approval is a human's to give on someone
+else's PR. `--approve` is available in reviewer mode only, and still only when
+the user explicitly picks it.
 
 **Voice — post as if the user reviewed it themselves:**
 - NO tool/bot attribution. Never write "Automated", "multi-expert review",

@@ -5,6 +5,55 @@ All notable changes to deep-plan will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [5.7.0] - 2026-08-30
+
+First wave of alignment with Anthropic's
+[AI-Native SDLC Playbook](https://claude.com/blog/the-ai-native-sdlc-playbook).
+This release is the foundation the later stages need: continuous integration,
+live metrics, and two governance holes closed. Full per-stage audits live in
+`~/.claude/marketplace/deep-plan-enhanced/sessions/sdlc-audit/`.
+
+### Fixed
+- **The agent could approve its own code.** `code-review` step 9 permitted
+  `gh pr review --approve` as a user-chosen action in *author* mode, where the
+  code under review is the user's own. The playbook's separation-of-duties rule
+  is that whoever writes the code does not approve it. `--approve` is now
+  reviewer-mode only; author mode posts comments and request-changes.
+- **`active_packs` was never actually resolved, so the reviewer always fell back
+  to `["core"]`.** `implement-protocol.md` and `code-reviewer.md` both claimed
+  the active packs were "frozen in the blueprint at plan time", but nothing ever
+  wrote them — the Phase 6 snippet imported `resolve_packs`/`detect_signals` and
+  then referenced undefined variables. Every non-core pack was dead on arrival,
+  including the `warehouse` pack shipped in 5.5.0 and repaired in 5.6.1. Phase 6
+  now resolves packs itself and reports the resolved set; a dbt or frontend
+  target landing on `core` alone is a routing bug, not a quiet default.
+- **`MetricsCollector` had zero call sites.** It was tested dead code: a
+  repo-wide grep found it only in `deepstate.py` and `test_metrics.py`. Every
+  measurement the playbook asks for was blocked behind it. `setup-session.py`
+  now opens the metrics file for each new session, best-effort and non-fatal.
+- **A sub-minute session reported its wall clock as `N/A`.**
+  `format_dashboard` tested `if wc`, so a run that finalized in under a second
+  was indistinguishable from one that never finalized.
+
+### Added
+- **CI, for the first time.** `.github/workflows/tests.yml` runs the 805-test
+  suite on Python 3.11, 3.12 and 3.13 for every push and pull request. 46 test
+  files had been running only when someone remembered to. `ruff` runs as a
+  second, advisory job — there are ~243 pre-existing violations, so it reports
+  without blocking until they are cleared.
+- **`scripts/checks/session-metrics.py`** — `record`, `increment`, `finalize`
+  and `report` subcommands, so a run can reach its own metrics file.
+- **Issue timestamps.** `DeepStateTracker` issues now carry `created_at` and
+  `closed_at`. Nothing could measure time-to-anything without them.
+- **`CLAUDE.md` is now a real file.** The repo that enforces ruff, mypy
+  `--strict`, bandit and a documented complexity budget on everyone else had
+  three literal `_Add your…_` placeholders. Documents build/test commands, the
+  directory map, the session-state invariant, and the hook conventions
+  (`python3` not `uv run`, fail open, never print stray stdout).
+- **README: an SDLC alignment section** mapping each playbook stage to its
+  `/deep` surface with an honest status, plus the deliberate non-goals — no
+  managed settings, no deployer, no chat on-call.
+
 ## [5.6.1] - 2026-08-24
 
 ### Fixed

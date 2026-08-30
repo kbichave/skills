@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime
 from pathlib import Path
 
 import pytest
@@ -51,6 +52,11 @@ class TestCreate:
         result = tracker.create("step-01", "First Step")
         assert result["status"] == "open"
         assert result["title"] == "First Step"
+
+    def test_stamps_created_at_and_leaves_closed_at_unset(self, tracker):
+        result = tracker.create("step-01", "First Step")
+        assert datetime.fromisoformat(result["created_at"]).tzinfo is not None
+        assert result["closed_at"] is None
 
     def test_stores_depends_on(self, tracker):
         tracker.create("step-01", "First")
@@ -143,6 +149,19 @@ class TestClose:
     def test_nonexistent_raises(self, tracker):
         with pytest.raises(KeyError):
             tracker.close("nope", "reason")
+
+    def test_stamps_closed_at(self, tracker):
+        tracker.create("step-01", "First")
+        result = tracker.close("step-01", "done")
+        assert result["closed_at"] is not None
+        assert datetime.fromisoformat(result["closed_at"]).tzinfo is not None
+
+    def test_closed_at_is_after_created_at(self, tracker):
+        created = tracker.create("step-01", "First")
+        closed = tracker.close("step-01", "done")
+        assert datetime.fromisoformat(closed["closed_at"]) >= datetime.fromisoformat(
+            created["created_at"]
+        )
 
     def test_returns_updated_dict(self, tracker):
         tracker.create("step-01", "First")

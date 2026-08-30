@@ -91,3 +91,12 @@ class TestMetricsCollector:
         collector.finalize()
         dashboard = collector.format_dashboard()
         assert "N/A" in dashboard
+
+    def test_sub_minute_session_reports_zero_not_na(self, collector):
+        """A session that finalizes in under a second measured 0s; it is not
+        the same as a session that never finalized."""
+        collector.finalize()
+        assert "| Wall clock time | 0m 0s |" in collector.format_dashboard()
+
+    def test_unfinalized_session_reports_na(self, collector):
+        assert "| Wall clock time | N/A |" in collector.format_dashboard()
