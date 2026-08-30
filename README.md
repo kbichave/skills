@@ -47,7 +47,33 @@ cd ~/.claude/plugins/deep-plan-enhanced && uv sync
 
 ## The Workflow
 
+### What to run, in order
+
+Start at whichever step matches what you already have. Each one produces the
+input the next one expects.
+
+| # | Command | Run it when | Produces |
+|---|---|---|---|
+| 1 | `/deep intent "…"` | You have a problem, not a solution | `intent.md` — the problem in the originator's words |
+| 2 | `/deep discovery @path` | You don't yet know what to build | Audit docs + `phasing-overview.md` (the phase list and its dependency graph) |
+| 3 | `/deep plan @spec.md` | You know the phase; you need the blueprint | `claude-spec.md`, `claude-plan.md`, `sections/` |
+| 4 | `/deep implement` | The blueprint exists | Code and tests, section by section, behind quality gates |
+| 5 | `/deep:code-review` | Before you open the PR | A report under `~/.claude/code-reviews/` |
+
+**Steps 3 and 4 are the loop.** One phase at a time: plan it, build it, then plan
+the next against a codebase that actually changed.
+
+Skipping is normal and expected:
+
+- **Small, well-understood change** → `/deep plan "add retry to the price client"` → `/deep implement`. Steps 1, 2 and 5 are optional.
+- **Greenfield or an unfamiliar codebase** → start at `/deep discovery`.
+- **A problem someone reported, not a task** → start at `/deep intent`, then hand it to `/deep plan --from-intent`.
+- **Many phases already mapped** → `/deep auto @phases/` replaces steps 3 and 4 for every phase.
+
 ```
+/deep intent       Capture → Grill (is the problem real, owned, measurable?) → Decide
+                   (produces intent.md; opt-in publish + single-file commit)
+
 /deep discovery    Scan → Topic Enumeration → Research → Coverage Validation → Gaps → Interview → Audit Docs → Build-vs-Buy → Phase Specs
                    (produces system discovery + migration roadmap)
 
@@ -59,8 +85,24 @@ cd ~/.claude/plugins/deep-plan-enhanced && uv sync
 
 /deep auto         Multi-phase plan + implement loop (parses phasing-overview.md,
                    plans each phase in dependency order then implements before
-                   the next phase plans, fully autonomous)
+                   the next phase plans)
 ```
+
+### How much runs without you
+
+`/deep auto` chains plan → implement across every phase in the dependency graph
+without stopping. It is genuinely unattended: the human checkpoints
+(`user-review`, and the two context checks) are auto-closed with the reason
+`"Auto mode: skipped"`.
+
+**Be aware of what that trades away.** The gates are skipped unconditionally, not
+conditionally on the work being clean — so `/deep auto` will carry on past a
+phase it should have stopped at. Use it when the phases are well specified and
+you intend to review the whole result at the end. Use `/deep plan` +
+`/deep implement` per phase when you want the checkpoints to mean something.
+
+Making that conditional — advance on green, halt on a failed gate or an
+exhausted retry — is tracked and not yet built.
 
 ## What's Inside
 
