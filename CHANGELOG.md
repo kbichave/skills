@@ -5,6 +5,41 @@ All notable changes to deep-plan will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [5.14.0] - 2026-08-30
+
+Playbook Stage 2: policy moves from review time to spec time.
+
+### Added
+- **`scripts/lib/policy_router.py` + `references/spec-policy.md`.** The 13 rule
+  packs previously fired only at implement time, so a design decision that
+  violated policy was found once the code existed. They now project forward into
+  a bounded list of questions the spec should answer.
+
+  It is a **projection, never a second resolver**: it imports `pack_router` and
+  calls it, and a test asserts both agree on `active_packs`. Two resolvers drift
+  and then nobody knows which is right. The lift was small because
+  `detect_signals` already accepted `spec_text` and `audit-topic-enumeration.md`
+  already did this same projection at discovery time.
+
+  Only rules a **human or reviewer** must judge, at BLOCK or WARN, become
+  obligations. Linter-enforced rules are excluded on purpose: asking a spec
+  author to promise `ruff` will pass is noise, and Phase 6 answers it better.
+
+  The guardrails matter more than the mechanism, because the failure mode is
+  that `/deep plan` turns into a compliance interrogation and stops being used:
+  a hard cap of 25 obligations (BLOCK-first, so truncation keeps what matters),
+  a stated norm that more than five open concerns means the model is flagging
+  things it could have answered, two resolution rounds maximum, and the standing
+  instruction to **answer obligations from research rather than relay them**.
+
+  Ships in `advise` mode — nothing blocks — matching the plugin's own convention
+  that new BLOCK rules ship as WARN for a release.
+
+  `spec-policy.md` also records two constraints for the governance layer that
+  follows: a sign-off the agent filled in on the user's behalf is worse than
+  none, and brand/privacy/regulatory policy cannot ship in a public plugin, so
+  build the seam rather than stub packs that rot.
+
 ## [5.13.0] - 2026-08-30
 
 Playbook Stage 5, first half: `REVIEW.md` as a per-repo policy overlay.
