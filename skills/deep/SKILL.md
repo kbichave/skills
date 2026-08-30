@@ -110,6 +110,8 @@ For `implement`: skip setup-session. Use `@path` (or its parent), else `~/.claud
 | Concern | File |
 |---|---|
 | Intent capture (`/deep intent`) | `references/intent-capture.md` |
+| Guardrails + test lock | `references/guardrails.md` |
+| Target-repo CLAUDE.md | `references/claude-md-protocol.md` |
 | Vault, routing, architecture-audit, vault-curator | `references/integration-protocol.md` |
 | Discovery findings reuse for auto + plan | `references/discovery-bridge.md` |
 | Plan mutation (split/skip/reorder/insert/amend) | `references/plan-mutation-protocol.md` |

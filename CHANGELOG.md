@@ -5,6 +5,32 @@ All notable changes to deep-plan will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [5.12.0] - 2026-08-30
+
+Playbook Stage 3, remainder: diff-vs-plan alignment and the `CLAUDE.md` loop.
+
+### Added
+- **`scripts/lib/plan_diff.py` + `scripts/checks/check-plan-alignment.py`** —
+  compares the real git diff against what the plan said it would touch. Until
+  now the only record was `impl-progress.md`, which stores what Claude *says* it
+  touched: a self-report, not evidence.
+
+  The interesting part is what it refuses to do. `agents/section-writer.md`
+  documents a `**File:** \`path\`` convention, but real sessions largely ignore
+  it and mention paths inline instead — a survey of real plans found sections
+  declaring ~1.2 paths while mentioning ~9.2, and a mentioned path is not a
+  promise to edit it. So declared and mentioned paths are kept apart, and when
+  fewer than half the sections declare anything, **the alignment percentage is
+  withheld** and the tool says why. It still reports the unplanned-changes list,
+  which is the useful half. A confident number computed from hints would be
+  worse than no measurement, because someone would act on it.
+- **`references/claude-md-protocol.md`** — when to offer to generate a target
+  repo's `CLAUDE.md`, and the rule for promoting a Phase 10 post-mortem finding
+  into it: twice is the threshold, promote the rule rather than the incident,
+  one imperative line, confirm before writing. Delegates the auditing to the
+  existing `claude-md-improver` skill rather than reimplementing it — and adds
+  no script whose only job would be to say "call that skill".
+
 ## [5.11.0] - 2026-08-30
 
 Playbook Stage 4, the half that costs nothing to run: the test-file lock.
