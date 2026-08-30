@@ -272,7 +272,11 @@ def prune(
         )
         os.replace(tmp, path)
     except OSError:
-        tmp.unlink(missing_ok=True)
+        # Cleanup can itself raise; an exception inside the handler escapes it.
+        try:
+            tmp.unlink(missing_ok=True)
+        except OSError:
+            pass
         return 0
     return dropped
 

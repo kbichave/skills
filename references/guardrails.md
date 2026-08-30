@@ -88,6 +88,41 @@ This is why the hook runs under `python3` rather than `uv run`, which would add
 regexes are compiled once. `hooks.json` sets `"timeout": 5` so a pathological
 pattern cannot wedge the session.
 
+## The test-file lock
+
+A second decision rides on the same `PreToolUse` hook, so a per-edit hook stays
+one interpreter start. It is consulted only when the guard itself had nothing
+to say.
+
+**Why it exists.** "All tests pass" is only evidence if the agent could not have
+edited the test. Without a lock, the fastest route to a green run is to change
+the assertion, and the loop closes on itself.
+
+**How it works.** Open the lock when a section's tests exist and before its
+implementation does — Phase 3 step 1 — naming exactly those files:
+
+```bash
+python3 ${DEEP_PLUGIN_ROOT}/scripts/checks/fix-lock.py "${planning_dir}" \
+  open --section section-04 --protected tests/test_retry.py
+```
+
+Edits to a named file are then **denied** (not `ask` — the point is that the
+agent cannot clear it). Phase 9 widens the lock on strike ≥ 1 via `add`, since
+repeated failure is when the temptation to edit the test is strongest. Close it
+when the section lands.
+
+**It blocks only files it names.** Not "anything test-shaped": the lock protects
+the specific tests pinning the current bug, and over-blocking is how a safety
+feature gets switched off.
+
+**Releasing it.** `fix-lock.py <dir> override --reason "..."` requires a reason
+and records it in the lock file, so an override is visible afterwards rather
+than silent. `DEEP_FIX_LOCK=off` disables it for the session. Both are named in
+the block message.
+
+State lives at `<planning_dir>/.deepstate/fix-lock.json`. A missing or malformed
+lock is no lock.
+
 ## Not covered
 
 `Write|Edit` does not see `sed -i`, `tee`, or shell redirection. A `Bash`

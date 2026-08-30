@@ -5,6 +5,37 @@ All notable changes to deep-plan will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [5.11.0] - 2026-08-30
+
+Playbook Stage 4, the half that costs nothing to run: the test-file lock.
+
+### Added
+- **Test-file lock.** `scripts/lib/fix_lock.py` + `scripts/checks/fix-lock.py`,
+  decided on the existing `PreToolUse` hook so a per-edit hook still costs one
+  interpreter start.
+
+  The playbook's point is that "all tests pass" is only evidence if the agent
+  could not have edited the test. Without a lock, the fastest route to green is
+  to change the assertion and the loop closes on itself. So the lock opens when
+  a section's tests exist and before its implementation does, and edits to the
+  named files are **denied** rather than `ask` — an `ask` the agent can clear is
+  not a lock.
+
+  - It blocks **only the files it names**, never "anything test-shaped".
+    Over-blocking is how a safety feature gets switched off.
+  - Phase 9 widens it on strike >= 1, when the temptation to edit the test
+    rather than the code is strongest.
+  - `override` requires a reason and records it in the lock file, so releasing
+    the lock is visible afterwards rather than silent. `DEEP_FIX_LOCK=off` is
+    the session kill switch. Both are named in every block message, along with
+    "change the code instead".
+  - A missing or malformed lock is no lock, in line with every other guardrail.
+
+### Fixed
+- Two error handlers called `Path.unlink()` during cleanup, which can itself
+  raise when the parent is not a directory — an exception thrown inside the
+  handler escapes it, turning a best-effort write into a crash.
+
 ## [5.10.0] - 2026-08-30
 
 Playbook Stage 6, foundation layer. Nothing in the plugin could answer "is this
