@@ -1,8 +1,9 @@
 # deep-plan-enhanced (plugin: `deep`)
 
-A Claude Code plugin for discovering, planning, and implementing complex systems — one unified `/deep` skill with four modes.
+A Claude Code plugin for discovering, planning, and implementing complex systems — one unified `/deep` skill, aligned with Anthropic's AI-Native SDLC Playbook.
 
 ```
+/deep intent "the price board lags" → intent.md (the problem, in your words)
 /deep discovery @path               → system audit + phase specs
 /deep plan @spec.md                 → implementation blueprint
 /deep implement [@plan-dir/]        → execute sections
@@ -156,7 +157,7 @@ Legacy sessions that already exist inside project directories are detected via f
 
 | Hook | When | What |
 |------|------|------|
-| **PreToolUse** | Before Write/Edit/MultiEdit/NotebookEdit | Denies credential writes, pauses on repo-declared protected paths. Blocks nothing else out of the box — see [`references/guardrails.md`](references/guardrails.md) |
+| **PreToolUse** | Before Write/Edit/MultiEdit/NotebookEdit | Denies credential writes, pauses on repo-declared protected paths, and denies edits to tests the fix-lock is pinning. Blocks nothing else out of the box — see [`references/guardrails.md`](references/guardrails.md) |
 | **SessionStart** | Session begins | Captures session ID + plugin root for task isolation |
 | **PostToolUse** | After Write/Edit | Nudges agent to update progress files |
 | **Stop** | Agent tries to exit | Requires implementation summary; blocks exit if sections incomplete |
@@ -168,14 +169,14 @@ The plugin is being aligned with Anthropic's [AI-Native SDLC Playbook](https://c
 
 | Stage | Playbook artifact | `/deep` surface | Status |
 |-------|-------------------|-----------------|--------|
-| **1. Plan** | `intent.md` | `auto-spec-synthesis` → `claude-spec.md` | Spec synthesis ships; a distinct `intent.md` in the originator's own words does not |
-| **2. Design** | `spec.md` | `/deep plan` collapses requirements + design into one session | Ships, and ahead of the playbook here. Policy is applied at review time, not yet at spec time |
-| **3. Build** | `plan.md`, `CLAUDE.md`, skills, blocking hooks | `/deep implement`, 13 rule packs, `skill-router`, `PreToolUse` guardrails | Plan artifacts exceed the playbook. Guardrails ship; `CLAUDE.md` generation does not |
-| **4. Test** | Feedback loops, continuous evals | TDD protocol, composed quality gate, `tests/evals/` | Eval harness and ablation protocol exist; they are not continuous and do not gate merges |
-| **5. Deploy** | `REVIEW.md`, approval gates, CI/CD | `deep:code-review` panel, authorship detection | Review *quality* is the plugin's strongest asset; the *automation* around it is absent |
-| **6. Maintain** | Control bands, findings → Stage 1 | Context monitor, metrics, beads triage | The threshold-and-debounce engine exists for context; there are no control bands or cross-session metrics |
+| **1. Plan** | `intent.md` | `/deep intent`, `--from-intent` | **Ships.** Separate entry point, grilled, opt-in publish + single-file commit |
+| **2. Design** | `spec.md` | `/deep plan`, `policy_router` | **Ships**, ahead of the playbook on collapsing requirements + design. Policy now projects into the spec in `advise` mode; sign-off records are not built |
+| **3. Build** | `plan.md`, `CLAUDE.md`, skills, blocking hooks | `/deep implement`, 13 rule packs, `PreToolUse` guardrails, `plan_diff` | **Ships.** Guardrails block credentials and protected paths; diff-vs-plan alignment reports (and refuses to score on weak evidence) |
+| **4. Test** | Feedback loops, continuous evals | TDD protocol, quality gate, test-file lock, `tests/evals/` | **Partial.** The test-file lock ships. Continuous live evals are gated on a model-spend decision |
+| **5. Deploy** | `REVIEW.md`, approval gates, CI/CD | `deep:code-review` panel, `review_policy` | **Partial.** `REVIEW.md` overlay ships. Approval gates and headless CI review are deferred for supervised rollout |
+| **6. Maintain** | Control bands, findings → Stage 1 | `metrics_store`, `deep-maintain.py` | **Partial.** Cross-session run store and baselines ship. Control bands and the incident → `intent.md` loop are not built |
 
-**Deliberate non-goals.** A plugin cannot ship managed settings (that is a root-owned MDM path), so approval gates ship as a hook plus a deployable template. The plugin gates deploys; it is not a deployer. Chat-based on-call (`@claude` in Slack or Teams) is out of scope.
+**Deliberate non-goals.** A plugin cannot ship managed settings (that is a root-owned MDM path), so approval gates will ship as a hook plus a deployable template. The plugin gates deploys; it is not a deployer. Chat-based on-call (`@claude` in Slack or Teams) is out of scope. Parallel execution across git worktrees was measured and rejected: ~1.67x with three workers, and section files do not reliably declare which paths they touch.
 
 ## Architecture
 
