@@ -5,6 +5,38 @@ All notable changes to deep-plan will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [5.10.0] - 2026-08-30
+
+Playbook Stage 6, foundation layer. Nothing in the plugin could answer "is this
+getting better or worse" — metrics existed per session and nothing aggregated
+them. This is the store that makes trends, baselines and control bands possible.
+
+### Added
+- **`scripts/lib/metrics_store.py`** — append-only JSONL run log at
+  `~/.claude/marketplace/deep-plan-enhanced/metrics/`, outside every repo so it
+  cannot be staged or need a `.gitignore` entry. Not the vault: the vault is
+  curated human knowledge, this is machine telemetry.
+- **`scripts/checks/deep-maintain.py`** — `report`, `baseline`, `prune`. It
+  reports and nothing else: no PRs, no issues, no config changes. A human
+  decides what to do about a number.
+- `MetricsCollector.finalize()` gained optional `store_dir`. With no arguments
+  its behaviour is byte-identical to before, so every existing caller and test
+  is unaffected; passing `store_dir` additionally appends a run record.
+
+Two decisions worth stating, both about not lying with statistics:
+
+- **Median and MAD, not mean and standard deviation.** At these sample sizes one
+  disastrous run would drag a mean far enough to make any band meaningless.
+- **It refuses to call three runs a baseline.** Below 8 samples `trustworthy` is
+  `False` and the CLI says so in words. A median of three runs presented as a
+  baseline is how a monitoring system starts producing confident nonsense.
+
+Also: records carry counts, rates, timestamps and identifiers only — no file
+contents, no code, no prompt or user text — which is asserted by a test rather
+than left as a promise. Oversized records drop the raw metrics blob but keep the
+derived rates, degrading to less detail rather than to no record, and a corrupt
+line is skipped rather than making the whole history unreadable.
+
 ## [5.9.0] - 2026-08-30
 
 Playbook Stage 1, plus three bugs found while building it. Two of them had been

@@ -266,13 +266,49 @@ class MetricsCollector:
         self._data[key] = self._data.get(key, 0) + amount
         self._save()
 
-    def finalize(self) -> dict:
-        """Compute derived metrics and write final state."""
+    def finalize(
+        self,
+        *,
+        store_dir: Path | None = None,
+        run_id: str = "",
+        project_slug: str = "",
+        mode: str = "",
+        outcome: str = "complete",
+        plugin_version: str = "",
+    ) -> dict:
+        """Compute derived metrics and write final state.
+
+        With no arguments this behaves exactly as it always has — same return
+        value, same single file — so existing callers and tests are unaffected.
+        Pass `store_dir` to additionally append a run record to the
+        cross-session store, which is what makes trends and baselines possible.
+
+        A store failure is swallowed: telemetry must never fail a run.
+        """
         self._data["completed_at"] = datetime.now(timezone.utc).isoformat()
         started = datetime.fromisoformat(self._data["started_at"])
         completed = datetime.fromisoformat(self._data["completed_at"])
         self._data["wall_clock_seconds"] = int((completed - started).total_seconds())
         self._save()
+
+        if store_dir is not None or run_id:
+            try:
+                from lib.metrics_store import append_run, build_record
+
+                append_run(
+                    build_record(
+                        run_id=run_id or self.state_dir.parent.name,
+                        project_slug=project_slug,
+                        mode=mode or str(self._data.get("workflow", "")),
+                        metrics=self._data,
+                        outcome=outcome,
+                        plugin_version=plugin_version,
+                    ),
+                    store_dir,
+                )
+            except Exception:
+                pass
+
         return self._data
 
     def _save(self) -> None:
