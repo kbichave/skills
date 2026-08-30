@@ -442,12 +442,12 @@ class TestResolvePlanningDir:
 
     def test_no_session_id_uses_sessions_root(self, tmp_path):
         result = resolve_planning_dir(tmp_path, None)
-        # Without a session_id, falls into SESSIONS_ROOT under "default" prefix
-        assert str(_mod.SESSIONS_ROOT) in str(result)
+        # Without a session_id, falls into the sessions root under "default" prefix
+        assert str(_mod.sessions_root()) in str(result)
         assert "default" in str(result)
 
     def test_new_session_creates_subdirectory(self, tmp_path):
         result = resolve_planning_dir(tmp_path, "abcdef12-rest")
-        # New sessions go to SESSIONS_ROOT, not inside the project tree
-        assert str(_mod.SESSIONS_ROOT) in str(result)
+        # New sessions go to the sessions root, not inside the project tree
+        assert str(_mod.sessions_root()) in str(result)
         assert "abcdef12" in str(result)

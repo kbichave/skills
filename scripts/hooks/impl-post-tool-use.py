@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 """PostToolUse hook for deep-implement: Truncation guard + progress nudge.
 
-Session-aware: uses DEEP_SESSION_ID env var to find the correct session marker
-in ~/.claude/.deep-implement-sessions/. Falls back to most recently modified
-marker if env var is unavailable.
+Session binding is delegated to lib.session_paths, which prefers the session_id
+on the hook payload over the env var and over stale on-disk markers.
 
 Also checks for truncated writes to critical planning files via a size cache.
 """
@@ -11,9 +10,12 @@ Also checks for truncated writes to critical planning files via a size cache.
 from __future__ import annotations
 
 import json
-import os
 import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from lib.session_paths import find_planning_dir as _resolve_planning_dir
+from lib.session_paths import session_id_from_payload
 
 # Critical planning files where truncation is catastrophic
 CRITICAL_FILES = {
@@ -29,43 +31,14 @@ CRITICAL_FILES = {
 SHRINKAGE_THRESHOLD = 0.5
 
 
-def find_active_dir() -> Path | None:
+def find_active_dir(session_id: str | None = None) -> Path | None:
     """Find the active planning directory for the current session."""
-    sessions_dir = Path.home() / ".claude" / ".deep-implement-sessions"
-    if not sessions_dir.is_dir():
-        return None
-
-    session_id = os.environ.get("DEEP_SESSION_ID")
-    if session_id:
-        marker = sessions_dir / f"{session_id}.marker"
-        if marker.exists():
-            active_dir = Path(marker.read_text().strip())
-            return active_dir if active_dir.is_dir() else None
-
-    markers = sorted(sessions_dir.glob("*.marker"), key=lambda p: p.stat().st_mtime, reverse=True)
-    for marker in markers:
-        active_dir = Path(marker.read_text().strip())
-        if active_dir.is_dir():
-            return active_dir
-
-    return None
+    return _resolve_planning_dir(session_id)
 
 
-def find_planning_dir() -> Path | None:
+def find_planning_dir(session_id: str | None = None) -> Path | None:
     """Find the planning directory from either deep-implement or deep-plan markers."""
-    # Try deep-implement session marker first
-    impl_dir = find_active_dir()
-    if impl_dir:
-        return impl_dir
-
-    # Try deep-plan active marker
-    active_marker = Path.home() / ".claude" / ".deep-plan-active"
-    if active_marker.exists():
-        planning_dir = Path(active_marker.read_text().strip())
-        if planning_dir.is_dir():
-            return planning_dir
-
-    return None
+    return _resolve_planning_dir(session_id)
 
 
 def check_truncation(planning_dir: Path) -> list[str]:
@@ -115,7 +88,12 @@ def check_truncation(planning_dir: Path) -> list[str]:
 
 
 def main() -> int:
-    planning_dir = find_planning_dir()
+    try:
+        payload = json.load(sys.stdin) or {}
+    except (ValueError, OSError):
+        payload = {}
+
+    planning_dir = find_planning_dir(session_id_from_payload(payload))
     if not planning_dir:
         return 0
 

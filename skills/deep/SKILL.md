@@ -11,14 +11,16 @@ Pick mode by question:
 
 | Question | Mode | Output | Load-bearing step |
 |---|---|---|---|
+| "Here's a problem we have" | `intent` | `intent.md` | **Grilling** (is the problem real?) |
 | "What should we build?" | `discovery` | audit + phase specs | **Topic enumeration** |
 | "How do I build phase X?" | `plan` | blueprint + sections | **Interview** (Premise Challenge) |
 | "Code section X" | `implement` | tested code | **Confidence gate** |
 | "Do it all autonomously" | `auto` | multi-phase plan + implement chain | **Discovery bridge** |
 
 ```
+/deep intent "the price board lags the rack"         → intent.md
 /deep discovery @path [--depth=quick|standard|deep]  → audit + phase specs
-/deep plan @spec.md [--from-prd @prd.md | --from-adr @adrs/]  → blueprint
+/deep plan @spec.md [--from-prd @prd.md | --from-adr @adrs/ | --from-intent @intent.md]  → blueprint
 /deep implement [@dir]                               → execute sections
 /deep auto @phases/                                  → end-to-end
 ```
@@ -31,6 +33,9 @@ Pick mode by question:
 **Express paths** (`plan` only): when input is already structured, skip research + interview.
 - `--from-prd @prd.md`: PRD with requirements + acceptance criteria
 - `--from-adr @adrs/`: existing ADR file or directory of ADRs
+- `--from-intent @intent.md`: an **accepted** intent. Trace every spec
+  requirement back to a line in it; anything you cannot trace is scope you are
+  adding, so say so rather than smuggling it in.
 
 Also accepts inline text or no argument — see **Resolve Input**.
 
@@ -104,6 +109,7 @@ For `implement`: skip setup-session. Use `@path` (or its parent), else `~/.claud
 ### Cross-cutting
 | Concern | File |
 |---|---|
+| Intent capture (`/deep intent`) | `references/intent-capture.md` |
 | Vault, routing, architecture-audit, vault-curator | `references/integration-protocol.md` |
 | Discovery findings reuse for auto + plan | `references/discovery-bridge.md` |
 | Plan mutation (split/skip/reorder/insert/amend) | `references/plan-mutation-protocol.md` |
@@ -145,6 +151,30 @@ uv run ${DEEP_PLUGIN_ROOT}/scripts/checks/check-coverage.py \
   --planning-dir "${planning_dir}"
 ```
 Exit 0 = pass, exit 1 = missing items (do NOT close output-summary). Parse JSON `missing` list; either add sections, mark items deferred in spec, or escalate to user.
+
+### Intent (`/deep intent`)
+Standalone entry point, not a step in `plan`. `/deep plan @spec.md` is unchanged.
+Full protocol in `references/intent-capture.md`.
+
+Record the problem in the originator's words — do **not** translate it into
+engineering terms, that is `plan`'s job. Ask at most 6 questions, none that the
+codebase can answer. Then grill the draft with `Skill(grilling)` to test whether
+the problem is real, owned and measurable, and offer documents as grist when the
+user has them.
+
+```bash
+python3 ${DEEP_PLUGIN_ROOT}/scripts/checks/intent.py new --title "..." --out "${planning_dir}/intent"
+python3 ${DEEP_PLUGIN_ROOT}/scripts/checks/intent.py validate <path>     # exit 1 = errors
+python3 ${DEEP_PLUGIN_ROOT}/scripts/checks/intent.py decide <path> --status accepted --by "<who>" --reason "..."
+python3 ${DEEP_PLUGIN_ROOT}/scripts/checks/intent.py publish <path> --repo "${target_root}" --commit
+```
+
+Rules that are not negotiable:
+- `decide --by` must be a real answer from the user, never your inference.
+- **Auto mode leaves `status: draft` and `source: agent`.** It never writes
+  `accepted`, and it says so in the summary.
+- `publish` writes into the user's repo, so confirm first. Without it the intent
+  stays in the session directory.
 
 ### Auto (`--workflow auto`)
 Multi-phase: parses `phasing-overview.md`, plans each phase in topological order, implements before next dependent phase plans. First phase = full plan workflow; later phases use `references/discovery-bridge.md`. Human-interactive steps auto-close at ready time (do NOT pre-close — breaks dependency chain).

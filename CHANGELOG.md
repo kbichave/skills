@@ -5,6 +5,84 @@ All notable changes to deep-plan will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [5.9.0] - 2026-08-30
+
+Playbook Stage 1, plus three bugs found while building it. Two of them had been
+silently degrading the plugin for months.
+
+### Fixed
+- **The implement hooks had been silently inert since April.** Both
+  `impl-post-tool-use.py` and `impl-stop.py` looked up a per-session marker in
+  `~/.claude/.deep-implement-sessions/` that **nothing in the codebase has ever
+  written**. They fell through to "most recently modified marker", every one of
+  those pointed at a directory deleted months ago, and the resolver returned
+  `None` — which a hook treats as "nothing to do". The practical effect: the
+  Stop hook that enforces "you must write `impl-summary.md` before exiting", one
+  of the plugin's advertised guarantees, had not fired since 2026-04-07.
+  Session binding now lives in `scripts/lib/session_paths.py`, prefers the
+  `session_id` on the hook payload, falls back to `.deep-plan-active` (the one
+  marker that is actually maintained), and never returns a path that is not on
+  disk. `setup-session.py` now writes the per-session marker it always assumed
+  existed.
+- **`state.json` and `metrics.json` used a fixed temp filename.** `_save` wrote
+  `state.json.tmp` then renamed it, which is atomic for one writer and a
+  corruption vector for two: the second writer renames a file the first already
+  moved away. Temp names are now pid-scoped and cleaned up on failure. Note this
+  makes each *write* atomic; it does not make read-modify-write sequences safe,
+  which is tracked separately as a precondition for any future concurrency.
+- **The test suite wrote into the developer's real `~/.claude`.** It had
+  accumulated 1331 session directories, and once pytest recycled a tmp path the
+  project slug collided with an existing one, so a "new session" test resumed
+  instead and failed. Invisible in CI, where home is always fresh — the worst
+  combination, since CI stayed green while the developer saw red. Session roots
+  and marker paths are now resolved lazily through `$DEEP_SESSIONS_ROOT` and
+  `$DEEP_STATE_HOME`, and an autouse fixture redirects both.
+- A sub-minute session reported its wall clock as `N/A` (`if wc` on an int).
+
+### Added
+- **`/deep intent`** — Playbook Stage 1. `scripts/lib/intent.py` (schema,
+  validation, decision lifecycle), `scripts/lib/vcs.py` (author resolution,
+  single-file commit), `scripts/checks/intent.py` (CLI) and
+  `references/intent-capture.md`.
+
+  It is a **separate entry point, not a new step**: `/deep plan @spec.md`
+  behaves exactly as before. The distinction it protects is that
+  `auto-spec-synthesis.md` interprets an ask into a precise engineering goal,
+  which is right at plan time and wrong for an intent — the playbook wants the
+  originator's own words, so the spec can be traced back to them.
+
+  - Capture is capped at 6 questions and forbidden from re-deriving anything the
+    synthesizer already reads from git and the codebase.
+  - The draft is then grilled with `Skill(grilling)`, adapted for intents: is
+    this the problem or a symptom, who actually asked, what happens if we do
+    nothing, is the metric checkable by someone else. Supplied documents are
+    grist — quote the passage, ask what it does not say.
+  - `decided_by` is mandatory and must come from a real answer. **Auto mode
+    leaves `status: draft` and never writes `accepted`**, enforced by test. A
+    decision the agent filled in on the user's behalf looks like an audit trail
+    without being one.
+  - Terminal statuses are terminal; re-deciding is refused in favour of
+    superseding.
+  - Publishing into the repo is opt-in (`--publish`, `--commit`), stages exactly
+    one file, and never pushes. A test asserts an unrelated staged file is not
+    swept into the commit.
+  - `source: agent` exists from day one so Stage 6 can raise intents from
+    breached control bands without a schema change.
+- **`--from-intent`** on `/deep plan`. Deliberately **not** an express path:
+  unlike `--from-prd`, an intent carries no engineering content by design, so
+  research and the interview still run. It is recorded so the spec can be traced
+  back to it.
+
+### Decided
+- **Git worktree parallelism: not building it**, neither dispatch nor an
+  advisory. Two independent reviews measured a 1.67x speedup with three workers
+  on 32 real plans, found that 60% of section files lack a parseable `File:`
+  line (so disjointness cannot be computed), and found that `/deep implement`
+  has no `--section` flag — meaning an advisory's printed commands would point
+  three instances at the same section. The original audit's claim that
+  `claude -p --worktree` cannot compose was wrong and is corrected in the record;
+  it does not change the verdict. Reports under `sessions/sdlc-audit/`.
+
 ## [5.8.0] - 2026-08-30
 
 Playbook Stage 3: the plugin can now block. This is the shared prerequisite for

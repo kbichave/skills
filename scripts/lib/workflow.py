@@ -121,6 +121,7 @@ def create_plan_workflow(
     discovery_findings: str | None = None,
     express_source: str | None = None,
     express_kind: str | None = None,
+    intent_source: str | None = None,
 ) -> str:
     """Create epic + 17 step issues for /deep-plan.
 
@@ -128,6 +129,12 @@ def create_plan_workflow(
     research-decision, execute-research, detailed-interview, and save-interview
     are pre-closed because the structured input already captures requirements.
     Plan-writing reads the source directly.
+
+    `intent_source` is deliberately NOT an express path. An intent records a
+    problem in the originator's words and contains no engineering content by
+    design, so research and the interview still have to run — skipping them
+    would leave the spec with nothing to stand on. It is recorded so
+    write-spec can trace each requirement back to it.
 
     Returns the epic title string.
     """
@@ -146,6 +153,8 @@ def create_plan_workflow(
             )
         context["express_source"] = express_source
         context["express_kind"] = express_kind
+    if intent_source:
+        context["intent_source"] = intent_source
     tracker.init(epic_title, context)
 
     has_discovery = _has_discovery_artifacts(discovery_findings)

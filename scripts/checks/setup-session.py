@@ -11,6 +11,7 @@ Usage:
 import argparse
 import hashlib
 import json
+import os
 import shutil
 import sys
 from datetime import datetime, timezone
@@ -24,6 +25,7 @@ from lib.config import (
     save_session_config,
 )
 from lib.deepstate import DeepStateTracker, MetricsCollector
+from lib.session_paths import active_marker, write_marker
 from lib.beads_sync import BeadsSyncTracker, detect_beads
 from lib.workflow import create_plan_workflow, create_discovery_workflow, create_autonomous_workflow
 
@@ -31,7 +33,27 @@ from lib.workflow import create_plan_workflow, create_discovery_workflow, create
 VALID_REVIEW_MODES = {"external_llm", "opus_subagent", "sonnet_subagent", "skip"}
 
 # All session state lives here — project working trees stay clean.
-SESSIONS_ROOT = Path.home() / ".claude" / "marketplace" / "deep-plan-enhanced" / "sessions"
+DEFAULT_SESSIONS_ROOT = (
+    Path.home() / ".claude" / "marketplace" / "deep-plan-enhanced" / "sessions"
+)
+
+
+def sessions_root() -> Path:
+    """Where session state lives. Read lazily so `$DEEP_SESSIONS_ROOT` can be
+    set after import.
+
+    The override exists so the test suite does not write into the developer's
+    real home. Without it the suite accumulates a session directory per test per
+    run, and once pytest recycles a tmp path the slug hashes to an existing
+    directory, so a "new session" test resumes instead and fails. That flake
+    only bites a machine that has run the suite before — never CI, where home is
+    fresh — which is the worst combination, because CI stays green while the
+    developer sees red.
+    """
+    return Path(os.environ.get("DEEP_SESSIONS_ROOT") or DEFAULT_SESSIONS_ROOT)
+
+
+SESSIONS_ROOT = sessions_root()
 
 
 def detect_discovery_artifacts(planning_dir: Path) -> Path | None:
@@ -57,7 +79,7 @@ def project_slug(project_path: Path) -> str:
 
 def _update_session_index(slug: str, project_path: Path, session_prefix: str, workflow: str, initial_file: str) -> None:
     """Append a session entry to SESSIONS_ROOT/<slug>/index.json (creates if absent)."""
-    index_path = SESSIONS_ROOT / slug / "index.json"
+    index_path = sessions_root() / slug / "index.json"
     if index_path.exists():
         try:
             data = json.loads(index_path.read_text())
@@ -147,7 +169,7 @@ def resolve_planning_dir(project_path: Path, session_id: str | None, spec_parent
     prefix = session_id[:8] if session_id else "default"
 
     # Check if this session already exists in SESSIONS_ROOT (resume case)
-    candidate = SESSIONS_ROOT / slug / prefix
+    candidate = sessions_root() / slug / prefix
     if candidate.exists() and (candidate / SESSION_CONFIG_FILENAME).exists():
         return candidate
 
@@ -233,6 +255,7 @@ def setup_session(
     depth: str = "standard",
     express_source: str | None = None,
     express_kind: str | None = None,
+    intent_source: str | None = None,
 ) -> dict:
     """Core setup logic. Returns JSON-serializable result dict."""
     is_audit = workflow == "audit"
@@ -411,6 +434,7 @@ def setup_session(
             discovery_findings=str(discovery_dir) if discovery_dir else None,
             express_source=express_source,
             express_kind=express_kind,
+            intent_source=intent_source,
         )
 
     # Store epic reference in config
@@ -426,11 +450,18 @@ def setup_session(
         pass
 
     # Write active session marker
-    marker_file = Path.home() / ".claude" / ".deep-plan-active"
+    marker_file = active_marker()
     try:
+        marker_file.parent.mkdir(parents=True, exist_ok=True)
         marker_file.write_text(str(planning_dir))
     except OSError:
         pass
+
+    # Per-session marker for the implement hooks. Nothing wrote this before, so
+    # their per-session lookup could never hit and they fell through to stale
+    # markers or to None — which is why impl-stop's summary gate went quiet.
+    if session_id:
+        write_marker(session_id, planning_dir)
 
     # Record session in the project index (best-effort, non-fatal)
     try:
@@ -456,7 +487,7 @@ def setup_session(
         "review_mode": review_mode,
         "epic_id": epic_title,
         "beads_available": True,
-        "sessions_root": str(SESSIONS_ROOT),
+        "sessions_root": str(sessions_root()),
         "message": f"Starting new {'audit' if is_audit else 'auto' if is_auto else 'planning'} session in: {planning_dir}",
     }
 
@@ -489,6 +520,13 @@ def main():
         help="Express path (plan workflow): path to an ADR file or directory. "
              "Skips research + interview.",
     )
+    parser.add_argument(
+        "--from-intent",
+        help="Plan workflow: path to an accepted intent.md. NOT an express path — "
+             "research and interview still run, because an intent deliberately "
+             "carries no engineering content. Recorded so the spec can be traced "
+             "back to it.",
+    )
     args = parser.parse_args()
 
     if args.from_prd and args.from_adr:
@@ -496,6 +534,14 @@ def main():
             "success": False,
             "mode": "error",
             "error": "Cannot use --from-prd and --from-adr together. Pick one.",
+        }))
+        sys.exit(2)
+
+    if args.from_intent and args.workflow != "plan":
+        print(json.dumps({
+            "success": False,
+            "mode": "error",
+            "error": f"--from-intent only valid with --workflow plan, got {args.workflow}",
         }))
         sys.exit(2)
 
@@ -528,6 +574,7 @@ def main():
             depth=args.depth,
             express_source=express_source,
             express_kind=express_kind,
+            intent_source=args.from_intent,
         )
     except Exception as e:
         result = {"success": False, "error": str(e), "mode": "error"}

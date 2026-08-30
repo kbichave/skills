@@ -1,13 +1,11 @@
 #!/usr/bin/env python3
 """Stop hook for deep-implement: Verify sections and request exit summary.
 
-Session-aware: uses DEEP_SESSION_ID env var to find the correct session marker
-in ~/.claude/.deep-implement-sessions/. Falls back to most recently modified
-marker if env var is unavailable.
+Session binding is delegated to lib.session_paths, which prefers the session_id
+on the hook payload over the env var and over stale on-disk markers.
 """
 
 import json
-import os
 import re
 import sys
 from pathlib import Path
@@ -18,34 +16,25 @@ try:
     from lib.scratch import cleanup_scratch
 except ImportError:
     cleanup_scratch = None  # type: ignore[assignment]
+from lib.session_paths import find_planning_dir, session_id_from_payload
 
 
-def find_active_dir() -> Path | None:
+def _payload() -> dict:
+    """Hook payload from stdin. Absent or malformed input is not an error —
+    the resolver falls back to the env var and the active-session marker."""
+    try:
+        return json.load(sys.stdin) or {}
+    except (ValueError, OSError):
+        return {}
+
+
+def find_active_dir(payload: dict | None = None) -> Path | None:
     """Find the active planning directory for the current session."""
-    sessions_dir = Path.home() / ".claude" / ".deep-implement-sessions"
-    if not sessions_dir.is_dir():
-        return None
-
-    # Try session-specific marker first
-    session_id = os.environ.get("DEEP_SESSION_ID")
-    if session_id:
-        marker = sessions_dir / f"{session_id}.marker"
-        if marker.exists():
-            active_dir = Path(marker.read_text().strip())
-            return active_dir if active_dir.is_dir() else None
-
-    # Fallback: most recently modified marker
-    markers = sorted(sessions_dir.glob("*.marker"), key=lambda p: p.stat().st_mtime, reverse=True)
-    for marker in markers:
-        active_dir = Path(marker.read_text().strip())
-        if active_dir.is_dir():
-            return active_dir
-
-    return None
+    return find_planning_dir(session_id_from_payload(payload or {}))
 
 
 def main() -> int:
-    active_dir = find_active_dir()
+    active_dir = find_active_dir(_payload())
     if not active_dir:
         return 0
 

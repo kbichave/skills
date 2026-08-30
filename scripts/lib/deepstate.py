@@ -205,11 +205,23 @@ class DeepStateTracker:
         return json.loads(state_file.read_text())
 
     def _save(self, state: dict) -> None:
-        """Atomic write: write to state.json.tmp, then os.rename."""
-        tmp_file = self.state_dir / "state.json.tmp"
+        """Atomic write: write to a private temp file, then os.rename.
+
+        The temp name carries the pid. A fixed `state.json.tmp` is only atomic
+        for a single writer: two processes write the same temp path, the first
+        renames it away, and the second renames a file that no longer exists.
+        Note this makes each write atomic but does not make read-modify-write
+        sequences (`close`, `update`) safe against concurrent processes — see
+        the module note.
+        """
         state_file = self.state_dir / "state.json"
-        tmp_file.write_text(json.dumps(state, indent=2))
-        os.rename(tmp_file, state_file)
+        tmp_file = self.state_dir / f"state.json.{os.getpid()}.tmp"
+        try:
+            tmp_file.write_text(json.dumps(state, indent=2))
+            os.rename(tmp_file, state_file)
+        except OSError:
+            tmp_file.unlink(missing_ok=True)
+            raise
 
 
 class MetricsCollector:
@@ -264,11 +276,15 @@ class MetricsCollector:
         return self._data
 
     def _save(self) -> None:
-        """Atomic write to metrics.json."""
-        tmp_file = self.state_dir / "metrics.json.tmp"
+        """Atomic write to metrics.json. Pid-scoped temp name, as above."""
+        tmp_file = self.state_dir / f"metrics.json.{os.getpid()}.tmp"
         self.metrics_file.parent.mkdir(parents=True, exist_ok=True)
-        tmp_file.write_text(json.dumps(self._data, indent=2))
-        os.rename(tmp_file, self.metrics_file)
+        try:
+            tmp_file.write_text(json.dumps(self._data, indent=2))
+            os.rename(tmp_file, self.metrics_file)
+        except OSError:
+            tmp_file.unlink(missing_ok=True)
+            raise
 
     def format_dashboard(self) -> str:
         """Format metrics as a markdown table for summary output."""
