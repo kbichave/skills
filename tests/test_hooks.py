@@ -96,6 +96,41 @@ class TestHooksJsonConfig:
         assert "SubagentStop" in hooks, "SubagentStop hook should exist"
         assert "SubagentStart" not in hooks, "SubagentStart hook should be removed"
 
+    def test_pre_tool_use_guard_is_wired(self, hooks_json_path):
+        """The guard is the blocking layer Stages 3/4/5 all build on. Without a
+        PreToolUse entry the plugin cannot block anything at all."""
+        hooks = json.loads(hooks_json_path.read_text())["hooks"]
+        assert "PreToolUse" in hooks
+        groups = hooks["PreToolUse"]
+        guard = [
+            h
+            for g in groups
+            for h in g["hooks"]
+            if "guard-pre-tool-use.py" in h["command"]
+        ]
+        assert len(guard) == 1, "guard hook should be wired exactly once"
+
+    def test_pre_tool_use_guard_matches_write_shaped_tools(self, hooks_json_path):
+        hooks = json.loads(hooks_json_path.read_text())["hooks"]
+        matchers = [g.get("matcher", "") for g in hooks["PreToolUse"]]
+        assert any(
+            all(tool in m for tool in ("Write", "Edit", "NotebookEdit"))
+            for m in matchers
+        )
+
+    def test_guard_hook_uses_python3_and_has_a_timeout(self, hooks_json_path):
+        """uv run costs 150-300 ms of resolver overhead, which is unaffordable
+        on a per-edit hook. The timeout stops a pathological regex wedging the
+        session."""
+        hooks = json.loads(hooks_json_path.read_text())["hooks"]
+        for group in hooks["PreToolUse"]:
+            for hook in group["hooks"]:
+                if "guard-pre-tool-use.py" not in hook["command"]:
+                    continue
+                assert hook["command"].startswith("python3 ")
+                assert "uv run" not in hook["command"]
+                assert hook.get("timeout") is not None
+
     def test_subagent_stop_has_matcher(self, hooks_json_path):
         """SubagentStop hook should have matcher for section-writer."""
         data = json.loads(hooks_json_path.read_text())

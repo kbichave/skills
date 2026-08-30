@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "enabled": true,
+  "fail_open": true,
+  "guard_bash": false,
+  "max_scan_bytes": 262144,
+  "protected_paths": [],
+  "allow_secret_paths": [
+    "**/tests/fixtures/**",
+    "**/testdata/**",
+    "**/*.example",
+    "**/*.sample",
+    "**/*.md"
+  ],
+  "secret_patterns": [
+    {"id": "SEC-PEM",    "regex": "-----BEGIN [A-Z ]*PRIVATE KEY-----", "reason": "private key material"},
+    {"id": "SEC-AWS",    "regex": "\\b(AKIA|ASIA)[0-9A-Z]{16}\\b",      "reason": "AWS access key id"},
+    {"id": "SEC-GH",     "regex": "\\bgh[pousr]_[A-Za-z0-9]{36,}\\b",   "reason": "GitHub token"},
+    {"id": "SEC-SLACK",  "regex": "\\bxox[baprs]-[A-Za-z0-9-]{10,}\\b", "reason": "Slack token"},
+    {"id": "SEC-ANT",    "regex": "\\bsk-ant-[A-Za-z0-9_-]{20,}\\b",    "reason": "Anthropic API key"},
+    {"id": "SEC-OPENAI", "regex": "\\bsk-[A-Za-z0-9]{32,}\\b",          "reason": "OpenAI-style API key"},
+    {"id": "SEC-GCP",    "regex": "\"type\"\\s*:\\s*\"service_account\"", "reason": "GCP service-account JSON"},
+    {"id": "SEC-PGURI",  "regex": "\\b(postgres|postgresql|mysql|mongodb)(\\+\\w+)?://[^:\\s]+:[^@\\s]+@", "reason": "connection string with inline password"}
+  ],
+  "format_on_edit": []
+}

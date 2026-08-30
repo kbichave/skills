@@ -5,6 +5,56 @@ All notable changes to deep-plan will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [5.8.0] - 2026-08-30
+
+Playbook Stage 3: the plugin can now block. This is the shared prerequisite for
+the Test and Deploy stages, both of which need a `PreToolUse` layer to hang off.
+
+### Added
+- **`PreToolUse` guardrails.** `scripts/lib/guard.py` (pure decision logic,
+  stdlib only) behind `scripts/hooks/guard-pre-tool-use.py` (thin adapter), wired
+  for `Write|Edit|MultiEdit|NotebookEdit`. Credential patterns `deny`; paths a
+  repo declares protected `ask`. Config merges plugin defaults ← planning dir ←
+  `<repo>/.claude/deep-guard.json` ← `$DEEP_GUARD_CONFIG`, with `"inherit": false`
+  to reset. `DEEP_GUARD=off` is the session kill switch.
+- **`references/guardrails.md`** documenting the schema, the `ask`-over-`deny`
+  policy, glob semantics, the latency budget and what is deliberately not covered.
+
+The design is shaped entirely around not being the feature people rip out:
+
+- **Ships blocking almost nothing.** `protected_paths` and `format_on_edit` are
+  empty in the baseline; protected paths are opt-in per repo. Only credentials
+  are universal, and every pattern is a vendor-prefixed high-entropy token or a
+  structural marker. There is deliberately no generic `password\s*=` rule —
+  that class of regex is the biggest source of false-positive frustration, and
+  `bandit`/`semgrep` already cover it at Phase 6.
+- **`ask`, not `deny`, for paths.** `deny` is reserved for credentials, where no
+  override is legitimate. Secrets outrank protected paths when a file is both.
+- **Fails open everywhere.** Malformed config layer, bad regex, unparseable
+  payload, unexpected exception — all exit 0 silently. The guard must never be
+  the reason an edit fails.
+- **Every block message names the rule id, the config file and both escape
+  hatches.** A block that does not say how to unblock is a bad block.
+- **Fast on the hot path.** `python3`, not `uv run` (150-300 ms of resolver
+  overhead). Config memoised on `(path, mtime)`, regexes compiled once, scan
+  capped at 256 KB, `"timeout": 5`. Measured: 0.1 ms at 1 KB, 1.8 ms at 50 KB,
+  9.4 ms at the cap, against a ~25-35 ms interpreter start that the plugin
+  already pays on every tool call.
+
+### Fixed
+- **`**/*.md` did not match a top-level `README.md`.** `fnmatch` requires the
+  separator, so a leading `**/` silently failed to mean "at any depth, including
+  none" — which would have exempted nested docs from the secret scan while
+  blocking top-level ones. Glob matching now handles both the leading `**/` and
+  trailing `/**` cases people expect from gitignore-style patterns.
+
+### Removed
+- **The two dead `PreToolUse` scripts.** `scripts/hooks/pre-tool-use.py` and
+  `scripts/hooks/impl-pre-tool-use.py` were wired to no hook event, always
+  allowed, and emitted the deprecated `{"decision": "allow"}` envelope. Their one
+  piece of institutional memory — that stray stdout from a hook breaks Claude
+  Code's hook parser — is preserved in `CLAUDE.md` and the new hook's docstring.
+
 ## [5.7.0] - 2026-08-30
 
 First wave of alignment with Anthropic's

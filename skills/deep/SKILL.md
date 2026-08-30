@@ -163,6 +163,11 @@ All section-level discipline lives in `references/implement-protocol.md`:
 
 Reads from `.deepstate/state.json`.
 
+A `PreToolUse` hook blocks credential writes and pauses on paths the target repo
+declared protected. It needs no invocation. When it fires, the message names the
+rule and the config file — fix the cause, do not reach for `DEEP_GUARD=off`. See
+`references/guardrails.md`.
+
 ---
 
 ## Guardrails
