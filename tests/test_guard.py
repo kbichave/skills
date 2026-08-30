@@ -317,29 +317,48 @@ class TestFormatters:
         assert rule is not None and "{file}" in rule.command
 
 
-class TestLatencyBudget:
+class TestScanCost:
     """The hook runs on every Write/Edit, so the decision path is on the hot
-    path. Measured on an M-series mac with the 8 shipped patterns: 1 KB is
-    0.1 ms, 50 KB is 1.8 ms, and the 256 KB cap is 9.4 ms. Interpreter start
-    (~25-35 ms) dominates in every case, which is the cost the plugin already
-    pays for deep-context-monitor.py on every tool call.
+    path. On an M-series mac with the 8 shipped patterns: 1 KB is 0.1 ms, 50 KB
+    is 1.8 ms, the 256 KB cap is 9.4 ms. A CI runner measured 31 ms for the same
+    cap case.
 
-    Thresholds are set well above the measurements so CI machine variance does
-    not make these flake; they are here to catch an order-of-magnitude
-    regression, such as someone adding a catastrophically backtracking regex.
+    That spread is why there are no absolute wall-clock assertions here. An
+    absolute threshold either flakes on a slow runner or is set so high it
+    asserts nothing. What actually needs protecting is that scanning stays
+    roughly linear in input size — a catastrophically backtracking regex is the
+    realistic regression, and it shows up as superlinear growth on any machine.
     """
 
-    def _mean_ms(self, repo, cfg, content: str, runs: int = 10) -> float:
+    def _mean_ms(self, repo, cfg, content: str, runs: int = 5) -> float:
         payload = {"file_path": str(repo / "big.py"), "content": content}
         start = time.perf_counter()
         for _ in range(runs):
             decide("Write", payload, repo, cfg)
         return (time.perf_counter() - start) / runs * 1000
 
-    def test_typical_source_file_is_negligible(self, repo):
-        assert self._mean_ms(repo, defaults_config(repo), "x = 1\n" * 170) < 2.0
+    def test_scaling_stays_roughly_linear(self, repo):
+        """32x the input should cost far less than 32x-squared the time.
 
-    def test_worst_case_stays_below_interpreter_start(self, repo):
-        """At the scan cap the decision must still cost less than the process
-        start it rides on, or the guard becomes the bottleneck."""
-        assert self._mean_ms(repo, defaults_config(repo), "x = 1\n" * 45000) < 25.0
+        Machine-independent because it compares the implementation against
+        itself. The bound is loose on purpose: it is a blowup detector, not a
+        benchmark.
+        """
+        cfg = defaults_config(repo)
+        small = self._mean_ms(repo, cfg, "x = 1\n" * 1400)      # ~8 KB
+        large = self._mean_ms(repo, cfg, "x = 1\n" * 45000)     # at the 256 KB cap
+
+        if small <= 0:  # clock resolution on a very fast machine
+            pytest.skip("timer resolution too coarse to compare")
+
+        # Linear would be ~32x. Allow generous headroom for noise and fixed
+        # overhead; catastrophic backtracking lands orders of magnitude above.
+        assert (large / small) < 200
+
+    def test_scan_stops_at_the_cap(self, repo):
+        """The deterministic half of the same guarantee: content past
+        max_scan_bytes is never examined, so cost is bounded regardless of how
+        large the payload gets."""
+        cfg = defaults_config(repo)
+        beyond_cap = "x = 1\n" * 60000 + AWS_KEY
+        assert scan_secrets(beyond_cap, "src/a.py", cfg) == []
