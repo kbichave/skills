@@ -5,6 +5,37 @@ All notable changes to deep-plan will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [5.16.0] - 2026-09-01
+
+Codex support for the portable half of the plugin.
+
+### Added
+- **`.codex-plugin/plugin.json` and `.agents/plugins/marketplace.json`**,
+  generated from the Claude Code manifests by
+  `scripts/checks/sync-codex-manifests.py`. `--check` guards drift in CI, and a
+  test enforces it. Hand-maintaining a second pair is exactly how
+  `marketplace.json` sat at 5.4.1 for ten releases.
+- **`docs/codex.md`** — what ports, what is degraded, what to do about it,
+  verified against a real Codex install rather than inferred from docs.
+
+The two hosts are closer than expected. Both use `SKILL.md` with `name` +
+`description` frontmatter, both have plugin and marketplace manifests, and Codex
+honours the **identical** `PreToolUse` deny envelope — so the guardrails and the
+test-file lock work unchanged. One `skills/` tree serves both.
+
+What differs is only naming and location: Codex nests marketplace `source` as an
+object, scans `.agents/skills/`, and keeps hooks in `.codex/hooks.json`.
+
+### Known gaps, tracked
+- **The review panel does not port yet.** Codex subagents are TOML, and offer no
+  documented per-agent tool allowlist and no structured-output contract. Our
+  panel depends on both — `claim-verifier` is deliberately the only agent with
+  network access, and `review-verifier` consumes a JSON finding schema.
+  Prototype one expert before converting nine.
+- **`${DEEP_PLUGIN_ROOT}` is a Claude Code convention.** Codex skills use
+  skill-relative paths and define no plugin-root variable. Codex users must
+  export it manually for now.
+
 ## [5.15.0] - 2026-08-30
 
 Conditional autonomy. `/deep auto` now advances on green and halts otherwise,

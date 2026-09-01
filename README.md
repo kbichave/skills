@@ -38,6 +38,19 @@ cd ~/.claude/plugins/deep-plan-enhanced && uv sync
 # "enabledPlugins": { "deep@kbichave-skills": true }
 ```
 
+### Codex
+
+Most of the plugin runs on Codex too: skills, guardrails and every Python CLI
+are portable, because both hosts use `SKILL.md` with `name`/`description`
+frontmatter and accept the same `PreToolUse` deny payload. The Codex manifests
+are generated from the Claude ones, so they cannot drift.
+
+The multi-expert review panel is **not** portable yet — Codex subagents are TOML
+and offer no documented per-agent tool allowlist or structured-output contract.
+
+See [`docs/codex.md`](docs/codex.md) for the install steps and the honest gap
+list.
+
 ### Required Integrations
 
 - **[Beads](https://github.com/plastic-labs/beads)** (`bd`) — issue tracking + multi-agent coordination. Mirrored from the built-in deepstate tracker.

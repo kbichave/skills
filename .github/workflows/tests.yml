@@ -45,3 +45,16 @@ jobs:
 
       - name: ruff
         run: uvx ruff check scripts tests
+
+  generated:
+    # The Codex manifests are derived from the Claude ones. Drift here means a
+    # Codex install silently ships stale metadata.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - name: Codex manifests are current
+        run: uv run scripts/checks/sync-codex-manifests.py --check
