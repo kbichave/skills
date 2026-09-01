@@ -126,6 +126,7 @@ everything is fine.
 | Concern | File |
 |---|---|
 | Intent capture (`/deep intent`) | `references/intent-capture.md` |
+| Secondary repository freshness | `references/repository-freshness.md` |
 | Guardrails + test lock | `references/guardrails.md` |
 | Target-repo CLAUDE.md | `references/claude-md-protocol.md` |
 | Policy at spec time | `references/spec-policy.md` |
@@ -211,6 +212,14 @@ All section-level discipline lives in `references/implement-protocol.md`:
 - Phase 10: post-mortem — answer "what would have prevented the rework?". Architectural answer → suggest `Skill(codebase-design)`. Spec-clarity answer → log under `## Spec gaps observed`. None → say so. Stop hook enforces.
 
 Reads from `.deepstate/state.json`.
+
+Whenever discovery, planning, research, or implementation review consults a
+different project—whether a local checkout or a newly cloned repository—load
+`references/repository-freshness.md` first. Refresh the secondary project's
+remote default branch, normally `origin/main`, immediately before using it;
+never rely on a stale local `main`. Preserve both repositories' working trees,
+record the fetched commit, and explicitly report fetch failures or missing
+remotes as freshness limitations.
 
 **Record every section's outcome after Phase 6**, in both interactive and auto
 mode. This is what `/deep auto` routes on, and an unrecorded section counts as

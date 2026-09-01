@@ -101,11 +101,12 @@ the skill); in that case use it as `review_context` and say so.
 Otherwise ask (AskUserQuestion):
 1. **Provide** — user pastes ticket text, spec, or constraints.
 2. **Skip** — review the code on its own terms.
-3. **Auto-discover** — pull context from whatever is actually connected:
-   ticket key (branch name first), the PR and its prior review rounds, then
-   linked wiki/SharePoint/roadmap docs, then an in-repo spec. Follow
-   `references/code-review-context.md` for the full search order, the MCP
-   checks, and the `review_context` output shape.
+3. **Auto-discover** — pull context from whatever is actually connected: ticket
+   key (branch name first), the PR and its prior review rounds, then linked
+   wiki/SharePoint/roadmap docs, then an in-repo spec. Search order and output
+   shape: `references/code-review-context.md`. For any related project, local or
+   cloned, apply `references/repository-freshness.md`: refresh `origin/main`, use
+   that commit, record fetch failures as potentially stale specialist context.
 
 ### 3. Resolve packs + languages
 

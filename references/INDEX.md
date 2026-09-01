@@ -11,6 +11,7 @@ Navigation hub for `references/`. SKILL.md maps each workflow step to a file; th
 | `plan-mutation-protocol.md` | Implement when reality diverges from plan |
 | `auto-spec-synthesis.md` | All modes when input is inline text |
 | `external-review.md` | Plan + Discovery review steps |
+| `repository-freshness.md` | Refreshing secondary repositories before cross-project analysis |
 | `coding-standards.md` | Implement before any code |
 | `guardrails.md` | PreToolUse blocking layer — credentials, protected paths, test lock |
 | `claude-md-protocol.md` | Generating and updating a target repo's CLAUDE.md |
