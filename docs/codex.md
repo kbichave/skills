@@ -85,24 +85,51 @@ wrapper that exports `DEEP_PLUGIN_ROOT`, or the scripts reachable on `PATH`.
 Nothing load-bearing, so far as this investigation found. The gaps are the two
 above, and both are engineering rather than impossibility.
 
-## Recommended install (manual, until this is packaged)
+## Install
 
 ```bash
-# 1. Clone once
-git clone https://github.com/kbichave/skills.git ~/src/deep
+brew install --cask codex      # or: npm i -g @openai/codex
+```
 
-# 2. Make the skills visible to Codex
-ln -s ~/src/deep/skills/deep         ~/.agents/skills/deep
-ln -s ~/src/deep/skills/code-review  ~/.agents/skills/deep-code-review
+### Marketplace registration may be blocked
 
-# 3. Make the guardrails active (merge, do not overwrite an existing file)
-cp ~/src/deep/hooks/hooks.json ~/.codex/hooks.json
+`codex plugin marketplace add <path>` is the tidy route, but on a managed Mac it
+can fail:
 
-# 4. Point the scripts at the checkout
-echo 'export DEEP_PLUGIN_ROOT=~/src/deep' >> ~/.zshrc
+```
+Error: marketplace source ... is not allowed by requirements from
+enterprise-managed requirements Admin Groups Policy Mac
+```
+
+MDM policy restricts which marketplaces Codex will accept, and it also pins
+`approval_policy` and `windows.sandbox` regardless of local config. Nothing to
+work around — use the skills path instead, which needs no marketplace.
+
+### Symlink route (works under MDM)
+
+```bash
+R=~/Personal/deep-plan-enhanced          # your checkout
+
+ln -sfn $R/skills/deep           ~/.agents/skills/deep
+ln -sfn $R/skills/code-review    ~/.agents/skills/deep-code-review
+ln -sfn $R/skills/humanizer      ~/.agents/skills/deep-humanizer
+ln -sfn $R/skills/no-op-remover  ~/.agents/skills/deep-no-op-remover
+
+# Codex has no plugin-root variable of its own; the skills need this.
+echo 'export DEEP_PLUGIN_ROOT="'$R'"' >> ~/.zshrc
+
+# Guardrails — merge into an existing file, do not clobber it.
+cp $R/hooks/hooks.json ~/.codex/hooks.json
 ```
 
 Symlinks rather than copies, so `git pull` updates both hosts at once.
+
+Verify:
+
+```bash
+codex exec --sandbox read-only "List every available skill whose name starts with 'deep'."
+# → deep:code-review, deep:deep, deep:humanizer, deep:no-op-remover
+```
 
 ## Status
 
