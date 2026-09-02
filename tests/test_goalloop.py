@@ -452,6 +452,91 @@ class TestRendering:
         assert "iteration ceiling (1)" in report
 
 
+class TestDraftCheck:
+    """`/deep goalloop` may be invoked with nothing but a target, so the goal
+    is drafted in conversation — and a line nobody could act on has to be
+    caught before `init` makes it durable."""
+
+    def test_a_measurable_line_passes_clean(self):
+        check = gl.check_acceptance_line(
+            "A rack change appears on the board within 60s, measured end to end"
+        )
+        assert check.measurable and check.hints == ()
+
+    @pytest.mark.parametrize(
+        "line",
+        [
+            "`ruff check` reports zero new violations against the base commit",
+            "Seven consecutive nightly runs exit 0",
+            "No operator touches a spreadsheet in the path",
+            "tests/test_lag.py::test_under_60s passes",
+            "The flag is gone and no reference to it remains",
+        ],
+    )
+    def test_lines_naming_a_number_command_or_artifact_pass(self, line):
+        assert gl.check_acceptance_line(line).measurable, line
+
+    @pytest.mark.parametrize(
+        "line",
+        [
+            "The pipeline is reliable",
+            "Code quality improves",
+            "The board is fast",
+            "Make it production-ready",
+            "Users are happy with the new dashboard",
+        ],
+    )
+    def test_lines_describing_a_feeling_are_flagged(self, line):
+        check = gl.check_acceptance_line(line)
+        assert not check.measurable
+        assert check.hints
+
+    def test_a_vague_word_is_named_so_the_user_can_fix_it(self):
+        hints = " ".join(gl.check_acceptance_line("The loader is robust").hints)
+        assert "'robust'" in hints
+        assert "say what you would measure" in hints
+
+    def test_a_vague_clause_taints_an_otherwise_measurable_line(self):
+        # "runs in under 2s and is reliable" carries a clause nobody can check.
+        check = gl.check_acceptance_line("Runs in under 2s and is reliable")
+        assert not check.measurable
+        assert any("reliable" in hint for hint in check.hints)
+
+    def test_a_one_word_line_says_it_is_too_short(self):
+        assert "too short" in " ".join(gl.check_acceptance_line("Fast").hints)
+
+    def test_a_draft_with_a_statement_and_a_line_is_ready(self):
+        report = gl.check_draft(GOAL, [ACCEPTANCE[0]])
+        assert report["ready"] and report["errors"] == []
+        assert report["measurable"] == 1
+
+    def test_a_draft_with_no_statement_says_what_to_ask(self):
+        report = gl.check_draft("  ", [ACCEPTANCE[0]])
+        assert not report["ready"]
+        assert "ask what end state" in report["errors"][0]
+
+    def test_a_draft_with_no_acceptance_line_says_what_to_ask(self):
+        report = gl.check_draft(GOAL, [])
+        assert not report["ready"]
+        assert "ask how they would know" in report["errors"][0]
+
+    def test_blank_acceptance_entries_do_not_count(self):
+        assert not gl.check_draft(GOAL, ["", "   "])["ready"]
+
+    def test_a_vague_draft_is_ready_but_warns(self):
+        # Advisory, never blocking. Rewriting someone's criterion into
+        # something measurable substitutes our goal for theirs.
+        report = gl.check_draft(GOAL, ["The pipeline is reliable"])
+        assert report["ready"] is True
+        assert report["measurable"] == 0
+        assert "reliable" in report["warnings"][0]
+
+    def test_warnings_are_numbered_to_match_the_lines(self):
+        report = gl.check_draft(GOAL, [ACCEPTANCE[0], "It is fast"])
+        assert len(report["warnings"]) == 1
+        assert report["warnings"][0].startswith("2. It is fast")
+
+
 class TestCLI:
     def run(self, planning_dir, *args):
         return subprocess.run(
@@ -465,6 +550,45 @@ class TestCLI:
             planning_dir, "init", "--goal", GOAL,
             "--acceptance", ACCEPTANCE[0], "--acceptance", ACCEPTANCE[1], *extra,
         )
+
+    def test_check_goal_runs_without_a_session(self):
+        result = subprocess.run(
+            [
+                sys.executable, str(CLI), "check-goal",
+                "--goal", GOAL, "--acceptance", ACCEPTANCE[0],
+            ],
+            capture_output=True, text=True,
+        )
+        assert result.returncode == 0
+        payload = json.loads(result.stdout)
+        assert payload["ready"] is True
+        assert payload["measurable"] == 1
+
+    def test_check_goal_exits_one_on_an_unusable_draft(self):
+        result = subprocess.run(
+            [sys.executable, str(CLI), "check-goal"], capture_output=True, text=True
+        )
+        assert result.returncode == 1
+        assert len(json.loads(result.stdout)["errors"]) == 2
+
+    def test_check_goal_warns_without_refusing(self):
+        result = subprocess.run(
+            [
+                sys.executable, str(CLI), "check-goal",
+                "--goal", GOAL, "--acceptance", "The board is fast",
+            ],
+            capture_output=True, text=True,
+        )
+        assert result.returncode == 0
+        payload = json.loads(result.stdout)
+        assert payload["ready"] is True and payload["warnings"]
+
+    def test_every_other_subcommand_still_needs_a_planning_dir(self):
+        result = subprocess.run(
+            [sys.executable, str(CLI), "tick"], capture_output=True, text=True
+        )
+        assert result.returncode == 2
+        assert "--planning-dir is required" in json.loads(result.stdout)["error"]
 
     def test_init_reports_the_files_it_wrote(self, planning_dir):
         result = self.init(planning_dir)

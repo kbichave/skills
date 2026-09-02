@@ -11,6 +11,7 @@ lasting hours — what the goal was, what has actually been delivered, which
 acceptance lines have evidence, and whether any of that adds up to done.
 
 Subcommands:
+  check-goal              --goal TEXT --acceptance LINE [...]   (no session needed)
   init      --planning-dir D --goal TEXT --acceptance LINE [...]
   add       --planning-dir D --title T --acceptance A [--after ID]
   triage    --planning-dir D --kind blocker|deferrable --title T --acceptance A
@@ -24,9 +25,10 @@ Subcommands:
   handoff   --planning-dir D          end-of-run report, markdown
 
 Exit codes:
-  0 — the goal is met; stop
+  0 — the goal is met; stop  (check-goal: the draft is usable)
   3 — not met, work remains; run another iteration
   1 — stopped and a human is needed (blocked, or the iteration ceiling)
+      (check-goal: the draft is missing a statement or an acceptance line)
   2 — usage or I/O error
 
 `tick` is the only one that returns 3. Everything else returns 0 on success,
@@ -51,6 +53,20 @@ CONTINUE = 3
 def _emit(payload: dict, code: int = 0) -> int:
     print(json.dumps(payload, indent=2))
     return code
+
+
+def cmd_check_goal(args: argparse.Namespace) -> int:
+    """Validate a drafted goal before setting it.
+
+    Runs without a session, so the elicitation round can check a goal the user
+    just described in conversation and push back on an acceptance line nobody
+    could act on — before `init` makes it durable.
+    """
+    statement = args.goal or ""
+    if args.goal_file:
+        statement = Path(args.goal_file).read_text()
+    report = gl.check_draft(statement, args.acceptance or [])
+    return _emit({"success": True, **report}, 0 if report["ready"] else 1)
 
 
 def cmd_init(args: argparse.Namespace) -> int:
@@ -211,6 +227,16 @@ def cmd_handoff(args: argparse.Namespace) -> int:
 
 
 def _add_subcommands(subparsers) -> None:
+    check = subparsers.add_parser(
+        "check-goal", help="validate a drafted goal before setting it"
+    )
+    check.add_argument("--goal", help="the drafted end state")
+    check.add_argument("--goal-file", help="read the drafted statement from a file")
+    check.add_argument(
+        "--acceptance", action="append", help="one drafted acceptance line; repeat"
+    )
+    check.set_defaults(func=cmd_check_goal)
+
     init = subparsers.add_parser("init", help="set the goal")
     init.add_argument("--goal", help="the end state, in the user's words")
     init.add_argument("--goal-file", help="read the goal statement from a file")
@@ -275,10 +301,18 @@ def _add_subcommands(subparsers) -> None:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument(
-        "--planning-dir", required=True, help="session directory holding .deepstate/"
+        "--planning-dir",
+        help="session directory holding .deepstate/. Required by every "
+             "subcommand except check-goal, which runs before a session exists.",
     )
     _add_subcommands(parser.add_subparsers(dest="command", required=True))
     args = parser.parse_args()
+
+    if args.command != "check-goal" and not args.planning_dir:
+        return _emit(
+            {"success": False, "error": f"--planning-dir is required for {args.command}"},
+            2,
+        )
 
     try:
         return args.func(args)

@@ -201,8 +201,17 @@ through recorded triage.
   --max-iters 8
 ```
 
+Every flag is optional. `/deep goalloop @repo` on its own restates whatever
+goal you have already described, then uses `AskUserQuestion` to turn it into
+acceptance lines you tick — candidates derived from the goal and from the
+tests and metrics the probe found, with the iteration ceiling in the same
+prompt. An acceptance line it cannot check ("the pipeline is reliable") comes
+back to you with the word that caused it, rather than being rewritten into
+something measurable behind your back.
+
 | Feature | Description |
 |---------|-------------|
+| **Elicited, not required** | Invoked with nothing but a target, it asks: goal restated for confirmation, acceptance lines offered as `AskUserQuestion` candidates, ceiling in the same prompt. `check-goal` validates the draft before it becomes durable |
 | **Increment ledger** | `goal-ledger.md` — ordered, individually shippable slices, each with its own one-line acceptance test |
 | **Blocker vs deferral triage** | A blocker preempts the current increment; a deferral is spliced in behind it. Classified explicitly, never inferred, and logged with its reason |
 | **Intent per iteration** | Each increment becomes an intent, then a nested `plan` + `implement` session under `iterations/iNN/`. Intents stay `draft`/`agent`; publishing to your repo is confirm-first |

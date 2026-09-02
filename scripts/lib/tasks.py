@@ -398,9 +398,12 @@ GOALLOOP_TASK_DEFINITIONS: dict[str, TaskDefinition] = {
     "capture-goal": TaskDefinition(
         subject="Capture Goal",
         description=(
-            "Read goalloop-protocol.md §1. Record the end state in the user's "
-            "words and extract its acceptance lines — each one an observation "
-            "someone could make, not a feeling. Run `goalloop.py init`."
+            "Read goalloop-protocol.md §0-§1. If the invocation carried no "
+            "goal or no acceptance line, elicit them per §0 — ask, do not "
+            "invent, and do not refuse the invocation. Record the end state in "
+            "the user's words, keep each acceptance line an observation "
+            "someone could make rather than a feeling, and run `check-goal` "
+            "before `init`."
         ),
         active_form="Capturing the goal",
     ),

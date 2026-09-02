@@ -975,3 +975,136 @@ def summary(loop: GoalLoop, status: GoalStatus) -> str:
         lines += ["", "### Sections that did not pass", ""]
         lines += [f"- {section}" for section in status.failing_sections]
     return "\n".join(lines) + "\n"
+
+
+# ---------------------------------------------------------------------------
+# Drafting a goal before it is set
+# ---------------------------------------------------------------------------
+#
+# `/deep goalloop` is allowed to be invoked with nothing but a target: the
+# goal and its acceptance lines are then elicited in conversation. What cannot
+# be elicited in conversation is whether a line someone just typed is actually
+# checkable — that is a judgement made once, badly, under the pressure of
+# wanting to start.
+#
+# So the draft gets checked here. The check is advisory: it flags a line and
+# says what would fix it, and the user decides. Silently rewriting someone's
+# acceptance criterion into something measurable would substitute the agent's
+# goal for theirs, which is worse than starting with a vague one.
+
+# Words that describe a feeling about a system rather than an observation of
+# it. Every one of these has appeared as an "acceptance criterion" that no
+# amount of work could satisfy.
+_VAGUE_TERMS = (
+    "reliable", "robust", "clean", "fast", "slow", "scalable", "performant",
+    "maintainable", "stable", "efficient", "seamless", "intuitive", "modern",
+    "better", "improved", "good", "solid", "sane", "reasonable", "proper",
+    "user-friendly", "well-tested", "production-ready", "best practice",
+)
+
+# Signals that a line names something observable: a threshold, a count, a
+# command, or an artifact.
+_MEASURABLE_HINTS = (
+    "within", "under", "over", "at least", "at most", "no more than",
+    "no less than", "fewer than", "exceeds", "exits", "exit code", "returns",
+    "zero", "none", "no ", "every", "all ", "each", "passes", "fails",
+    "reports", "logs", "measured", "matches", "equals", "empty", "gone",
+    "removed", "deleted", "<", ">", "=", "%",
+)
+
+# Artifact-shaped substrings — a path, a test id, a command, a file type.
+_ARTIFACT_HINTS = ("`", "::", ".py", ".md", ".sql", ".yml", ".yaml", ".json", "/", "--")
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class LineCheck:
+    """One acceptance line, and what is wrong with it if anything."""
+
+    text: str
+    measurable: bool
+    hints: tuple[str, ...] = ()
+
+    def to_dict(self) -> dict:
+        return {"text": self.text, "measurable": self.measurable, "hints": list(self.hints)}
+
+
+def check_acceptance_line(text: str) -> LineCheck:
+    """Is this line something someone could go and observe?
+
+    Heuristic, and deliberately generous — it flags rather than rejects. A
+    line passes when it names a threshold, a count, a command, or an artifact.
+    A vague adjective is called out even in a line that otherwise passes,
+    because "runs in under 2s and is reliable" carries a clause nobody can
+    check.
+    """
+    stripped = text.strip()
+    lowered = stripped.lower()
+
+    long_enough = len(stripped) >= 15
+    observable = (
+        any(char.isdigit() for char in lowered)
+        or any(term in lowered for term in _MEASURABLE_HINTS)
+        or any(term in stripped for term in _ARTIFACT_HINTS)
+    )
+    vague = sorted({term.strip() for term in _VAGUE_TERMS if term in lowered})
+
+    hints: list[str] = []
+    if not long_enough:
+        hints.append("too short to say what would be observed")
+    if not observable:
+        hints.append(
+            "name a number, a command, or an artifact — something a person "
+            "could go and check"
+        )
+    if vague:
+        hints.append(
+            f"'{', '.join(vague)}' describes a feeling about the system, not "
+            "an observation of it — say what you would measure instead"
+        )
+
+    return LineCheck(
+        text=stripped,
+        measurable=long_enough and observable and not vague,
+        hints=tuple(hints),
+    )
+
+
+def check_draft(statement: str, acceptance) -> dict:
+    """Validate a goal before `init` writes it, and say what to fix.
+
+    `ready` is about the two things the loop cannot run without: a statement
+    and at least one acceptance line. `warnings` is about quality, and never
+    blocks — showing them to the user beats guessing on their behalf.
+    """
+    lines = [str(line) for line in acceptance or () if str(line).strip()]
+    errors: list[str] = []
+    if not statement.strip():
+        errors.append(
+            "no goal statement — ask what end state they want, in their words"
+        )
+    if not lines:
+        errors.append(
+            "no acceptance line — ask how they would know the goal was reached. "
+            "Without one the loop can only ever stop at its iteration ceiling."
+        )
+
+    checks = [check_acceptance_line(line) for line in lines]
+    warnings = [
+        f"{index}. {check.text} — {'; '.join(check.hints)}"
+        for index, check in enumerate(checks, start=1)
+        if check.hints
+    ]
+    if len(statement.strip()) > 4000:
+        warnings.append(
+            "the goal statement is very long; the durable part is the end "
+            "state, and detail belongs in the increments"
+        )
+
+    return {
+        "ready": not errors,
+        "errors": errors,
+        "statement": statement.strip(),
+        "acceptance": [check.to_dict() for check in checks],
+        "measurable": sum(1 for check in checks if check.measurable),
+        "warnings": warnings,
+    }

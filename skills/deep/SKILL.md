@@ -24,7 +24,7 @@ Pick mode by question:
 /deep plan @spec.md [--from-prd @prd.md | --from-adr @adrs/ | --from-intent @intent.md]  → blueprint
 /deep implement [@dir] [--auto]                      → execute sections
 /deep auto @phases/                                  → end-to-end
-/deep goalloop @target --goal "<end state>" --acceptance "<observable>" [--max-iters N]
+/deep goalloop [@target] [--goal "<end state>"] [--acceptance "<observable>"] [--max-iters N]
 ```
 
 **Discovery depth** (`audit` only):
@@ -66,7 +66,7 @@ Lifecycle concerns live in `references/integration-protocol.md`:
 | `plan @file.md` or `@file.md` | `plan` |
 | `implement [@path]` or `@dir` with `claude-plan.md` + `sections/` | `implement` |
 | `auto @path` | `auto` |
-| `goalloop [@target]` + `--goal` | `goalloop` |
+| `goalloop [@target]`, flags optional | `goalloop` |
 | Inline text (no `@`) | Synthesize via `references/auto-spec-synthesis.md` |
 | Empty | Ask: `"What do you want to build or audit?"` |
 
@@ -211,6 +211,18 @@ Starts from an end state, not from phases someone already enumerated. Full
 protocol in `references/goalloop-protocol.md`; all seven control steps point
 at it. Per iteration: `begin` → increment as an intent → nested `plan` session
 under `iterations/iNN/` → `implement` → `evidence` → `end` → `tick`.
+
+**Every flag is optional.** With no `--goal` or `--acceptance`, elicit them
+per §0 — restate any goal already described rather than re-asking it, and use
+`AskUserQuestion` (`multiSelect`) to turn the end state into acceptance lines
+the user ticks. Ask; never invent, never refuse the invocation. Check the
+draft before setting it, and show a flagged line to the user rather than
+quietly rewriting it into something measurable:
+
+```bash
+python3 ${DEEP_PLUGIN_ROOT}/scripts/checks/goalloop.py check-goal \
+  --goal "<statement>" --acceptance "<line>"   # no session needed; 1 = unusable
+```
 
 ```bash
 GL="python3 ${DEEP_PLUGIN_ROOT}/scripts/checks/goalloop.py --planning-dir ${planning_dir}"

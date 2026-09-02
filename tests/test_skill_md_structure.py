@@ -61,9 +61,15 @@ def test_skill_md_has_tracker_close(skill_content):
 
 
 def test_skill_md_is_under_budget(skill_content):
-    """Unified SKILL.md budget. Detailed workflows live under references/, not inline."""
+    """Unified SKILL.md budget. Detailed workflows live under references/, not inline.
+
+    Raised from 300 to 320 when `goalloop` landed as a sixth mode. The budget
+    exists so protocol detail stays in `references/`, not to freeze the number
+    of modes — but it is a ceiling, so a mode that needs more than a dozen
+    lines here is a mode whose protocol file is not carrying its weight.
+    """
     lines = skill_content.split("\n")
-    assert len(lines) <= 300, f"SKILL.md has {len(lines)} lines, max is 300"
+    assert len(lines) <= 320, f"SKILL.md has {len(lines)} lines, max is 320"
 
 
 def test_frontmatter_preserved(skill_content):

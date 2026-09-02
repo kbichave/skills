@@ -30,6 +30,109 @@ GL="python3 ${DEEP_PLUGIN_ROOT}/scripts/checks/goalloop.py --planning-dir ${plan
 
 ---
 
+## §0 Elicit what was not passed
+
+`/deep goalloop` is allowed to be invoked with nothing but a target, or with
+nothing at all. Do not refuse it and do not invent the goal — ask.
+
+Elicit when the invocation is missing the goal statement or has no acceptance
+line. Everything else has a defensible default: the target is the working
+directory, and the iteration ceiling is unbounded.
+
+### 0.1 The statement
+
+If the user gave *any* description — an inline phrase, a sentence earlier in
+the conversation, a linked intent — do not re-ask it. Restate it as an end
+state and confirm in one line:
+
+> Goal: the price board reflects the current rack within a minute, with no
+> manual step. Correct?
+
+Ask only when there is genuinely nothing to work from, and ask in prose, not
+as a multiple choice. A menu of goals you invented is worse than a question:
+
+> What end state do you want? Describe where things should be when this is
+> done, not the first task.
+
+### 0.2 The acceptance lines
+
+This is where `AskUserQuestion` earns its place. You do the work of turning a
+described end state into lines someone could go and check; the user ticks the
+ones that are theirs.
+
+Derive candidates from the goal statement and from §2's probe — a test suite
+that already exists, a metric already on a dashboard, a command already in CI.
+Then:
+
+```
+AskUserQuestion({
+  questions: [{
+    question: "How will we know the goal was reached? Pick the checks that count.",
+    header: "Acceptance",
+    multiSelect: true,
+    options: [
+      {label: "A rack change appears on the board within 60s",
+       description: "Measured end to end, source write to board render. Provable by a timed integration test."},
+      {label: "No operator touches a spreadsheet in the path",
+       description: "The manual step is gone, not merely optional. Provable by the sheet being unreferenced and read-only."},
+      {label: "Seven consecutive nightly runs exit 0",
+       description: "Unattended for a week, not just green once. Provable from the run log."},
+      {label: "The old price path is deleted",
+       description: "Not flagged off — gone, with no references. Provable by grep and a passing suite."}
+    ]
+  }, {
+    question: "How long should the loop run before checking back with you?",
+    header: "Ceiling",
+    multiSelect: false,
+    options: [
+      {label: "Until the goal or a blocker stops it (Recommended)",
+       description: "Unbounded. It halts on its own when a clause cannot be satisfied or an increment needs a decision."},
+      {label: "At most 5 iterations",
+       description: "Stops and reports after five passes even if the goal is not met."},
+      {label: "At most 10 iterations", description: "A longer leash on the same terms."}
+    ]
+  }]
+})
+```
+
+Both questions in one call — an extra prompt for the ceiling is a prompt spent
+on something with a good default. "Other" lets the user write their own line,
+which is the common case and the point.
+
+Then apply `question-selection.md` to anything you were *also* about to ask.
+Most of it will score zero: the repo answers it, or the answer changes no
+increment. Budget the round at 2 questions beyond the two above.
+
+### 0.3 Check the draft before making it durable
+
+```bash
+python3 ${DEEP_PLUGIN_ROOT}/scripts/checks/goalloop.py check-goal \
+  --goal "<statement>" --acceptance "<line>" [--acceptance "<line>" ...]
+```
+
+No `--planning-dir` — it runs before the session exists. Exit 0 means usable,
+exit 1 means a statement or a line is still missing and names which.
+
+`warnings` is advisory and never blocks. When a line is flagged, show the
+user the flag and let them decide:
+
+> "The pipeline is reliable" isn't something I can check. Reliable how — no
+> failed runs in a week? Under a minute end to end? Recovers from a 503
+> without a rerun?
+
+**Do not silently rewrite it.** Turning someone's criterion into a measurable
+one without asking substitutes your goal for theirs, and the loop will then
+run to satisfy yours. A goal that starts vague and gets sharpened by the user
+is fine. A goal sharpened behind their back is not.
+
+### 0.4 Then set it
+
+Pass what you elicited to `setup-session.py --workflow goalloop`. Its refusal
+of a goal with no acceptance line is the backstop, not the interface — if you
+hit it, you skipped this section.
+
+---
+
 ## §1 Capture the goal
 
 The goal is set once by `setup-session.py --workflow goalloop` and does not
@@ -50,8 +153,8 @@ Read the goal back to the user with its lines numbered, and say which ones you
 had to sharpen. A line you invented and they did not agree to will still be
 holding the loop open at iteration nine.
 
-If the user gave a goal with no measurable end state at all, say so and ask
-for one. This is the single blocking question in the mode — proceeding without
+If the user gave a goal with no measurable end state at all, §0.2 is how you
+get one. This is the single blocking question in the mode — proceeding without
 it produces a run that cannot terminate.
 
 ---

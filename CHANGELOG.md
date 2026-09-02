@@ -5,6 +5,43 @@ All notable changes to deep-plan will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [5.18.0] - 2026-09-02
+
+`/deep goalloop` no longer requires its flags. What it cannot get from the
+invocation, it asks for.
+
+### Added
+- **§0 of `goalloop-protocol.md`: elicit what was not passed.** Invoked with
+  nothing but a target — or nothing at all — the mode asks instead of
+  refusing. A goal the user already described is restated for confirmation,
+  never re-asked. Acceptance lines are where `AskUserQuestion` earns its
+  place: the agent turns the end state into candidate lines someone could go
+  and check, derived from the goal and from the probe's existing tests and
+  metrics, and the user ticks the ones that are theirs. The iteration ceiling
+  rides along in the same call, because an extra prompt for something with a
+  good default is a prompt wasted.
+- **`goalloop.py check-goal`**, the one subcommand that runs without a
+  session, because the draft has to be checked before `init` makes it durable.
+  Exit 1 names what is still missing; exit 0 means usable.
+- **A measurability check on acceptance lines.** "The pipeline is reliable"
+  and "code quality improves" are flagged with the word that caused it and
+  what would fix it. The check is advisory and never blocks, and the protocol
+  is explicit that a flagged line goes back to the user rather than being
+  quietly rewritten — sharpening someone's criterion behind their back
+  substitutes the agent's goal for theirs, and the loop then runs to satisfy
+  the agent's.
+
+### Changed
+- `--planning-dir` moved from a parser-level requirement to a per-command one,
+  so `check-goal` can run before a session directory exists. Every other
+  subcommand still refuses without it.
+- `setup-session.py`'s refusal of a goal with no acceptance line now names the
+  elicitation route. It is the backstop, not the interface: hitting it means
+  §0 was skipped.
+- SKILL.md's line budget raised from 300 to 320. Six modes, and the ceiling
+  exists to keep protocol detail in `references/`, not to freeze the mode
+  count.
+
 ## [5.17.0] - 2026-09-02
 
 `/deep goalloop` — the SDLC as a loop toward an end state — and an

@@ -90,13 +90,17 @@ def _init_goalloop_state(planning_dir: Path, file_path: Path, opts: dict) -> str
     if not statement:
         return (
             "goalloop needs a goal: pass --goal \"<end state>\", --goal-file, "
-            "or point --file at a markdown document describing it"
+            "or point --file at a markdown document describing it. If the user "
+            "did not give one, elicit it per goalloop-protocol.md §0 rather "
+            "than inventing one."
         )
     if not acceptance:
         return (
             "goalloop needs at least one --acceptance line. Without one there "
             "is nothing for evidence to satisfy and the loop can only ever "
-            "stop at its iteration ceiling."
+            "stop at its iteration ceiling. Elicit them with AskUserQuestion "
+            "per goalloop-protocol.md §0.2 — this refusal is the backstop, not "
+            "the interface."
         )
 
     try:
