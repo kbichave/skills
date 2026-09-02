@@ -28,6 +28,12 @@ Concretely, the difference:
 context. Intent capture must not re-ask any of it. **Cap: 6 questions.** If you
 are asking a seventh, you are gathering spec input, not intent.
 
+The cap is a ceiling, not a target. Score the candidates first
+(`question-selection.md`): here the hypotheses are the distinct *problems* the
+report could be describing, not the plans, and a question earns its place by
+ruling some of them out. Six questions that change nothing are worse than two
+that separate "the board is stale" from "the board is wrong".
+
 Ask only what the codebase cannot answer:
 
 - What is the problem, in your words?

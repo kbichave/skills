@@ -262,6 +262,7 @@ If the user confirmed everything in Rounds 1-2, skip Round 3.
 4. **Maximum 3 ROUNDS** — could be done in 1 if user gives rich answers with clear vision.
 5. **Write full transcript to interview.md** including your suggestions and the user's responses to them.
 6. **If later research changes the picture, come BACK to the user.** The interview isn't a one-time event if step 9 (build-vs-buy) reveals something significant.
+7. **Score the questions before each round.** Rule 1 is the cheap half of this; `question-selection.md` is the rest. Enumerate the live hypotheses, mark what each answer eliminates, and run `pick-questions.py`. It drops the lookups rule 1 catches *and* the reworded duplicates and near-zero-gain questions rule 1 misses. Rounds have a budget of 4; research findings sharpen the hypothesis set, which is why the interview runs after research.
 
 ---
 

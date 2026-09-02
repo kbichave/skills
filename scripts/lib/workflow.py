@@ -53,6 +53,17 @@ _AUDIT_REFERENCE_FILES: dict[str, str] = {
     "external-review": "external-review.md",
 }
 
+# Goalloop workflow reference files
+_GOALLOOP_REFERENCE_FILES: dict[str, str] = {
+    "capture-goal": "goalloop-protocol.md",
+    "probe-target": "goalloop-protocol.md",
+    "goal-questions": "question-selection.md",
+    "initial-ledger": "goalloop-protocol.md",
+    "run-iterations": "goalloop-protocol.md",
+    "goal-verification": "goalloop-protocol.md",
+    "output-summary": "goalloop-protocol.md",
+}
+
 # Context task IDs to skip (not real workflow steps)
 _CONTEXT_TASK_IDS = {
     "context-plugin-root",
@@ -609,5 +620,73 @@ def create_autonomous_workflow(
             prev_step_id = namespaced_id
 
         is_first = False
+
+    return epic_title
+
+
+def create_goalloop_workflow(
+    tracker: DeepStateTracker,
+    *,
+    plugin_root: str,
+    planning_dir: str,
+    initial_file: str,
+    review_mode: str,
+    discovery_findings: str | None = None,
+) -> str:
+    """Create epic + control-layer issues for /deep goalloop.
+
+    Only the scaffolding around the loop lives here. Each iteration runs a
+    nested plan and implement session under `iterations/iNN/` with its own
+    tracker, because an iteration count nobody knows in advance cannot be
+    turned into issues up front — and pre-creating them is how the autonomous
+    workflow's dependency chain got broken before.
+
+    When `discovery_findings` names an existing audit, the probe step is
+    retargeted at ingesting it rather than re-auditing. It is **not**
+    pre-closed: `goal-questions` depends on `probe-target` alone, so closing it
+    at creation would make the clarification round ready before the goal has
+    even been captured. Same trap as `_HUMAN_INTERACTIVE_STEPS`.
+
+    Returns the epic title string.
+    """
+    from lib.tasks import (
+        GOALLOOP_TASK_IDS,
+        GOALLOOP_TASK_DEFINITIONS,
+        GOALLOOP_TASK_DEPENDENCIES,
+    )
+
+    goal_name = Path(initial_file).stem
+    epic_title = f"deep-goalloop: {goal_name}"
+    tracker.init(epic_title, {
+        "plugin_root": plugin_root,
+        "planning_dir": planning_dir,
+        "initial_file": initial_file,
+        "review_mode": review_mode,
+        "goalloop": True,
+    })
+
+    for step_num in sorted(GOALLOOP_TASK_IDS.keys()):
+        task_id = GOALLOOP_TASK_IDS[step_num]
+        task_def = GOALLOOP_TASK_DEFINITIONS[task_id]
+        deps = [
+            d
+            for d in GOALLOOP_TASK_DEPENDENCIES.get(task_id, [])
+            if d not in _CONTEXT_TASK_IDS
+        ]
+        description = _build_description(
+            task_id, task_def, plugin_root, planning_dir,
+            _GOALLOOP_REFERENCE_FILES,
+        )
+        if task_id == "probe-target" and discovery_findings:
+            description += (
+                f"\n\n**Discovery artifacts already exist at "
+                f"`{discovery_findings}`.** Ingest them per "
+                "`discovery-bridge.md` and do NOT run the audit workflow. "
+                "Re-auditing territory the loop may never enter spends the "
+                "run's budget on a map."
+            )
+        tracker.create(
+            task_id, task_def.subject, description=description, depends_on=deps,
+        )
 
     return epic_title

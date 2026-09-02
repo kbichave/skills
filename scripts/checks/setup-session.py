@@ -27,7 +27,12 @@ from lib.config import (
 from lib.deepstate import DeepStateTracker, MetricsCollector
 from lib.session_paths import active_marker, write_marker
 from lib.beads_sync import BeadsSyncTracker, detect_beads
-from lib.workflow import create_plan_workflow, create_discovery_workflow, create_autonomous_workflow
+from lib.workflow import (
+    create_plan_workflow,
+    create_discovery_workflow,
+    create_autonomous_workflow,
+    create_goalloop_workflow,
+)
 
 
 VALID_REVIEW_MODES = {"external_llm", "opus_subagent", "sonnet_subagent", "skip"}
@@ -64,6 +69,55 @@ def detect_discovery_artifacts(planning_dir: Path) -> Path | None:
     for d in [planning_dir, planning_dir.parent]:
         if (d / "interview.md").exists() and (d / "findings").is_dir():
             return d
+    return None
+
+
+def _init_goalloop_state(planning_dir: Path, file_path: Path, opts: dict) -> str | None:
+    """Record the goal for a new goalloop session. Returns an error, or None.
+
+    The goal statement comes from `--goal`, from `--goal-file`, or from
+    `--file` when that is a markdown document rather than a target directory.
+    Acceptance lines are required: a goal with none can never be shown to be
+    met, so the loop would run until its ceiling every time.
+    """
+    from lib.goalloop import GoalLoopError, init
+
+    statement = (opts.get("goal") or "").strip()
+    if not statement and file_path.is_file() and file_path.suffix == ".md":
+        statement = file_path.read_text().strip()
+    acceptance = [line for line in opts.get("acceptance") or [] if line.strip()]
+
+    if not statement:
+        return (
+            "goalloop needs a goal: pass --goal \"<end state>\", --goal-file, "
+            "or point --file at a markdown document describing it"
+        )
+    if not acceptance:
+        return (
+            "goalloop needs at least one --acceptance line. Without one there "
+            "is nothing for evidence to satisfy and the loop can only ever "
+            "stop at its iteration ceiling."
+        )
+
+    try:
+        init(
+            planning_dir,
+            statement=statement,
+            target=str(file_path),
+            acceptance=acceptance,
+            max_iterations=int(opts.get("max_iters") or 0),
+        )
+    except GoalLoopError as exc:
+        return str(exc)
+
+    try:
+        (planning_dir / "goal.md").write_text(
+            f"# Goal\n\n{statement}\n\n## Acceptance\n\n"
+            + "\n".join(f"- {line}" for line in acceptance)
+            + "\n"
+        )
+    except OSError:
+        pass  # goalloop.json is the source of truth; goal.md is a convenience
     return None
 
 
@@ -256,14 +310,21 @@ def setup_session(
     express_source: str | None = None,
     express_kind: str | None = None,
     intent_source: str | None = None,
+    goalloop_opts: dict | None = None,
 ) -> dict:
-    """Core setup logic. Returns JSON-serializable result dict."""
+    """Core setup logic. Returns JSON-serializable result dict.
+
+    `goalloop_opts` carries the goal statement, its acceptance lines and the
+    iteration ceiling. Bundled rather than spread across three more keyword
+    arguments, which this signature does not have room for.
+    """
     is_audit = workflow == "audit"
     is_auto = workflow == "auto"
+    is_goalloop = workflow == "goalloop"
 
     # Input validation
     if file_path.is_dir():
-        if not is_audit and not is_auto:
+        if not is_audit and not is_auto and not is_goalloop:
             return {
                 "success": False,
                 "error": f"Expected a spec file (.md), got a directory: {file_path}. "
@@ -341,11 +402,13 @@ def setup_session(
         review_mode = session_config.get("review_mode", review_mode)
 
     # Initialize tracker
-    from lib.tasks import TASK_IDS, AUDIT_TASK_IDS
+    from lib.tasks import TASK_IDS, AUDIT_TASK_IDS, GOALLOOP_TASK_IDS
     if is_auto:
         expected_count = None  # Dynamic — depends on number of phases
     elif is_audit:
         expected_count = len(AUDIT_TASK_IDS)
+    elif is_goalloop:
+        expected_count = len(GOALLOOP_TASK_IDS)
     else:
         expected_count = len(TASK_IDS)
 
@@ -426,6 +489,17 @@ def setup_session(
             plugin_root=str(plugin_root),
             discovery_findings=str(file_path.parent),
         )
+    elif is_goalloop:
+        discovery_dir = detect_discovery_artifacts(planning_dir)
+        epic_title = create_goalloop_workflow(
+            tracker, **context,
+            discovery_findings=str(discovery_dir) if discovery_dir else None,
+        )
+        goalloop_error = _init_goalloop_state(
+            planning_dir, file_path, goalloop_opts or {}
+        )
+        if goalloop_error:
+            return {"success": False, "error": goalloop_error, "mode": "error"}
     else:
         discovery_dir = detect_discovery_artifacts(planning_dir)
         epic_title = create_plan_workflow(
@@ -488,7 +562,7 @@ def setup_session(
         "epic_id": epic_title,
         "beads_available": True,
         "sessions_root": str(sessions_root()),
-        "message": f"Starting new {'audit' if is_audit else 'auto' if is_auto else 'planning'} session in: {planning_dir}",
+        "message": f"Starting new {workflow} session in: {planning_dir}",
     }
 
 
@@ -503,8 +577,26 @@ def main():
     parser.add_argument("--force", action="store_true", help="Force overwrite of existing state")
     parser.add_argument("--session-id", help="Session ID from hook's additionalContext")
     parser.add_argument(
-        "--workflow", choices=["plan", "audit", "auto"], default="plan",
-        help="Workflow type: plan (default), audit, or auto",
+        "--workflow", choices=["plan", "audit", "auto", "goalloop"], default="plan",
+        help="Workflow type: plan (default), audit, auto, or goalloop",
+    )
+    parser.add_argument(
+        "--goal",
+        help="Goalloop workflow: the end state, in the user's words.",
+    )
+    parser.add_argument(
+        "--goal-file",
+        help="Goalloop workflow: read the goal statement from this file instead.",
+    )
+    parser.add_argument(
+        "--acceptance", action="append",
+        help="Goalloop workflow: one acceptance line; repeat. At least one is "
+             "required — it is what evidence gets checked against.",
+    )
+    parser.add_argument(
+        "--max-iters", type=int, default=0,
+        help="Goalloop workflow: iteration ceiling. 0 (default) means only the "
+             "goal, a blocker, or the user stops the loop.",
     )
     parser.add_argument(
         "--depth", choices=["quick", "standard", "deep"], default="standard",
@@ -545,6 +637,33 @@ def main():
         }))
         sys.exit(2)
 
+    goalloop_flags = {
+        "--goal": args.goal,
+        "--goal-file": args.goal_file,
+        "--acceptance": args.acceptance,
+        "--max-iters": args.max_iters or None,
+    }
+    misplaced = sorted(f for f, v in goalloop_flags.items() if v)
+    if args.workflow != "goalloop" and misplaced:
+        print(json.dumps({
+            "success": False,
+            "mode": "error",
+            "error": f"{', '.join(misplaced)} only valid with --workflow goalloop, "
+                     f"got {args.workflow}",
+        }))
+        sys.exit(2)
+
+    goal_statement = args.goal
+    if args.goal_file:
+        try:
+            goal_statement = Path(args.goal_file).read_text().strip()
+        except OSError as exc:
+            print(json.dumps({
+                "success": False, "mode": "error",
+                "error": f"--goal-file unreadable: {exc}",
+            }))
+            sys.exit(2)
+
     express_source = args.from_prd or args.from_adr
     express_kind = "prd" if args.from_prd else ("adr" if args.from_adr else None)
     if express_source and args.workflow != "plan":
@@ -575,6 +694,11 @@ def main():
             express_source=express_source,
             express_kind=express_kind,
             intent_source=args.from_intent,
+            goalloop_opts={
+                "goal": goal_statement,
+                "acceptance": args.acceptance,
+                "max_iters": args.max_iters,
+            },
         )
     except Exception as e:
         result = {"success": False, "error": str(e), "mode": "error"}

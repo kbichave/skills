@@ -18,6 +18,7 @@ Navigation hub for `references/`. SKILL.md maps each workflow step to a file; th
 | `spec-policy.md` | Plan — projecting quality rules into spec obligations |
 | `implement-protocol.md` | Implement (Phase 1-10 per section) |
 | `resume.md` | After `/clear` or compaction |
+| `question-selection.md` | Any `AskUserQuestion` round — scores candidates by information gain |
 
 ## Discovery (`--workflow audit`)
 
@@ -45,6 +46,19 @@ Navigation hub for `references/`. SKILL.md maps each workflow step to a file; th
 | TDD | `tdd-approach.md` | |
 | Section Index | `section-index.md` | |
 | Section Splitting | `section-splitting.md` | |
+
+## Goalloop (`--workflow goalloop`)
+
+| Phase | File | Notes |
+|---|---|---|
+| All seven control steps | `goalloop-protocol.md` | §1 goal · §2 probe · §3 ledger · §4 the iteration · §5 verify |
+| Clarification round | `question-selection.md` | Run at `--budget 2` — an unattended mode asks rarely |
+
+The loop's own discipline is in `goalloop-protocol.md`. The SDLC work is
+delegated: each iteration runs a nested `plan` and `implement` session, so
+`plan-writing.md`, `implement-protocol.md` and the rest apply unchanged.
+**§5's three-clause done test is load-bearing** — it is the only thing standing
+between an autonomous loop and a run that declares itself finished.
 
 ## Implement
 

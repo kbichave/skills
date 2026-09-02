@@ -17,7 +17,7 @@
   "models": {
     "gemini": "gemini-2.5-pro",
     "chatgpt": "gpt-4.1",
-    "_comment": "Models for external plan review. Alternatives — Gemini: gemini-3.1-pro-preview, gemini-2.5-flash, gemini-3-flash-preview | OpenAI: gpt-5.4-mini, gpt-5.4, o4-mini, gpt-4o"
+    "_comment": "Models for external plan review. Alternatives \u2014 Gemini: gemini-3.1-pro-preview, gemini-2.5-flash, gemini-3-flash-preview | OpenAI: gpt-5.4-mini, gpt-5.4, o4-mini, gpt-4o"
   },
   "llm_client": {
     "timeout_seconds": 120,
@@ -28,5 +28,12 @@
       503
     ],
     "_comment": "Timeout and retry settings for external LLM calls"
+  },
+  "goalloop": {
+    "max_iterations": 0,
+    "question_budget": 2,
+    "floor_bits": 0.15,
+    "_comment_max": "max_iterations: iteration ceiling for /deep goalloop. 0 = only the goal, a blocker, or the user stops the loop. --max-iters overrides.",
+    "_comment_questions": "question_budget / floor_bits: defaults for pick-questions.py inside goalloop. An unattended run should ask rarely; interactive plan and discovery may use the CLI defaults (4 / 0.15)."
   }
 }

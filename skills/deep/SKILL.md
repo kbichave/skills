@@ -16,6 +16,7 @@ Pick mode by question:
 | "How do I build phase X?" | `plan` | blueprint + sections | **Interview** (Premise Challenge) |
 | "Code section X" | `implement` | tested code | **Confidence gate** |
 | "Do it all autonomously" | `auto` | multi-phase plan + implement chain | **Discovery bridge** |
+| "Get me to this end state" | `goalloop` | goal + increment ledger, looped | **Three-clause done test** |
 
 ```
 /deep intent "the price board lags the rack"         → intent.md
@@ -23,6 +24,7 @@ Pick mode by question:
 /deep plan @spec.md [--from-prd @prd.md | --from-adr @adrs/ | --from-intent @intent.md]  → blueprint
 /deep implement [@dir] [--auto]                      → execute sections
 /deep auto @phases/                                  → end-to-end
+/deep goalloop @target --goal "<end state>" --acceptance "<observable>" [--max-iters N]
 ```
 
 **Discovery depth** (`audit` only):
@@ -64,6 +66,7 @@ Lifecycle concerns live in `references/integration-protocol.md`:
 | `plan @file.md` or `@file.md` | `plan` |
 | `implement [@path]` or `@dir` with `claude-plan.md` + `sections/` | `implement` |
 | `auto @path` | `auto` |
+| `goalloop [@target]` + `--goal` | `goalloop` |
 | Inline text (no `@`) | Synthesize via `references/auto-spec-synthesis.md` |
 | Empty | Ask: `"What do you want to build or audit?"` |
 
@@ -76,11 +79,12 @@ For `audit` / `plan` / `auto`:
 uv run ${DEEP_PLUGIN_ROOT}/scripts/checks/setup-session.py \
   --file "<target>" --plugin-root "${DEEP_PLUGIN_ROOT}" \
   --review-mode "${review_mode}" --session-id "${DEEP_SESSION_ID}" \
-  --workflow "<audit | plan | auto>" \
+  --workflow "<audit | plan | auto | goalloop>" \
   [--depth "<quick|standard|deep>"] \
   [--from-prd "<path>" | --from-adr "<path>"]
 ```
 `--depth` is `audit`-only. `--from-prd` / `--from-adr` are `plan`-only and mutually exclusive.
+`--goal` / `--goal-file`, `--acceptance` (repeatable, at least one) and `--max-iters` are `goalloop`-only.
 Parse JSON: `new` → proceed; `resume` → continue at ready step; `complete` → stop; `success == false` → error.
 
 For `implement`: skip setup-session. Use `@path` (or its parent), else `~/.claude/.deep-plan-active`. Validate `claude-plan.md`, `sections/index.md`, `.deepstate/state.json` exist.
@@ -134,6 +138,7 @@ everything is fine.
 | Discovery findings reuse for auto + plan | `references/discovery-bridge.md` |
 | Plan mutation (split/skip/reorder/insert/amend) | `references/plan-mutation-protocol.md` |
 | Resume after compaction | `references/resume.md` |
+| Which questions to ask (information gain) | `references/question-selection.md` |
 
 ### Discovery (`--workflow audit`)
 | Step | Reference |
@@ -200,6 +205,23 @@ Rules that are not negotiable:
 Multi-phase: parses `phasing-overview.md`, plans each phase in topological order, implements before next dependent phase plans. First phase = full plan workflow; later phases use `references/discovery-bridge.md`. Human-interactive steps auto-close at ready time (do NOT pre-close — breaks dependency chain).
 
 Example: `plan P01 → implement P01 → plan P03 → implement P03 → plan P05 → implement P05`
+
+### Goalloop (`--workflow goalloop`)
+Starts from an end state, not from phases someone already enumerated. Full
+protocol in `references/goalloop-protocol.md`; all seven control steps point
+at it. Per iteration: `begin` → increment as an intent → nested `plan` session
+under `iterations/iNN/` → `implement` → `evidence` → `end` → `tick`.
+
+```bash
+GL="python3 ${DEEP_PLUGIN_ROOT}/scripts/checks/goalloop.py --planning-dir ${planning_dir}"
+${GL} tick   # 3 = iterate · 0 = goal met · 1 = stop, needs a human · 2 = usage
+```
+
+`tick` decides, not you: it reads recorded artifacts and needs all three
+clauses — ledger clear, gates green, every acceptance line evidenced. New
+information is triaged explicitly (`--kind blocker` preempts, `deferrable`
+splices), never inferred. Intents stay `draft`/`agent`, publishing is
+confirm-first, and clarification rounds run at `--budget 2`.
 
 ### Implement
 All section-level discipline lives in `references/implement-protocol.md`:

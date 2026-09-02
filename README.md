@@ -9,6 +9,7 @@ A Claude Code plugin for discovering, planning, and implementing complex systems
 /deep implement [@plan-dir/]        → execute sections
 /deep implement --auto              → all sections unattended, no phase chain
 /deep auto @phases/                 → autonomous end-to-end (multi-phase plan + implement)
+/deep goalloop @repo --goal "…"     → loop toward an end state until it is evidenced
 ```
 
 Also accepts **inline text** or **no argument** — the plugin synthesizes a spec or objective from git history + codebase context before proceeding.
@@ -72,6 +73,7 @@ input the next one expects.
 | 2 | `/deep discovery @path` | You don't yet know what to build | Audit docs + `phasing-overview.md` (the phase list and its dependency graph) |
 | 3 | `/deep plan @spec.md` | You know the phase; you need the blueprint | `claude-spec.md`, `claude-plan.md`, `sections/` |
 | 4 | `/deep implement` (add `--auto` to run unattended) | The blueprint exists | Code and tests, section by section, behind quality gates |
+| — | `/deep goalloop @repo --goal "…"` | You know the end state, not the phases | `goal-ledger.md`, an intent + nested plan/implement per increment, `goal-summary.md` |
 | 5 | `/deep:code-review` | Before you open the PR | A report under `~/.claude/code-reviews/` |
 
 **Steps 3 and 4 are the loop.** One phase at a time: plan it, build it, then plan
@@ -83,6 +85,7 @@ Skipping is normal and expected:
 - **Greenfield or an unfamiliar codebase** → start at `/deep discovery`.
 - **A problem someone reported, not a task** → start at `/deep intent`, then hand it to `/deep plan --from-intent`.
 - **Many phases already mapped** → `/deep auto @phases/` replaces steps 3 and 4 for every phase.
+- **An end state but no phase list** → `/deep goalloop`. It carves the increments as it goes.
 
 ```
 /deep intent       Capture → Grill (is the problem real, owned, measurable?) → Decide
@@ -96,6 +99,10 @@ Skipping is normal and expected:
 
 /deep implement    Reads sections → Implements in dependency order with quality gates
                    (writes code, tracks progress, enforces standards)
+
+/deep goalloop     Goal + acceptance lines → increment ledger → per increment:
+                   intent → plan → implement → evidence → tick. Loops until all
+                   three done-test clauses hold, a blocker halts it, or --max-iters.
 
 /deep auto         Multi-phase plan + implement loop (parses phasing-overview.md,
                    plans each phase in dependency order then implements before
@@ -178,6 +185,39 @@ Executes the blueprint section by section with strict quality gates.
 | **3-file tracking** | `impl-task-plan.md`, `impl-findings.md`, `impl-progress.md` persist across `/clear` |
 | **3-strike error rule** | Same error 3 times with different approaches → escalate to user |
 | **Exit summary** | Stop hook requires `impl-summary.md` before allowing exit |
+
+### /deep goalloop
+
+Starts from the end state instead of from phases someone already enumerated.
+`auto` executes a plan; `goalloop` finds one. The goal and its acceptance lines
+are durable; the ledger of increments is fixed by default and changed only
+through recorded triage.
+
+```
+/deep goalloop @repo \
+  --goal "The price board reflects the current rack within a minute, no manual step" \
+  --acceptance "A rack change appears on the board within 60s, measured end to end" \
+  --acceptance "No operator touches a spreadsheet in the path" \
+  --max-iters 8
+```
+
+| Feature | Description |
+|---------|-------------|
+| **Increment ledger** | `goal-ledger.md` — ordered, individually shippable slices, each with its own one-line acceptance test |
+| **Blocker vs deferral triage** | A blocker preempts the current increment; a deferral is spliced in behind it. Classified explicitly, never inferred, and logged with its reason |
+| **Intent per iteration** | Each increment becomes an intent, then a nested `plan` + `implement` session under `iterations/iNN/`. Intents stay `draft`/`agent`; publishing to your repo is confirm-first |
+| **Three-clause done test** | Ledger clear **and** gates green **and** every acceptance line pointing at a recorded artifact. `goalloop.py tick` decides from artifacts, not from the run's own assessment |
+| **Evidence, not argument** | An acceptance line is met by a test name, a report path, or a recorded command — never by a paragraph explaining why it should hold |
+| **Information-gain questions** | Clarification rounds score candidates in bits and ask at `--budget 2`. A question the codebase can answer scores zero, so the agent looks it up instead |
+| **Iteration ceiling** | `--max-iters N`, or unbounded by default. A goal met on the final allowed pass reads as met, not as out of budget |
+
+`tick`'s exit code drives the loop: `3` keep working, `0` goal met, `1` stop
+and report, `2` usage error. `3` comes with a reason — `running` means take the
+next increment; `measurement_needed` means everything is delivered and green
+and an acceptance line has no measurement yet, which is one command from done
+rather than a reason to hand back. A run that stops on `1` names the unmet
+clause and the increments left; one that quietly holds skipped work is the
+failure mode the done test exists to prevent.
 
 ### /deep auto
 

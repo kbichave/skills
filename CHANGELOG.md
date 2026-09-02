@@ -5,6 +5,63 @@ All notable changes to deep-plan will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [5.17.0] - 2026-09-02
+
+`/deep goalloop` — the SDLC as a loop toward an end state — and an
+information-gain gate on clarifying questions.
+
+### Added
+- **`/deep goalloop`**, a fifth mode. `auto` executes phases discovery already
+  enumerated; `goalloop` starts from "here is where I want to end up" and
+  carves the increments as it goes. Per iteration: take the next increment off
+  the ledger, write it as an intent, plan it in a nested session, implement it,
+  record evidence, tick. `scripts/lib/goalloop.py` holds the goal, the ledger
+  and the done test; `scripts/checks/goalloop.py` is the CLI;
+  `references/goalloop-protocol.md` is the protocol.
+- **The three-clause done test.** A run is finished only when the ledger is
+  clear, every section recorded `passed` with an empty needs-human queue, and
+  every acceptance line points at a recorded artifact. Each clause catches a
+  different way a loop lies about being done, and the third is the one nothing
+  else covered: building all the right parts and never checking the thing the
+  user asked for. `tick` decides from artifacts; the run's own assessment is
+  not an input.
+- **Evidence over argument.** `goalloop.py evidence --source` requires an
+  artifact — a test name, a report path, a recorded command. "It should now be
+  under two seconds because the write is synchronous" is reasoning, and the
+  loop will not accept it as a measurement.
+- **Blocker-versus-deferral triage.** New information found mid-iteration is
+  classified explicitly: a blocker preempts (the displaced increment returns to
+  pending, the pass is recorded `preempted`), a deferral is spliced in behind
+  the active increment. The kind is never inferred from the text, and every
+  decision is logged with its reason, so a run that reshuffled the whole ledger
+  is visible as exactly that.
+- **`scripts/lib/eig.py` + `scripts/checks/pick-questions.py`** — expected
+  information gain over the live hypotheses, in bits, so a question competes
+  against silence rather than against the other questions. Selection is greedy
+  over the joint distribution, not a sort by score, which is what catches the
+  reworded duplicate; signature comparison catches the rest. A question the
+  codebase can answer scores zero however discriminating it is. Protocol in
+  `references/question-selection.md`, following arXiv 2406.17453 (EIG question
+  selection) and arXiv 2606.03135 (information-gain reward, and the
+  zero-for-abstaining property that does the work here).
+
+- **A fourth `tick` verdict, `measurement_needed`.** Ledger clear, gates green,
+  and an acceptance line nobody measured is not a halt — measuring is work the
+  loop can do, and stopping there hands back a run that was one command from
+  finished. It returns exit 3 with the measurement named, and says plainly not
+  to record an argument as evidence instead.
+
+### Changed
+- `setup-session.py` accepts `--workflow goalloop` with `--goal` /
+  `--goal-file`, repeatable `--acceptance`, and `--max-iters`. A goal with no
+  acceptance line is refused at setup: it could never be shown to be met, so
+  the loop would stop at its ceiling every time.
+- `begin_iteration` attaches the nested plan session's directory when resumed
+  with `--dir`. That directory is where the iteration's verification results
+  land, so without it `gates_green` would never see the work.
+- `config.json` gained a `goalloop` block: `max_iterations` (0 = unbounded),
+  `question_budget` (2 — an unattended run asks rarely), `floor_bits`.
+
 ## [5.16.0] - 2026-09-01
 
 Codex support for the portable half of the plugin.

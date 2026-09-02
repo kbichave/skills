@@ -338,3 +338,129 @@ AUDIT_TASK_DEFINITIONS: dict[str, TaskDefinition] = {
 }
 
 
+
+
+# ============================================================================
+# GOALLOOP WORKFLOW DEFINITIONS
+# ============================================================================
+
+# The control layer only. Each iteration's plan and implement work runs in its
+# own nested session under `iterations/iNN/`, with its own tracker — so these
+# steps are the scaffolding around the loop, not the SDLC steps themselves.
+# `run-iterations` is one issue that stays open for the whole run.
+GOALLOOP_TASK_IDS: dict[int, str] = {
+    4: "capture-goal",
+    5: "probe-target",
+    6: "goal-questions",
+    7: "initial-ledger",
+    8: "run-iterations",
+    9: "goal-verification",
+    10: "output-summary",
+}
+
+GOALLOOP_TASK_ID_TO_STEP: dict[str, int] = {
+    v: k for k, v in GOALLOOP_TASK_IDS.items()
+}
+
+GOALLOOP_STEP_NAMES: dict[int, str] = {
+    0: "Context check",
+    1: "Validate environment",
+    2: "Resolve goal and target",
+    3: "Setup session",
+    4: "Capture goal and acceptance lines",
+    5: "Probe the target",
+    6: "Clarification round (information-gain gated)",
+    7: "Decompose into the initial ledger",
+    8: "Run iterations until the goal or a stop",
+    9: "Goal verification (three-clause done test)",
+    10: "Output summary",
+}
+
+GOALLOOP_TASK_DEPENDENCIES: dict[str, list[str]] = {
+    # Context items
+    "context-plugin-root": ["output-summary"],
+    "context-planning-dir": ["output-summary"],
+    "context-initial-file": ["output-summary"],
+    "context-review-mode": ["output-summary"],
+    # Control flow. Questions come before decomposition because the answers
+    # decide how the goal splits; probing comes before both because the repo
+    # settles most of what there is to ask about.
+    "capture-goal": [],
+    "probe-target": ["capture-goal"],
+    "goal-questions": ["probe-target"],
+    "initial-ledger": ["goal-questions"],
+    "run-iterations": ["initial-ledger"],
+    "goal-verification": ["run-iterations"],
+    "output-summary": ["goal-verification"],
+}
+
+GOALLOOP_TASK_DEFINITIONS: dict[str, TaskDefinition] = {
+    "capture-goal": TaskDefinition(
+        subject="Capture Goal",
+        description=(
+            "Read goalloop-protocol.md §1. Record the end state in the user's "
+            "words and extract its acceptance lines — each one an observation "
+            "someone could make, not a feeling. Run `goalloop.py init`."
+        ),
+        active_form="Capturing the goal",
+    ),
+    "probe-target": TaskDefinition(
+        subject="Probe Target",
+        description=(
+            "Read goalloop-protocol.md §2. If the target has no discovery "
+            "artifacts, run the audit workflow at --depth quick and use its "
+            "findings. If this issue names an existing findings path, ingest "
+            "that instead and do not re-audit. Either way, this step is what "
+            "keeps the clarification round from asking about things the "
+            "codebase already states."
+        ),
+        active_form="Probing the target",
+    ),
+    "goal-questions": TaskDefinition(
+        subject="Clarification Round",
+        description=(
+            "Read question-selection.md. Enumerate the live hypotheses for how "
+            "the goal could be met, score candidate questions with "
+            "pick-questions.py at --budget 2, ask only what it returns, and "
+            "record the residual uncertainty as a stated assumption."
+        ),
+        active_form="Running the clarification round",
+    ),
+    "initial-ledger": TaskDefinition(
+        subject="Initial Ledger",
+        description=(
+            "Read goalloop-protocol.md §3. Decompose the goal into ordered, "
+            "individually shippable increments, each with its own one-line "
+            "acceptance test. Add them with `goalloop.py add`."
+        ),
+        active_form="Decomposing the goal into increments",
+    ),
+    "run-iterations": TaskDefinition(
+        subject="Run Iterations",
+        description=(
+            "Read goalloop-protocol.md §4. Stays open for the whole run. Per "
+            "iteration: begin, write the increment as an intent, plan it, "
+            "implement it, record evidence, end, tick. Close this issue only "
+            "when tick stops returning 3."
+        ),
+        active_form="Running iterations",
+    ),
+    "goal-verification": TaskDefinition(
+        subject="Goal Verification",
+        description=(
+            "Read goalloop-protocol.md §5. Run `goalloop.py tick` one final "
+            "time and report its verdict verbatim. Do not restate an unmet "
+            "clause as met."
+        ),
+        active_form="Verifying the goal",
+    ),
+    "output-summary": TaskDefinition(
+        subject="Output Summary",
+        description=(
+            "Write goal-summary.md from `goalloop.py handoff`. Append the "
+            "needs-human queue from every iteration directory. A run that "
+            "stops without saying what is left has not reported."
+        ),
+        active_form="Outputting summary",
+    ),
+}

@@ -1,12 +1,22 @@
 {
   "name": "deep",
   "description": "Discover, plan, and implement complex systems with AI-assisted research, multi-LLM review, TDD sections, and disciplined execution",
-  "version": "5.16.0",
+  "version": "5.17.0",
   "author": {
     "name": "kbichave",
     "url": "https://github.com/kbichave"
   },
   "repository": "https://github.com/kbichave/skills",
   "license": "MIT",
-  "keywords": ["planning", "implementation", "tdd", "architecture", "llm-review", "execution", "discovery", "system-design", "build-vs-buy"]
+  "keywords": [
+    "planning",
+    "implementation",
+    "tdd",
+    "architecture",
+    "llm-review",
+    "execution",
+    "discovery",
+    "system-design",
+    "build-vs-buy"
+  ]
 }

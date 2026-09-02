@@ -87,6 +87,26 @@ question in the interview.
 - "Do you have any other requirements?" — no branch resolved
 - Any question without a recommended answer
 
+## Which Questions To Ask
+
+Before the first `AskUserQuestion`, score the candidates —
+`question-selection.md`. Write down the live hypotheses (the distinct plans
+still consistent with what you know), mark which of them each answer would
+rule out, and run:
+
+```bash
+python3 ${DEEP_PLUGIN_ROOT}/scripts/checks/pick-questions.py \
+  --in "${planning_dir}/questions.json" --format markdown
+```
+
+Ask what it returns, in the order it returns. A question the codebase can
+answer scores zero however well it discriminates — go read the code instead.
+Residual uncertainty is yours to absorb and state as an assumption, not to
+hand back.
+
+The sequential walk above is unchanged: ranked order exists so the *first*
+question is the right one, not so you can batch four at once.
+
 ## When to Stop
 
 Stop interviewing when both are true:

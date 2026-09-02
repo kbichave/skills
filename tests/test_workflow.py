@@ -558,3 +558,98 @@ class TestCreateAutonomousWorkflow:
         )
         issue = tracker.show("P01-detailed-interview")
         assert "SELF-INTERVIEW" in issue["description"]
+
+
+# ============================================================================
+# GOALLOOP WORKFLOW
+# ============================================================================
+
+
+class TestGoalloopWorkflow:
+    """The control layer around the loop. The SDLC steps themselves run in
+    nested per-iteration sessions, so they are deliberately absent here."""
+
+    @pytest.fixture
+    def goalloop_context(self, tmp_path):
+        return {
+            "plugin_root": "/fake/plugin",
+            "planning_dir": str(tmp_path / "planning"),
+            "initial_file": str(tmp_path / "repo"),
+            "review_mode": "external_llm",
+        }
+
+    def test_creates_one_issue_per_control_step(self, tracker, goalloop_context):
+        from lib.workflow import create_goalloop_workflow
+        from lib.tasks import GOALLOOP_TASK_IDS
+
+        create_goalloop_workflow(tracker, **goalloop_context)
+        ids = {issue["id"] for issue in tracker.list_issues()}
+        assert ids == set(GOALLOOP_TASK_IDS.values())
+
+    def test_epic_title_names_the_goal(self, tracker, goalloop_context):
+        from lib.workflow import create_goalloop_workflow
+
+        assert create_goalloop_workflow(
+            tracker, **goalloop_context
+        ) == "deep-goalloop: repo"
+
+    def test_the_chain_starts_at_capture_goal(self, tracker, goalloop_context):
+        from lib.workflow import create_goalloop_workflow
+
+        create_goalloop_workflow(tracker, **goalloop_context)
+        assert [i["id"] for i in tracker.ready()] == ["capture-goal"]
+
+    def test_probing_precedes_the_clarification_round(self, tracker, goalloop_context):
+        # The repo settles most of what there is to ask about, so asking first
+        # would burn questions on lookups.
+        from lib.workflow import create_goalloop_workflow
+        from lib.tasks import GOALLOOP_TASK_IDS, GOALLOOP_TASK_DEPENDENCIES
+
+        create_goalloop_workflow(tracker, **goalloop_context)
+        order = [GOALLOOP_TASK_IDS[k] for k in sorted(GOALLOOP_TASK_IDS)]
+        assert order.index("probe-target") < order.index("goal-questions")
+        assert GOALLOOP_TASK_DEPENDENCIES["goal-questions"] == ["probe-target"]
+
+    def test_every_dependency_is_created_before_its_dependent(
+        self, tracker, goalloop_context
+    ):
+        # Creating a step before its dependency exists is what broke the
+        # autonomous chain; the tracker refuses it, so this asserts the order.
+        from lib.workflow import create_goalloop_workflow
+        from lib.tasks import GOALLOOP_TASK_IDS
+
+        create_goalloop_workflow(tracker, **goalloop_context)  # would raise
+        assert len(tracker.list_issues()) == len(GOALLOOP_TASK_IDS)
+
+    def test_existing_discovery_retargets_the_probe_without_closing_it(
+        self, tracker, goalloop_context
+    ):
+        # Closing it at creation would make goal-questions ready before the
+        # goal has been captured — the pre-closing trap from the autonomous
+        # workflow.
+        from lib.workflow import create_goalloop_workflow
+
+        create_goalloop_workflow(
+            tracker, **goalloop_context, discovery_findings="/audit/findings"
+        )
+        probe = next(i for i in tracker.list_issues() if i["id"] == "probe-target")
+        assert probe["status"] == "open"
+        assert "/audit/findings" in probe["description"]
+        assert "do NOT run the audit workflow" in probe["description"]
+        assert [i["id"] for i in tracker.ready()] == ["capture-goal"]
+
+    def test_every_step_points_at_a_reference_file(self, tracker, goalloop_context):
+        from lib.workflow import create_goalloop_workflow, _GOALLOOP_REFERENCE_FILES
+        from lib.tasks import GOALLOOP_TASK_IDS
+
+        create_goalloop_workflow(tracker, **goalloop_context)
+        assert set(_GOALLOOP_REFERENCE_FILES) == set(GOALLOOP_TASK_IDS.values())
+        for issue in tracker.list_issues():
+            assert "**Reference:**" in issue["description"]
+
+    def test_the_reference_files_exist(self):
+        from lib.workflow import _GOALLOOP_REFERENCE_FILES
+
+        references = Path(__file__).resolve().parent.parent / "references"
+        for name in set(_GOALLOOP_REFERENCE_FILES.values()):
+            assert (references / name).exists(), name

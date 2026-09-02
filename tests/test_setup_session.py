@@ -451,3 +451,88 @@ class TestResolvePlanningDir:
         # New sessions go to the sessions root, not inside the project tree
         assert str(_mod.sessions_root()) in str(result)
         assert "abcdef12" in str(result)
+
+
+class TestGoalloopWorkflow:
+    """`--workflow goalloop`: a target directory plus a goal and its
+    acceptance lines."""
+
+    @pytest.fixture
+    def target(self, tmp_path):
+        repo = tmp_path / "repo"
+        (repo / "src").mkdir(parents=True)
+        (repo / "src" / "app.py").write_text("print('hi')\n")
+        return repo
+
+    def opts(self, **overrides):
+        base = {
+            "goal": "The board reflects the current rack within a minute.",
+            "acceptance": ["A rack change appears on the board within 60s, measured"],
+            "max_iters": 0,
+        }
+        base.update(overrides)
+        return base
+
+    def run(self, target, plugin_root, **overrides):
+        with _patch_tracker():
+            return setup_session(
+                file_path=target,
+                plugin_root=plugin_root,
+                review_mode="external_llm",
+                session_id="goalloop-session-1",
+                workflow="goalloop",
+                force=False,
+                goalloop_opts=self.opts(**overrides),
+            )
+
+    def test_a_directory_target_is_accepted(self, target, plugin_root, tmp_path, monkeypatch):
+        monkeypatch.setenv("DEEP_SESSIONS_ROOT", str(tmp_path / "sessions"))
+        result = self.run(target, plugin_root)
+        assert result["success"] is True
+        assert result["workflow"] == "goalloop"
+        assert result["epic_id"] == "deep-goalloop: repo"
+
+    def test_the_goal_and_its_ledger_are_written(self, target, plugin_root, tmp_path, monkeypatch):
+        monkeypatch.setenv("DEEP_SESSIONS_ROOT", str(tmp_path / "sessions"))
+        result = self.run(target, plugin_root, max_iters=6)
+        planning_dir = Path(result["planning_dir"])
+        state = json.loads((planning_dir / ".deepstate" / "goalloop.json").read_text())
+        assert state["goal"]["max_iterations"] == 6
+        assert [a["id"] for a in state["goal"]["acceptance"]] == ["A1"]
+        assert (planning_dir / "goal.md").exists()
+        assert (planning_dir / "goal-ledger.md").exists()
+
+    def test_a_goal_with_no_acceptance_line_is_refused(
+        self, target, plugin_root, tmp_path, monkeypatch
+    ):
+        # It could never be shown to be met, so the loop would only ever stop
+        # at its iteration ceiling.
+        monkeypatch.setenv("DEEP_SESSIONS_ROOT", str(tmp_path / "sessions"))
+        result = self.run(target, plugin_root, acceptance=[])
+        assert result["success"] is False
+        assert "--acceptance" in result["error"]
+
+    def test_a_goal_with_no_statement_is_refused(self, target, plugin_root, tmp_path, monkeypatch):
+        monkeypatch.setenv("DEEP_SESSIONS_ROOT", str(tmp_path / "sessions"))
+        result = self.run(target, plugin_root, goal="   ")
+        assert result["success"] is False
+        assert "needs a goal" in result["error"]
+
+    def test_a_markdown_target_supplies_the_statement(self, plugin_root, tmp_path, monkeypatch):
+        monkeypatch.setenv("DEEP_SESSIONS_ROOT", str(tmp_path / "sessions"))
+        goal_doc = tmp_path / "goal.md"
+        goal_doc.write_text("Every nightly run exits zero for a week.")
+        result = self.run(goal_doc, plugin_root, goal=None)
+        state = json.loads(
+            (Path(result["planning_dir"]) / ".deepstate" / "goalloop.json").read_text()
+        )
+        assert state["goal"]["statement"] == "Every nightly run exits zero for a week."
+
+    def test_resuming_reports_the_ready_control_step(
+        self, target, plugin_root, tmp_path, monkeypatch
+    ):
+        monkeypatch.setenv("DEEP_SESSIONS_ROOT", str(tmp_path / "sessions"))
+        self.run(target, plugin_root)
+        again = self.run(target, plugin_root)
+        assert again["mode"] == "resume"
+        assert [i["title"] for i in again["ready_issues"]] == ["Capture Goal"]
