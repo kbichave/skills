@@ -1,6 +1,6 @@
 ---
 name: deep
-description: Discovery, planning, and implementation pipeline. Modes — discovery: system audit → phase specs; plan: implementation blueprint; implement: execute sections; auto: autonomous end-to-end. Accepts @path, inline text, or no argument.
+description: Discovery, planning, and implementation pipeline. Modes — intent: capture the problem; discovery: system audit → phase specs; plan: implementation blueprint; implement: execute sections; auto: autonomous end-to-end from a phase list; goalloop: loop toward a stated end state, carving increments as it goes, until every acceptance line is evidenced. Accepts @path, inline text, or no argument.
 license: MIT
 compatibility: Requires uv (Python 3.11+). Optional Gemini or OpenAI API key for external review.
 ---

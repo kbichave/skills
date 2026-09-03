@@ -5,6 +5,16 @@ All notable changes to deep-plan will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [5.18.1] - 2026-09-03
+
+### Fixed
+- **`goalloop` was missing from the skill description.** It shipped with a mode
+  table, a protocol file and seven tracker steps, and no mention in the one
+  line that decides routing — so "loop until this end state holds" reached
+  nothing and only an explicit `/deep goalloop` worked. The description now
+  names every mode, `intent` included, which had the same gap. A test asserts
+  it, because the body listing a mode reads as sufficient and is not.
+
 ## [5.18.0] - 2026-09-02
 
 `/deep goalloop` no longer requires its flags. What it cannot get from the

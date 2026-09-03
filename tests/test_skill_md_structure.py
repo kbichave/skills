@@ -79,6 +79,21 @@ def test_frontmatter_preserved(skill_content):
     assert "description:" in skill_content
 
 
+def test_description_advertises_every_mode(skill_content):
+    """The description is the routing trigger, so a mode absent from it is a
+    mode nobody reaches without typing its name.
+
+    `goalloop` shipped in 5.18.0 with a mode table, a protocol file and seven
+    tracker steps — and no mention in the description, so "loop until this end
+    state holds" routed nowhere. The body listing a mode is not enough.
+    """
+    description = next(
+        line for line in skill_content.split("\n") if line.startswith("description:")
+    )
+    for mode in ("intent", "discovery", "plan", "implement", "auto", "goalloop"):
+        assert mode in description, f"mode '{mode}' missing from the description"
+
+
 def test_references_setup_session(skill_content):
     """SKILL.md must reference setup-session.py (used by plan/audit/auto)."""
     assert "setup-session.py" in skill_content
