@@ -28,6 +28,7 @@ from pathlib import Path
 HIGH_CONFIDENCE_KEYWORDS: dict[str, tuple[str, ...]] = {
     "claude-api": ("anthropic", "claude api", "anthropic sdk"),
     "code-review": ("review", "pre-commit", "code quality"),
+    "review-panel": ("review", "pre-commit", "code quality"),
     "security-review": ("security", "vulnerability", "secrets"),
     "humanizer": ("draft", "prose", "rephrase", "in my style"),
     "internal-comms": ("status report", "leadership update", "incident report"),

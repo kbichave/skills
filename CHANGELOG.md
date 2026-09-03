@@ -5,6 +5,28 @@ All notable changes to deep-plan will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [5.19.0] - 2026-09-03
+
+### Changed
+- **`code-review` renamed to `review-panel`.** Claude Code now ships a built-in
+  `/code-review`, so the plugin's skill and the built-in collided on the same
+  name and the wrong one fired. Invoke it as `/deep:review-panel`. The skill
+  directory, the eval case set (`tests/evals/review-panel-cases.yaml`) and its
+  test module moved with it. Report output still lands in
+  `~/.claude/code-reviews/` — that path never clashed, and moving it would
+  orphan every existing report.
+
+### Added
+- **`pep8-reviewer` joins the panel.** Spawns on any `.py`/`.pyi`/`.ipynb` in
+  the diff and covers what the core reviewer's pack rules do not: PEP 8 naming
+  that is legal but misleading, PEP 257 docstring content, PEP 484/585/604
+  typing form, import organization, non-idiomatic constructs, and the
+  configured complexity/length/param/nesting thresholds. It resolves the target
+  repo's own `ruff`/`black`/`isort`/`mypy` config before judging anything, so a
+  rule the project disabled is not a finding, and it never re-prints
+  auto-fixable linter output as individual findings — those collapse into one
+  `low`. Findings carry the `PEP8-*` tag prefix and render under `## Standards`.
+
 ## [5.18.1] - 2026-09-03
 
 ### Fixed

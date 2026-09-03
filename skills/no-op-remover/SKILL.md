@@ -9,7 +9,7 @@ description: |
   change no behavior. Scans SKILL.md, agent definitions, CLAUDE.md/AGENTS.md,
   prompt templates, and docs; proposes delete/strengthen fixes; applies only
   what the user approves. NOT for humanizing prose (use humanizer) or for
-  dead code in source files (use code-review).
+  dead code in source files (use review-panel).
 license: MIT
 compatibility: claude-code opencode
 allowed-tools:
@@ -121,7 +121,7 @@ the skipped list so nothing is silently dropped.
 4. Concrete non-default constraints are never no-ops — keep every real rule.
 5. Apply nothing without approval. This skill proposes; the user decides.
 6. Stay in instruction/prompt files. Code comments and dead code are out of
-   scope (route those to `code-review`).
+   scope (route those to `review-panel`).
 
 ## Reference
 

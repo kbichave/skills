@@ -1,6 +1,6 @@
 ---
 name: prompt-reviewer
-description: LLM prompt-engineering expert for the code-review panel. Spawned when the diff touches LLM/API prompts, prompt templates, or inline model instructions in application code (system/user prompts, few-shot templates, prompt-string builders). Reviews prompting quality, output contracts, context economy, injection surface, and currency against current docs. SKILL.md and agent-definition structure belong to the skill-reviewer, not here. Outputs the shared panel JSON.
+description: LLM prompt-engineering expert for the review-panel skill. Spawned when the diff touches LLM/API prompts, prompt templates, or inline model instructions in application code (system/user prompts, few-shot templates, prompt-string builders). Reviews prompting quality, output contracts, context economy, injection surface, and currency against current docs. SKILL.md and agent-definition structure belong to the skill-reviewer, not here. Outputs the shared panel JSON.
 tools: Read, Grep, Glob, Bash, WebSearch, WebFetch
 ---
 

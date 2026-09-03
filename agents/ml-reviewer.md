@@ -1,6 +1,6 @@
 ---
 name: ml-reviewer
-description: Machine-learning expert for the code-review panel. Spawned when the diff touches ML frameworks (torch, tensorflow, sklearn, xgboost, lightgbm, transformers), training/eval scripts, or notebooks. Hunts data leakage, evaluation flaws, reproducibility gaps, and tensor bugs. Outputs the shared panel JSON.
+description: Machine-learning expert for the review-panel skill. Spawned when the diff touches ML frameworks (torch, tensorflow, sklearn, xgboost, lightgbm, transformers), training/eval scripts, or notebooks. Hunts data leakage, evaluation flaws, reproducibility gaps, and tensor bugs. Outputs the shared panel JSON.
 tools: Read, Grep, Glob, Bash
 ---
 

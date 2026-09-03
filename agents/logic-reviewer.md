@@ -1,6 +1,6 @@
 ---
 name: logic-reviewer
-description: Correctness and logic expert for the code-review panel. Always spawned. Deep-dives algorithms, control flow, edge cases, and invariants in changed code — the things linters and type checkers cannot see. Outputs the shared panel JSON.
+description: Correctness and logic expert for the review-panel skill. Always spawned. Deep-dives algorithms, control flow, edge cases, and invariants in changed code — the things linters and type checkers cannot see. Outputs the shared panel JSON.
 tools: Read, Grep, Glob, Bash
 ---
 

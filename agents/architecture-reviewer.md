@@ -1,6 +1,6 @@
 ---
 name: architecture-reviewer
-description: Architecture and design expert for the code-review panel. Spawned for large or cross-module diffs, new modules, or boundary changes. Reviews coupling, dependency direction, API shape, and extensibility. Outputs the shared panel JSON.
+description: Architecture and design expert for the review-panel skill. Spawned for large or cross-module diffs, new modules, or boundary changes. Reviews coupling, dependency direction, API shape, and extensibility. Outputs the shared panel JSON.
 tools: Read, Grep, Glob, Bash
 ---
 

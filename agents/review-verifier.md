@@ -1,6 +1,6 @@
 ---
 name: review-verifier
-description: Final verification gate for the code-review panel — always the last subagent. Re-reads the actual code for every merged finding, kills phantom bugs, fixes wrong file/line references, deduplicates overlapping expert findings, and normalizes severity. Only findings it approves reach the user.
+description: Final verification gate for the review-panel skill — always the last subagent. Re-reads the actual code for every merged finding, kills phantom bugs, fixes wrong file/line references, deduplicates overlapping expert findings, and normalizes severity. Only findings it approves reach the user.
 tools: Read, Grep, Glob, Bash
 ---
 

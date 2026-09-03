@@ -8,18 +8,18 @@ outcomes as base models evolve.
 
 ### 1. Structural (CI, automated)
 
-`tests/test_code_review_evals.py` + `tests/test_comment_markers.py`. No live
+`tests/test_review_panel_evals.py` + `tests/test_comment_markers.py`. No live
 model calls. Validates the case set shape, panel-agent structure against the
 doc's rubric (≤500 lines, frontmatter, no no-ops), routing-table consistency,
 and the deterministic marker logic. Runs on every change:
 
 ```bash
-uv run --no-project python -m pytest tests/test_code_review_evals.py tests/test_comment_markers.py -v
+uv run --no-project python -m pytest tests/test_review_panel_evals.py tests/test_comment_markers.py -v
 ```
 
 ### 2. Live behavioral (manual/periodic, deferred automation)
 
-`code-review-cases.yaml` holds the prompt set — 5 golden / 5 negative / 5 edge.
+`review-panel-cases.yaml` holds the prompt set — 5 golden / 5 negative / 5 edge.
 The live runner (not yet built) drives the real CLI per the doc:
 
 - Seed an isolated git workspace per case (clean checkout + the diff the case

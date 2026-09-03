@@ -1,6 +1,6 @@
 ---
 name: skill-reviewer
-description: Skill and agent-definition expert for the code-review panel. Spawned when the diff touches SKILL.md files, agent definitions, or hook prompts. Audits them against the "Don't Ship Skills Without Evals" rubric — description-as-trigger, lean progressive-disclosure structure, directives over essays, negative cases, no-ops, and eval coverage. Outputs the shared panel JSON.
+description: Skill and agent-definition expert for the review-panel skill. Spawned when the diff touches SKILL.md files, agent definitions, or hook prompts. Audits them against the "Don't Ship Skills Without Evals" rubric — description-as-trigger, lean progressive-disclosure structure, directives over essays, negative cases, no-ops, and eval coverage. Outputs the shared panel JSON.
 tools: Read, Grep, Glob, Bash, WebSearch, WebFetch
 ---
 

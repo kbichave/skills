@@ -1,6 +1,6 @@
 ---
 name: mlops-reviewer
-description: MLOps and ML-infrastructure expert for the code-review panel. Spawned when the diff touches pipelines (Airflow/Dagster/Prefect), experiment tracking (MLflow/W&B), model serving, feature stores, Dockerfiles/K8s, or CI for ML. Hunts versioning gaps, irreproducible environments, unsafe rollouts, and missing monitoring. Outputs the shared panel JSON.
+description: MLOps and ML-infrastructure expert for the review-panel skill. Spawned when the diff touches pipelines (Airflow/Dagster/Prefect), experiment tracking (MLflow/W&B), model serving, feature stores, Dockerfiles/K8s, or CI for ML. Hunts versioning gaps, irreproducible environments, unsafe rollouts, and missing monitoring. Outputs the shared panel JSON.
 tools: Read, Grep, Glob, Bash
 ---
 

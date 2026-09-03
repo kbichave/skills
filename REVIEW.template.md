@@ -1,6 +1,6 @@
 # Review policy
 
-Copy this to `REVIEW.md` in a repo's root to tune how `deep:code-review` reports
+Copy this to `REVIEW.md` in a repo's root to tune how `deep:review-panel` reports
 there. Every section is optional; delete what you do not need.
 
 This file says **how this repo wants review reported**. It does not define what

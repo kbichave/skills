@@ -1,6 +1,6 @@
 """Deterministic insertion of review markers into source files.
 
-The code-review skill flags findings at specific lines. Rather than have the
+The review-panel skill flags findings at specific lines. Rather than have the
 model do line arithmetic in prose (error-prone, and against the "script the
 deterministic steps" guidance), it hands approved markers to this library,
 which inserts language-appropriate comment lines above each flagged line,

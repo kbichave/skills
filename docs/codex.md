@@ -111,7 +111,7 @@ work around — use the skills path instead, which needs no marketplace.
 R=~/Personal/deep-plan-enhanced          # your checkout
 
 ln -sfn $R/skills/deep           ~/.agents/skills/deep
-ln -sfn $R/skills/code-review    ~/.agents/skills/deep-code-review
+ln -sfn $R/skills/review-panel   ~/.agents/skills/deep-review-panel
 ln -sfn $R/skills/humanizer      ~/.agents/skills/deep-humanizer
 ln -sfn $R/skills/no-op-remover  ~/.agents/skills/deep-no-op-remover
 
@@ -128,7 +128,7 @@ Verify:
 
 ```bash
 codex exec --sandbox read-only "List every available skill whose name starts with 'deep'."
-# → deep:code-review, deep:deep, deep:humanizer, deep:no-op-remover
+# → deep:review-panel, deep:deep, deep:humanizer, deep:no-op-remover
 ```
 
 ## Status

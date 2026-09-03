@@ -1,6 +1,6 @@
 # Code Review — context auto-discovery
 
-Loaded by the `code-review` skill at step 2 when the user picks
+Loaded by the `review-panel` skill at step 2 when the user picks
 **Auto-discover**. Produces the `review_context` block the panel reviews
 against.
 

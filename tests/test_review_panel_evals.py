@@ -1,4 +1,4 @@
-"""Structural evals for the code-review panel (per "Don't Ship Skills Without Evals").
+"""Structural evals for the review-panel skill (per "Don't Ship Skills Without Evals").
 
 CI-safe: validates the eval case set and the panel's skill/agent structure
 against the doc's rubric. No live model calls.
@@ -13,21 +13,21 @@ import pytest
 
 PLUGIN_ROOT = pathlib.Path(__file__).resolve().parents[1]
 AGENTS_DIR = PLUGIN_ROOT / "agents"
-CASES_YAML = PLUGIN_ROOT / "tests" / "evals" / "code-review-cases.yaml"
-SKILL_MD = PLUGIN_ROOT / "skills" / "code-review" / "SKILL.md"
+CASES_YAML = PLUGIN_ROOT / "tests" / "evals" / "review-panel-cases.yaml"
+SKILL_MD = PLUGIN_ROOT / "skills" / "review-panel" / "SKILL.md"
 
-# Panel members reviewed for structure (the code-review-specific agents).
+# Panel members reviewed for structure (the review-panel-specific agents).
 PANEL_AGENTS = [
     "code-reviewer", "logic-reviewer", "architecture-reviewer", "ml-reviewer",
     "stats-reviewer", "mlops-reviewer", "data-eng-reviewer", "prompt-reviewer",
-    "skill-reviewer", "claim-verifier", "review-verifier",
+    "skill-reviewer", "pep8-reviewer", "claim-verifier", "review-verifier",
 ]
 
 # Agents the SKILL.md routing table spawns as the panel (deep:<name>).
 ROUTED_AGENTS = [
     "code-reviewer", "logic-reviewer", "architecture-reviewer", "ml-reviewer",
     "stats-reviewer", "mlops-reviewer", "data-eng-reviewer", "skill-reviewer",
-    "prompt-reviewer",
+    "prompt-reviewer", "pep8-reviewer",
 ]
 
 NOOP_PATTERNS = re.compile(
@@ -57,8 +57,8 @@ def cases():
 # --- eval case set shape ---
 
 class TestCaseSet:
-    def test_yaml_loads_and_targets_code_review(self, cases):
-        assert cases["skill"] == "code-review"
+    def test_yaml_loads_and_targets_review_panel(self, cases):
+        assert cases["skill"] == "review-panel"
         assert isinstance(cases["cases"], list)
 
     def test_case_mix_golden_negative_edge(self, cases):

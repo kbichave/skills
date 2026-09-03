@@ -74,7 +74,7 @@ input the next one expects.
 | 3 | `/deep plan @spec.md` | You know the phase; you need the blueprint | `claude-spec.md`, `claude-plan.md`, `sections/` |
 | 4 | `/deep implement` (add `--auto` to run unattended) | The blueprint exists | Code and tests, section by section, behind quality gates |
 | — | `/deep goalloop @repo --goal "…"` | You know the end state, not the phases | `goal-ledger.md`, an intent + nested plan/implement per increment, `goal-summary.md` |
-| 5 | `/deep:code-review` | Before you open the PR | A report under `~/.claude/code-reviews/` |
+| 5 | `/deep:review-panel` | Before you open the PR | A report under `~/.claude/code-reviews/` |
 
 **Steps 3 and 4 are the loop.** One phase at a time: plan it, build it, then plan
 the next against a codebase that actually changed.
@@ -280,7 +280,7 @@ The plugin is being aligned with Anthropic's [AI-Native SDLC Playbook](https://c
 | **2. Design** | `spec.md` | `/deep plan`, `policy_router` | **Ships**, ahead of the playbook on collapsing requirements + design. Policy now projects into the spec in `advise` mode; sign-off records are not built |
 | **3. Build** | `plan.md`, `CLAUDE.md`, skills, blocking hooks | `/deep implement`, 13 rule packs, `PreToolUse` guardrails, `plan_diff` | **Ships.** Guardrails block credentials and protected paths; diff-vs-plan alignment reports (and refuses to score on weak evidence) |
 | **4. Test** | Feedback loops, continuous evals | TDD protocol, quality gate, test-file lock, `tests/evals/` | **Partial.** The test-file lock ships. Continuous live evals are gated on a model-spend decision |
-| **5. Deploy** | `REVIEW.md`, approval gates, CI/CD | `deep:code-review` panel, `review_policy` | **Partial.** `REVIEW.md` overlay ships. Approval gates and headless CI review are deferred for supervised rollout |
+| **5. Deploy** | `REVIEW.md`, approval gates, CI/CD | `deep:review-panel` panel, `review_policy` | **Partial.** `REVIEW.md` overlay ships. Approval gates and headless CI review are deferred for supervised rollout |
 | **6. Maintain** | Control bands, findings → Stage 1 | `metrics_store`, `deep-maintain.py` | **Partial.** Cross-session run store and baselines ship. Control bands and the incident → `intent.md` loop are not built |
 
 **Deliberate non-goals.** A plugin cannot ship managed settings (that is a root-owned MDM path), so approval gates will ship as a hook plus a deployable template. The plugin gates deploys; it is not a deployer. Chat-based on-call (`@claude` in Slack or Teams) is out of scope. Parallel execution across git worktrees was measured and rejected: ~1.67x with three workers, and section files do not reliably declare which paths they touch.
@@ -337,6 +337,7 @@ The plugin is being aligned with Anthropic's [AI-Native SDLC Playbook](https://c
 | Agent | Purpose |
 |-------|---------|
 | `code-reviewer.md` | Sole multi-language reviewer (Python/TS/Go): pack-scoped rule families, 4-phase workflow, cross-cutting + language reference library, report-only dead-code. Absorbed `python-code-reviewer` |
+| `pep8-reviewer.md` | Python style + coding-standards panel expert: PEP 8 naming, PEP 257 docstrings, PEP 484/585/604 typing form, and the project's complexity/length/param/nesting thresholds. Reads the repo's own ruff/black/isort config first; never restates raw linter output |
 | `opus-plan-reviewer.md` | Plan review fallback when external LLMs unavailable |
 | `audit-doc-writer.md` | Focused audit document generation per topic |
 | `section-writer.md` | Self-contained section content generation |
@@ -389,7 +390,7 @@ This plugin vendors a curated subset of [mattpocock/skills](https://github.com/m
 | Skill | Slash command | Use |
 |-------|--------------|-----|
 | `deep` | `/deep` | The discovery/plan/implement/auto pipeline. |
-| `code-review` | `/code-review` | Standalone pack-scoped review via the `code-reviewer` agent. |
+| `review-panel` | `/review-panel` | Standalone multi-expert review panel. Renamed from `code-review` in 5.19.0 to avoid clashing with the built-in `/code-review`. |
 | `humanizer` | `/humanizer` | Strips AI-writing tells from prose outputs. |
 
 **Installed from [mattpocock/skills](https://github.com/mattpocock/skills)** — run `uv run scripts/checks/install-mattpocock-skills.py` once (re-run to update):

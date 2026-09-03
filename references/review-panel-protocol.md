@@ -1,6 +1,6 @@
 # Review Panel Protocol (shared expert contract)
 
-Contract for all specialist review experts spawned by the `code-review`
+Contract for all specialist review experts spawned by the `review-panel`
 skill's panel (step 4). The core `code-reviewer` agent has its own richer
 contract; everything else on the panel follows this one.
 

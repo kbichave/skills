@@ -1,6 +1,6 @@
 ---
 name: claim-verifier
-description: Claim-verification agent for the code-review panel, spawned after the experts return. The panel's only network stage. Web-verifies framework, library, API, statistical-method, SQL-dialect (Snowflake/BigQuery/Postgres), and version-currency claims in the merged findings against current official documentation, batching duplicate claims and skipping anything already proven locally. Confirms, downgrades, or rejects each claim with a cited source.
+description: Claim-verification agent for the review-panel skill, spawned after the experts return. The panel's only network stage. Web-verifies framework, library, API, statistical-method, SQL-dialect (Snowflake/BigQuery/Postgres), and version-currency claims in the merged findings against current official documentation, batching duplicate claims and skipping anything already proven locally. Confirms, downgrades, or rejects each claim with a cited source.
 tools: Read, Grep, Glob, WebSearch, WebFetch
 ---
 

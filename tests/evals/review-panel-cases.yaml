@@ -1,13 +1,13 @@
-# Eval prompt set for the code-review skill (per "Don't Ship Skills Without Evals").
+# Eval prompt set for the review-panel skill (per "Don't Ship Skills Without Evals").
 #
 # Two consumers:
-#  - tests/test_code_review_evals.py — structural checks on this case set +
+#  - tests/test_review_panel_evals.py — structural checks on this case set +
 #    the panel agents/skill (CI-safe, no live model calls).
 #  - Live ablation runner (deferred; see tests/evals/README.md) — drives the
 #    real CLI (`claude -p "<prompt>"`) in a seeded git workspace and evaluates
 #    the `checks` below. Run multiple trials per case (nondeterministic).
 
-skill: code-review
+skill: review-panel
 version: 1
 
 cases:
@@ -31,6 +31,11 @@ cases:
     prompt: "Review the dbt model changes on this branch"
     should_trigger: true
     checks: [spawns_data_eng_reviewer, writes_reviews_file, no_repo_artifacts]
+
+  - id: golden-python-style-routing
+    prompt: "Review my changes"  # workspace seeds a diff touching a .py module
+    should_trigger: true
+    checks: [spawns_pep8_reviewer, spawns_review_verifier_last]
 
   - id: golden-pr-review
     prompt: "Review PR #42 for quality issues"
@@ -109,6 +114,7 @@ checks:
   spawns_data_eng_reviewer: "Agent calls include deep:data-eng-reviewer"
   spawns_skill_reviewer: "Agent calls include deep:skill-reviewer"
   spawns_prompt_reviewer: "Agent calls include deep:prompt-reviewer"
+  spawns_pep8_reviewer: "Agent calls include deep:pep8-reviewer"
   spawns_review_verifier_last: "deep:review-verifier is the final Agent call"
   writes_reviews_file: "file exists matching ~/.claude/code-reviews/<owner>__<repo>/<YYYY-MM-DD>-*.md"
   no_repo_artifacts: "git status --porcelain in the reviewed repo lists no new untracked file after the run"

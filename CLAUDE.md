@@ -71,10 +71,10 @@ by hand (resolve, validate, count, persist).
 
 | Directory | Holds |
 |---|---|
-| `skills/` | `deep` (discovery/plan/implement/auto), `code-review`, `humanizer`, `no-op-remover` |
+| `skills/` | `deep` (discovery/plan/implement/auto), `review-panel`, `humanizer`, `no-op-remover` |
 | `references/` | On-demand protocol files loaded by SKILL.md; see `INDEX.md` |
 | `references/quality/` | 13 rule packs (core, service, warehouse, llm, iac …) + `lang/` guides |
-| `agents/` | Subagent definitions, mostly the code-review panel |
+| `agents/` | Subagent definitions, mostly the review panel |
 | `scripts/lib/` | The real logic: `pack_router`, `quality_gate`, `deepstate`, `beads_sync` |
 | `scripts/checks/` | CLI entry points the skill invokes |
 | `scripts/hooks/` | Hook handlers wired in `hooks/hooks.json` |

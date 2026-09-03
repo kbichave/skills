@@ -84,7 +84,7 @@ class TestCodexMarketplaceShape:
 
 class TestSharedSkillFormat:
     @pytest.mark.parametrize(
-        "skill", ["deep", "code-review", "humanizer", "no-op-remover"]
+        "skill", ["deep", "review-panel", "humanizer", "no-op-remover"]
     )
     def test_frontmatter_has_the_keys_both_hosts_require(self, skill):
         """Both Claude Code and Codex trigger a skill from `name` +

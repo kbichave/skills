@@ -69,7 +69,7 @@ All section-level discipline in `implement-protocol.md`. Phases 1-10 with explic
 | File | Loaded by |
 |---|---|
 | `review-panel-protocol.md` | Every panel expert — input, output JSON, detective sweep, rules |
-| `code-review-context.md` | `code-review` step 2 when the user picks Auto-discover |
+| `code-review-context.md` | `review-panel` step 2 when the user picks Auto-discover |
 | `quality/` | Rule packs the core reviewer enforces; `quality/lang/` for per-language idioms |
 
 ## Anti-patterns reference

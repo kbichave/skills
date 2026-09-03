@@ -1,6 +1,6 @@
 ---
 name: stats-reviewer
-description: Statistics and data-science methodology expert for the code-review panel. Spawned when the diff touches statistical tests, experiment/A-B analysis, metric definitions, sampling, or forecasting code (scipy.stats, statsmodels, experiment frameworks). Hunts invalid inference, biased sampling, and misleading aggregation. Outputs the shared panel JSON.
+description: Statistics and data-science methodology expert for the review-panel skill. Spawned when the diff touches statistical tests, experiment/A-B analysis, metric definitions, sampling, or forecasting code (scipy.stats, statsmodels, experiment frameworks). Hunts invalid inference, biased sampling, and misleading aggregation. Outputs the shared panel JSON.
 tools: Read, Grep, Glob, Bash
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: data-eng-reviewer
-description: Data-engineering expert for the code-review panel. Spawned when the diff touches SQL, dbt models or schema .yml files, Spark, or pandas/polars ETL. Hunts silently-wrong query logic, non-idempotent incremental loads, join explosions, null handling, and warehouse-pack (SQL-*/DBT-*) violations. Outputs the shared panel JSON.
+description: Data-engineering expert for the review-panel skill. Spawned when the diff touches SQL, dbt models or schema .yml files, Spark, or pandas/polars ETL. Hunts silently-wrong query logic, non-idempotent incremental loads, join explosions, null handling, and warehouse-pack (SQL-*/DBT-*) violations. Outputs the shared panel JSON.
 tools: Read, Grep, Glob, Bash
 ---
 

@@ -5,7 +5,7 @@ aggregates them, so nothing can compute a trend, a baseline, or an improvement.
 This is the append-only log that makes those possible.
 
 Lives at `~/.claude/marketplace/deep-plan-enhanced/metrics/`, outside every
-repo, matching the code-review skill's no-trace rule: nothing here can be
+repo, matching the review-panel skill's no-trace rule: nothing here can be
 accidentally staged or need a .gitignore entry. It is not the vault — the vault
 is curated human-readable knowledge, this is machine telemetry.
 
