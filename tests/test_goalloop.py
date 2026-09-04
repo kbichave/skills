@@ -237,6 +237,79 @@ class TestIterations:
             gl.end_iteration(loop, outcome=gl.DELIVERED)
 
 
+class TestUnblock:
+    """A blocker that clears has to have a way back onto the queue.
+
+    Without one, `blocked` is a one-way door: `ledger_clear` can never hold
+    again and the run's only remaining verdict is `blocked_on_human`, which
+    stops being true the moment the credential is re-issued.
+    """
+
+    def blocked_loop(self, loop):
+        stock_ledger(loop)
+        gl.begin_iteration(loop)
+        gl.end_iteration(loop, outcome=gl.BLOCKED, detail="AWS credentials expired")
+        return loop
+
+    def test_an_unblocked_increment_is_worked_again(self, loop):
+        self.blocked_loop(loop)
+        gl.unblock(loop, "I01", because="credentials re-issued")
+        assert gl.find(loop, "I01").state == gl.PENDING
+        assert gl.begin_iteration(loop).increment == "I01"
+
+    def test_it_keeps_its_place_in_the_queue(self, loop):
+        # A blocker clearing says nothing about priority, so the queue order
+        # the decomposition chose survives.
+        self.blocked_loop(loop)
+        gl.unblock(loop, "I01", because="credentials re-issued")
+        assert [i.id for i in loop.ledger] == ["I01", "I02", "I03"]
+
+    def test_only_a_blocked_increment_can_be_unblocked(self, loop):
+        stock_ledger(loop)
+        gl.begin_iteration(loop)
+        gl.end_iteration(loop, outcome=gl.DELIVERED)
+        with pytest.raises(gl.GoalLoopError, match="delivered, not blocked"):
+            gl.unblock(loop, "I01", because="changed my mind")
+
+    def test_a_reason_is_required(self, loop):
+        # The loop does not unblock its own work: the reason names what the
+        # person did outside the ledger.
+        self.blocked_loop(loop)
+        with pytest.raises(gl.GoalLoopError, match="needs a reason"):
+            gl.unblock(loop, "I01", because="   ")
+        assert gl.find(loop, "I01").state == gl.BLOCKED
+
+    def test_the_reason_is_recorded_in_the_triage_log(self, loop):
+        self.blocked_loop(loop)
+        gl.unblock(loop, "I01", because="credentials re-issued 2026-09-04")
+        event = loop.events[-1]
+        assert event.kind == gl.UNBLOCK
+        assert event.detail == "credentials re-issued 2026-09-04"
+        assert "I01" in event.action
+        assert "unblocked: credentials re-issued" in gl.find(loop, "I01").note
+
+    def test_an_unknown_increment_is_named(self, loop):
+        with pytest.raises(gl.GoalLoopError, match="I09"):
+            gl.unblock(loop, "I09", because="cleared")
+
+    def test_the_loop_goes_from_halted_back_to_running(self, loop, planning_dir):
+        gl.add_increment(loop, title="needs credentials", acceptance="uploaded")
+        record = gl.begin_iteration(loop, directory=str(planning_dir / "i01"))
+        pass_a_section(record.directory)
+        gl.end_iteration(loop, outcome=gl.BLOCKED, detail="AWS credentials expired")
+        assert gl.evaluate(loop, planning_dir).stop_reason == gl.BLOCKED_ON_HUMAN
+
+        gl.unblock(loop, "I01", because="credentials re-issued")
+        status = gl.evaluate(loop, planning_dir)
+        assert status.stop_reason == gl.RUNNING
+        assert status.should_continue and status.next_increment == "I01"
+
+    def test_the_handoff_tells_the_person_how_to_resume(self, loop, planning_dir):
+        self.blocked_loop(loop)
+        report = gl.summary(loop, gl.evaluate(loop, planning_dir))
+        assert "unblock --increment" in report
+
+
 class TestEvidence:
     def test_evidence_attaches_to_the_named_clause(self, loop):
         stock_ledger(loop)
@@ -697,6 +770,69 @@ class TestCLI:
         result = self.run(planning_dir, "handoff")
         assert result.returncode == 0
         assert result.stdout.startswith("## Goalloop summary")
+
+    def block_one(self, planning_dir):
+        self.init(planning_dir)
+        self.run(planning_dir, "add", "--title", "upload", "--acceptance", "in s3")
+        self.run(planning_dir, "add", "--title", "verify", "--acceptance", "checksum matches")
+        self.run(planning_dir, "begin")
+        self.run(
+            planning_dir, "end", "--outcome", "blocked",
+            "--detail", "AWS credentials expired",
+        )
+
+    def test_unblock_puts_the_increment_back_on_the_queue(self, planning_dir):
+        self.block_one(planning_dir)
+        result = self.run(
+            planning_dir, "unblock", "--increment", "I01",
+            "--because", "credentials re-issued",
+        )
+        assert result.returncode == 0
+        payload = json.loads(result.stdout)
+        assert [i["id"] for i in payload["unblocked"]] == ["I01"]
+        assert payload["still_blocked"] == []
+        assert json.loads(self.run(planning_dir, "begin").stdout)["increment"]["id"] == "I01"
+
+    def test_one_blocker_can_release_several_increments(self, planning_dir):
+        self.block_one(planning_dir)
+        self.run(planning_dir, "begin")
+        self.run(planning_dir, "end", "--outcome", "blocked", "--detail", "same credentials")
+        payload = json.loads(
+            self.run(
+                planning_dir, "unblock", "--increment", "I01", "--increment", "I02",
+                "--because", "credentials re-issued",
+            ).stdout
+        )
+        assert payload["pending"] == ["I01", "I02"]
+        assert payload["still_blocked"] == []
+
+    def test_a_bad_id_in_the_set_moves_nothing(self, planning_dir):
+        # Half an unblock across increments sharing one blocker leaves a
+        # ledger the caller cannot read back from a non-zero exit.
+        self.block_one(planning_dir)
+        result = self.run(
+            planning_dir, "unblock", "--increment", "I01", "--increment", "I02",
+            "--because", "credentials re-issued",
+        )
+        assert result.returncode == 2
+        assert "not blocked" in json.loads(result.stdout)["error"]
+        status = json.loads(self.run(planning_dir, "status").stdout)
+        assert [i["state"] for i in status["ledger"]] == ["blocked", "pending"]
+
+    def test_unblock_requires_a_reason(self, planning_dir):
+        self.block_one(planning_dir)
+        result = self.run(planning_dir, "unblock", "--increment", "I01")
+        assert result.returncode == 2
+
+    def test_tick_names_the_blocked_increments_and_the_way_back(self, planning_dir):
+        self.block_one(planning_dir)
+        self.run(planning_dir, "begin")
+        self.run(planning_dir, "end", "--outcome", "blocked", "--detail", "same credentials")
+        result = self.run(planning_dir, "tick")
+        assert result.returncode == 1
+        payload = json.loads(result.stdout)
+        assert payload["blocked_increments"] == ["I01", "I02"]
+        assert "unblock --increment" in payload["guidance"]
 
     def test_status_carries_the_whole_record(self, planning_dir):
         self.init(planning_dir, "--max-iters", "4")

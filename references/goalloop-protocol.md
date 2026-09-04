@@ -222,7 +222,9 @@ than double-starting, so it is safe after a compaction — which makes it the
 first thing to run when you are unsure where the loop is.
 
 Refuses when the ledger has nothing pending. If that refusal names blocked
-increments, the run is over: go to §5.
+increments, the run is over for now: go to §5. It is over *for now* rather
+than for good — see §4.7, which is how a cleared blocker gets back on the
+queue.
 
 ### 4.2 Write the increment as an intent
 
@@ -346,8 +348,9 @@ ${GL} tick
 `--outcome` is `delivered`, `blocked`, or `dropped`. Use `blocked` when the
 increment needs a person — a decision you are not entitled to make, or a
 dependency that never landed. A blocked increment is never picked up again
-automatically, which is deliberate: whatever the loop could clear on its own
-it already cleared.
+*automatically*, which is deliberate: whatever the loop could clear on its
+own it already cleared. It can still be put back deliberately, by a person,
+once the blocker is gone — §4.7.
 
 `tick`'s exit code is the loop:
 
@@ -371,6 +374,37 @@ asked to complete.
 The iteration ceiling, if the user set one, is enforced here: `tick` returns 1
 with `stop_reason: iterations_exhausted`. A goal met on the final allowed pass
 reads as `goal_met`, not as out of budget.
+
+---
+
+### 4.7 When a blocker clears
+
+Most blockers are external and temporary: an expired credential, a dependency
+that had not merged, a question nobody had answered yet. When the person
+clears one, the increment goes back on the queue:
+
+```bash
+${GL} unblock --increment I04 --because "AWS credentials re-issued 2026-09-04"
+${GL} tick
+```
+
+`--because` is required, and repeating `--increment` unblocks several at once
+when one blocker held them all. `tick` goes back to `running` and the loop
+resumes at §4.1 with no other state to repair.
+
+Two rules:
+
+- **The loop never unblocks its own work.** Whatever it could clear, it
+  cleared before recording the block. Running `unblock` because the loop
+  reconsidered is how a run talks itself past the thing that actually stopped
+  it. Wait for the person to say the blocker is gone.
+- **`--because` names what changed outside the ledger**, not why the work
+  still matters. "Credentials re-issued" is a reason. "Still needed for the
+  goal" is not — that was true when it blocked.
+
+Blocked increments the person does *not* clear stay blocked, and
+`ledger_clear` keeps failing on them. That is correct: a run with outstanding
+debt is not done, and the handoff says which debt.
 
 ---
 

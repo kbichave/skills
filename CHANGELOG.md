@@ -5,6 +5,23 @@ All notable changes to deep-plan will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [5.20.0] - 2026-09-04
+
+### Added
+- **`goalloop unblock` returns a blocked increment to the queue.** `blocked`
+  was a one-way door: the state exists for work only a person can clear (an
+  expired credential, an unmerged dependency, an unanswered question), and
+  once cleared there was no verb for saying so. `ledger_clear` could never
+  hold again, `tick` was stuck on `blocked_on_human`, and the only repair was
+  hand-editing `goalloop.json`. `unblock --increment I04 --because "..."` puts
+  it back at its original position in the queue and `tick` reads `running`
+  again. `--because` is required and `--increment` repeats, because one
+  external blocker usually held several increments; a bad id in the set moves
+  none of them. The loop never calls it on its own — whatever it could clear
+  it cleared before recording the block. `tick`'s halt guidance and the
+  handoff report now name the command and the blocked ids (§4.7 of
+  `references/goalloop-protocol.md`).
+
 ## [5.19.0] - 2026-09-03
 
 ### Changed

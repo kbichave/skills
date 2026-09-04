@@ -232,8 +232,12 @@ ${GL} tick   # 3 = iterate · 0 = goal met · 1 = stop, needs a human · 2 = usa
 `tick` decides, not you: it reads recorded artifacts and needs all three
 clauses — ledger clear, gates green, every acceptance line evidenced. New
 information is triaged explicitly (`--kind blocker` preempts, `deferrable`
-splices), never inferred. Intents stay `draft`/`agent`, publishing is
-confirm-first, and clarification rounds run at `--budget 2`.
+splices), never inferred. Exit 1 on a blocked increment is a debt, not an end:
+when the person says the blocker is cleared, `${GL} unblock --increment <id>
+--because "<what cleared it>"` returns it to the queue and `tick` reads
+`running` again — never unblock work the loop itself could have cleared.
+Intents stay `draft`/`agent`, publishing is confirm-first, and clarification
+rounds run at `--budget 2`.
 
 ### Implement
 All section-level discipline lives in `references/implement-protocol.md`:

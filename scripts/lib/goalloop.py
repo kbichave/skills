@@ -80,6 +80,11 @@ ORIGINS = (INITIAL, SPLICED, PREEMPT, SPLIT)
 BLOCKER = "blocker"
 DEFERRABLE = "deferrable"
 
+# Not a verdict on new information — a person clearing a blocker the loop
+# could not. It shares the triage log because it moves the ledger, and a
+# ledger that moved without a recorded reason is the thing that log prevents.
+UNBLOCK = "unblock"
+
 # Iteration outcomes. The first three mirror increment states; `preempted`
 # exists only here, because an abandoned pass says nothing about the increment
 # it was working on — that one goes back to pending, unharmed.
@@ -660,7 +665,8 @@ def begin_iteration(loop: GoalLoop, *, directory: str = "") -> IterationRecord:
         blocked = [i.id for i in loop.ledger if i.state == BLOCKED]
         raise GoalLoopError(
             f"nothing to work on: {len(blocked)} blocked increment(s) "
-            f"({', '.join(blocked)}) need a human"
+            f"({', '.join(blocked)}) need a human — once the blocker is "
+            f"cleared, `unblock` returns one to the queue"
             if blocked
             else "nothing to work on: the ledger has no pending increment"
         )
@@ -710,6 +716,44 @@ def end_iteration(loop: GoalLoop, *, outcome: str, detail: str = "") -> Iteratio
         raise GoalLoopError("no open iteration to end")
     _replace(loop, find(loop, record.increment), state=outcome, note=detail)
     return record
+
+
+def unblock(loop: GoalLoop, increment_id: str, *, because: str = "") -> Increment:
+    """Return a blocked increment to the queue after a person cleared it.
+
+    `blocked` is a debt, not a decision, and the debt is usually external: an
+    expired credential, a dependency that had not merged, an answer nobody had
+    yet. Those get cleared. Without a way back, the ledger can never go clear
+    again and the run's only remaining verdict is `blocked_on_human` — wrong
+    from the moment the blocker is gone, and unfixable except by hand-editing
+    state the CLI owns.
+
+    The loop never calls this on its own. Whatever it could clear it cleared
+    before recording the block, so `because` is required and names what the
+    person actually did. The increment keeps its place in the queue; a blocker
+    clearing says nothing about priority.
+    """
+    increment = find(loop, increment_id)
+    if increment.state != BLOCKED:
+        raise GoalLoopError(
+            f"{increment_id} is {increment.state}, not {BLOCKED} — only a "
+            "blocked increment can be unblocked"
+        )
+    if not because.strip():
+        raise GoalLoopError(
+            f"unblocking {increment_id} needs a reason naming what cleared "
+            "the blocker — the loop does not unblock its own work"
+        )
+    reason = because.strip()
+    updated = _replace(loop, increment, state=PENDING, note=f"unblocked: {reason}")
+    _record_event(
+        loop,
+        kind=UNBLOCK,
+        summary=f"unblock {increment_id}",
+        action=f"unblock: {increment_id} returned to pending",
+        detail=reason,
+    )
+    return updated
 
 
 def add_evidence(
@@ -966,6 +1010,18 @@ def summary(loop: GoalLoop, status: GoalStatus) -> str:
             for i in loop.ledger
             if i.is_open
         ]
+        blocked = [i.id for i in loop.ledger if i.state == BLOCKED]
+        if blocked:
+            # The report is what the person reads, so it is where the way
+            # back belongs: a cleared blocker is worthless if the ledger has
+            # no verb for it.
+            resume = (
+                f"{len(blocked)} of those are blocked. Once the blocker is "
+                "cleared, return one to the queue with "
+                "`goalloop.py unblock --increment <id> --because \"<what "
+                "cleared it>\"`, then run `tick` again."
+            )
+            lines += ["", resume]
     if status.unevidenced:
         lines += ["", "### Acceptance lines with no evidence", ""]
         lines += [

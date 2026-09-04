@@ -18,6 +18,7 @@ Subcommands:
   split     --planning-dir D --increment ID --slice "title :: acceptance" [...]
   begin     --planning-dir D [--dir ITERATION_DIR]
   end       --planning-dir D --outcome delivered|blocked|dropped [--detail X]
+  unblock   --planning-dir D --increment ID [...] --because "what cleared it"
   evidence  --planning-dir D --acceptance-id A1 --source S [--detail X]
   tick      --planning-dir D          the done test
   status    --planning-dir D          full state
@@ -162,6 +163,34 @@ def cmd_end(args: argparse.Namespace) -> int:
     return _emit({"success": True, "iteration": record.to_dict()})
 
 
+def cmd_unblock(args: argparse.Namespace) -> int:
+    """Return blocked increments to the queue once a person cleared the blocker.
+
+    Every id is checked before any is moved. A partial unblock across a set of
+    increments that share one external blocker leaves a ledger nobody can read
+    back, and the caller cannot tell from a non-zero exit which half landed.
+    """
+    loop = gl.require(args.planning_dir)
+    for increment_id in args.increment:
+        increment = gl.find(loop, increment_id)
+        if increment.state != gl.BLOCKED:
+            raise gl.GoalLoopError(
+                f"{increment_id} is {increment.state}, not {gl.BLOCKED} — "
+                "only a blocked increment can be unblocked"
+            )
+    moved = [
+        gl.unblock(loop, increment_id, because=args.because)
+        for increment_id in args.increment
+    ]
+    gl.save(args.planning_dir, loop)
+    return _emit({
+        "success": True,
+        "unblocked": [i.to_dict() for i in moved],
+        "pending": [i.id for i in loop.ledger if i.state == gl.PENDING],
+        "still_blocked": [i.id for i in loop.ledger if i.state == gl.BLOCKED],
+    })
+
+
 def cmd_evidence(args: argparse.Namespace) -> int:
     loop = gl.require(args.planning_dir)
     clause = gl.add_evidence(
@@ -202,10 +231,19 @@ def cmd_tick(args: argparse.Namespace) -> int:
             + "; ".join(f"{k} ({v})" for k, v in status.unmet.items())
         )
         return _emit(payload, CONTINUE)
+    blocked = [i.id for i in loop.ledger if i.state == gl.BLOCKED]
+    payload["blocked_increments"] = blocked
     payload["guidance"] = (
         "Stop and report. The loop cannot advance on its own — see `unmet` "
         "and run `handoff` for the report."
     )
+    if blocked:
+        payload["guidance"] += (
+            f" {', '.join(blocked)} need a person. When one of those blockers "
+            "is cleared, `unblock --increment <id> --because \"<what cleared "
+            "it>\"` returns it to the queue and `tick` will say `running` "
+            "again. Do not unblock work the loop itself could have cleared."
+        )
     return _emit(payload, 1)
 
 
@@ -282,6 +320,19 @@ def _add_subcommands(subparsers) -> None:
     )
     end.add_argument("--detail")
     end.set_defaults(func=cmd_end)
+
+    unblock = subparsers.add_parser(
+        "unblock", help="return a blocked increment to the queue"
+    )
+    unblock.add_argument(
+        "--increment", action="append", required=True,
+        help="blocked increment id; repeat when one blocker held several",
+    )
+    unblock.add_argument(
+        "--because", required=True,
+        help="what cleared the blocker; the loop never unblocks its own work",
+    )
+    unblock.set_defaults(func=cmd_unblock)
 
     evidence = subparsers.add_parser("evidence", help="record evidence for an acceptance line")
     evidence.add_argument("--acceptance-id", required=True)
