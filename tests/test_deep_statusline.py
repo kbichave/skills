@@ -97,10 +97,9 @@ class TestMainEntrypoint:
         monkeypatch.setattr(
             "builtins.print", lambda *a, **k: captured.append(" ".join(str(x) for x in a))
         )
-        # Pin tempfile dir so the bridge does not leak into /tmp during tests.
-        monkeypatch.setattr(
-            statusline_module, "ACTIVE_POINTER", tmp_path / "nope"
-        )
+        # Point the marker lookup at an empty home so no real session on the
+        # developer's machine can decide what this test renders.
+        monkeypatch.setenv("DEEP_STATE_HOME", str(tmp_path / "home"))
         rc = statusline_module.main()
         return rc, captured
 
@@ -142,7 +141,7 @@ class TestMainEntrypoint:
 
         monkeypatch.setattr(statusline_module, "bridge_path", fake_bridge_path)
         monkeypatch.setattr(cm, "bridge_path", fake_bridge_path)
-        monkeypatch.setattr(statusline_module, "ACTIVE_POINTER", tmp_path / "absent")
+        monkeypatch.setenv("DEEP_STATE_HOME", str(tmp_path / "home"))
 
         payload = {
             "session_id": "sess1",
@@ -170,30 +169,69 @@ class TestMainEntrypoint:
         assert data["used_input_tokens"] == 723_000
 
 
-class TestResolveActiveDir:
-    def test_missing_pointer_returns_none(
-        self, statusline_module, monkeypatch, tmp_path: Path
-    ) -> None:
-        monkeypatch.setattr(statusline_module, "ACTIVE_POINTER", tmp_path / "absent")
-        assert statusline_module.resolve_planning_dir() is None
+class TestResolvePlanningDir:
+    """The status line shows this session's run or nothing at all.
 
-    def test_pointer_with_existing_path(
+    It used to read `~/.claude/.deep-plan-active`, which is one file for the
+    machine and is never cleared, so every session on the box displayed
+    whichever project ran `/deep` last.
+    """
+
+    def home(self, monkeypatch, tmp_path: Path) -> Path:
+        state_home = tmp_path / "home"
+        (state_home / ".deep-implement-sessions").mkdir(parents=True)
+        monkeypatch.setenv("DEEP_STATE_HOME", str(state_home))
+        monkeypatch.delenv("DEEP_SESSION_ID", raising=False)
+        return state_home
+
+    def test_no_marker_returns_none(
         self, statusline_module, monkeypatch, tmp_path: Path
     ) -> None:
+        self.home(monkeypatch, tmp_path)
+        assert statusline_module.resolve_planning_dir("sess1") is None
+
+    def test_the_session_marker_resolves(
+        self, statusline_module, monkeypatch, tmp_path: Path
+    ) -> None:
+        state_home = self.home(monkeypatch, tmp_path)
         planning = tmp_path / "pd"
         planning.mkdir()
-        pointer = tmp_path / "active"
-        pointer.write_text(str(planning) + "\n")
-        monkeypatch.setattr(statusline_module, "ACTIVE_POINTER", pointer)
-        assert statusline_module.resolve_planning_dir() == planning
+        (state_home / ".deep-implement-sessions" / "sess1.marker").write_text(
+            str(planning) + "\n"
+        )
+        assert statusline_module.resolve_planning_dir("sess1") == planning
 
-    def test_pointer_with_stale_path(
+    def test_a_marker_pointing_at_a_deleted_dir_returns_none(
         self, statusline_module, monkeypatch, tmp_path: Path
     ) -> None:
-        pointer = tmp_path / "active"
-        pointer.write_text("/no/such/dir\n")
-        monkeypatch.setattr(statusline_module, "ACTIVE_POINTER", pointer)
-        assert statusline_module.resolve_planning_dir() is None
+        state_home = self.home(monkeypatch, tmp_path)
+        (state_home / ".deep-implement-sessions" / "sess1.marker").write_text(
+            "/no/such/dir\n"
+        )
+        assert statusline_module.resolve_planning_dir("sess1") is None
+
+    def test_another_sessions_marker_is_not_borrowed(
+        self, statusline_module, monkeypatch, tmp_path: Path
+    ) -> None:
+        state_home = self.home(monkeypatch, tmp_path)
+        planning = tmp_path / "someone-elses"
+        planning.mkdir()
+        (state_home / ".deep-implement-sessions" / "other.marker").write_text(
+            str(planning)
+        )
+        assert statusline_module.resolve_planning_dir("sess1") is None
+
+    def test_the_machine_wide_pointer_is_not_consulted(
+        self, statusline_module, monkeypatch, tmp_path: Path
+    ) -> None:
+        # The shipped bug: a stalled goalloop from another repo rendered into
+        # every session's status line, for as long as the pointer stood.
+        state_home = self.home(monkeypatch, tmp_path)
+        planning = tmp_path / "another-project"
+        planning.mkdir()
+        (state_home / ".deep-plan-active").write_text(str(planning))
+        assert statusline_module.resolve_planning_dir("sess1") is None
+        assert statusline_module.resolve_planning_dir(None) is None
 
 
 class TestDetectMode:
@@ -212,6 +250,23 @@ class TestDetectMode:
     def test_audit_detected(self, statusline_module, tmp_path: Path) -> None:
         (tmp_path / "objective.md").write_text("x")
         assert statusline_module.detect_mode(tmp_path) == "audit"
+
+    def test_goalloop_detected(self, statusline_module, tmp_path: Path) -> None:
+        (tmp_path / ".deepstate").mkdir()
+        (tmp_path / ".deepstate" / "goalloop.json").write_text("{}")
+        assert statusline_module.detect_mode(tmp_path) == "goalloop"
+
+    def test_goalloop_outranks_its_own_implement_artifacts(
+        self, statusline_module, tmp_path: Path
+    ) -> None:
+        # How `deep:implement probe-target` reached a status line: a goalloop
+        # directory carries impl-progress.md, the implement branch matched
+        # first, and the tracker meanwhile reported a goalloop-only step.
+        (tmp_path / ".deepstate").mkdir()
+        (tmp_path / ".deepstate" / "goalloop.json").write_text("{}")
+        (tmp_path / "impl-progress.md").write_text("x")
+        (tmp_path / "goal-ledger.md").write_text("x")
+        assert statusline_module.detect_mode(tmp_path) == "goalloop"
 
     def test_unknown_returns_none(self, statusline_module, tmp_path: Path) -> None:
         assert statusline_module.detect_mode(tmp_path) is None

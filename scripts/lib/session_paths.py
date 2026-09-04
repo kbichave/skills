@@ -20,6 +20,11 @@ Resolution order, first hit that exists on disk wins:
 Every candidate is checked with `is_dir()`. Returning a stale path is worse
 than returning nothing, because the caller then writes progress into another
 project's session.
+
+Steps 1-2 are `find_session_planning_dir`; steps 3-4 are the fallback that
+only `find_planning_dir` applies. A caller that *displays* state must use the
+former — the global pointer belongs to whichever session ran `/deep` last on
+this machine, which is nobody in particular.
 """
 
 from __future__ import annotations
@@ -74,8 +79,19 @@ def write_marker(session_id: str, planning_dir: Path) -> bool:
         return False
 
 
-def find_planning_dir(session_id: str | None = None) -> Path | None:
-    """Best available planning directory, or None. Never raises."""
+def find_session_planning_dir(session_id: str | None = None) -> Path | None:
+    """The planning dir *this session* owns, or None. Never another session's.
+
+    Split out of `find_planning_dir` because the two callers want opposite
+    things when the session owns nothing. A hook about to write progress would
+    rather fall back to the machine's active session than do nothing; a
+    display would rather show nothing than another project's run.
+
+    The display got the hook's answer, and it shipped: `~/.claude/.deep-plan-active`
+    is one file for the whole machine, nothing clears it, so a stalled goalloop
+    from another repo rendered into the status line of every session on the box
+    until the next `/deep` overwrote the pointer.
+    """
     candidates: list[str] = []
     if session_id:
         candidates.append(session_id)
@@ -89,6 +105,14 @@ def find_planning_dir(session_id: str | None = None) -> Path | None:
             resolved = _read_dir(marker)
             if resolved:
                 return resolved
+    return None
+
+
+def find_planning_dir(session_id: str | None = None) -> Path | None:
+    """Best available planning directory, or None. Never raises."""
+    owned = find_session_planning_dir(session_id)
+    if owned is not None:
+        return owned
 
     active = active_marker()
     if active.exists():

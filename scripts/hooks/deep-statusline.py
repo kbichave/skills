@@ -47,8 +47,11 @@ from lib.context_metrics import (  # noqa: E402
     resolve_context_size,
     write_bridge,
 )
+from lib.session_paths import (  # noqa: E402
+    find_session_planning_dir,
+    session_id_from_payload,
+)
 
-ACTIVE_POINTER = Path.home() / ".claude" / ".deep-plan-active"
 BAR_WIDTH = 10
 TRACKER_TIMEOUT_S = 2.0
 
@@ -64,22 +67,27 @@ def render_bar(used_pct: float, width: int = BAR_WIDTH) -> str:
     return "▰" * filled + "▱" * (width - filled)
 
 
-def resolve_planning_dir() -> Path | None:
-    """Read ``~/.claude/.deep-plan-active`` to find the active planning dir."""
-    if not ACTIVE_POINTER.exists():
-        return None
-    try:
-        text = ACTIVE_POINTER.read_text().strip()
-    except OSError:
-        return None
-    if not text:
-        return None
-    candidate = Path(text)
-    return candidate if candidate.exists() else None
+def resolve_planning_dir(session_id: str | None = None) -> Path | None:
+    """The planning dir this session owns, or None.
+
+    Deliberately narrower than the implement hooks' lookup: no fallback to
+    `~/.claude/.deep-plan-active`. That pointer is machine-global and nothing
+    clears it, so reading it here rendered another project's stalled run into
+    the status line of every session on the box. A blank status line is the
+    honest answer for a session that never ran `/deep`.
+    """
+    return find_session_planning_dir(session_id)
 
 
 def detect_mode(planning_dir: Path) -> str | None:
     """Cheap mode detection from artifacts in the planning dir."""
+    if (planning_dir / ".deepstate" / "goalloop.json").exists():
+        # Ahead of implement on purpose: a goalloop run's own directory
+        # accumulates `impl-progress.md`, so the implement branch matched first
+        # and the line read `deep:implement probe-target` — a mode and a step
+        # that cannot go together, since `probe-target` exists only in the
+        # goalloop task set.
+        return "goalloop"
     if (planning_dir / "impl-progress.md").exists() or (
         planning_dir / "impl-summary.md"
     ).exists():
@@ -191,7 +199,7 @@ def main() -> int:
 
     level = classify_level(used_pct)
 
-    planning_dir = resolve_planning_dir()
+    planning_dir = resolve_planning_dir(session_id_from_payload(payload))
     mode: str | None = None
     step_id: str | None = None
     step_title: str | None = None

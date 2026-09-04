@@ -5,6 +5,26 @@ All notable changes to deep-plan will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [5.20.1] - 2026-09-04
+
+### Fixed
+- **The status line showed another project's session.** `deep-statusline.py`
+  resolved its planning directory from `~/.claude/.deep-plan-active` — one file
+  for the whole machine, written by every `/deep` setup and cleared by nothing.
+  Any session on the box, in any repo, rendered whichever run touched that
+  pointer last, so a stalled goalloop from another project sat in the status
+  line of sessions that had never invoked `/deep`. It now resolves through the
+  new `session_paths.find_session_planning_dir`, which accepts only this
+  session's own marker (payload `session_id`, then `$DEEP_SESSION_ID`) and
+  returns None otherwise. The implement hooks keep the machine-wide fallback:
+  a hook about to write progress would rather use the active session than do
+  nothing, while a display would rather show nothing than the wrong run.
+- **`detect_mode` had no goalloop branch**, so a goalloop directory — which
+  accumulates `impl-progress.md` like any other — matched the implement branch
+  and rendered `deep:implement probe-target`, a mode and a step that cannot go
+  together, since `probe-target` exists only in the goalloop task set. The
+  branch is keyed on `.deepstate/goalloop.json` and is checked first.
+
 ## [5.20.0] - 2026-09-04
 
 ### Added

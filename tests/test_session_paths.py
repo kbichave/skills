@@ -20,6 +20,7 @@ import pytest
 from lib.session_paths import (
     active_marker,
     find_planning_dir,
+    find_session_planning_dir,
     marker_dir,
     marker_path,
     session_id_from_payload,
@@ -78,6 +79,38 @@ class TestResolutionOrder:
 
     def test_returns_none_when_nothing_is_known(self):
         assert find_planning_dir("no-such-session") is None
+
+
+class TestSessionOnlyResolution:
+    """`find_session_planning_dir` answers for this session or not at all.
+
+    Callers that display state need this: the machine-wide fallbacks are right
+    for a hook about to write progress and wrong for a status line, which was
+    showing another project's stalled run in every session on the box.
+    """
+
+    def test_it_finds_the_session_own_dir(self, live_dir):
+        write_marker("sess-1", live_dir)
+        assert find_session_planning_dir("sess-1") == live_dir
+
+    def test_it_does_not_fall_back_to_the_active_marker(self, live_dir):
+        active_marker().parent.mkdir(parents=True, exist_ok=True)
+        active_marker().write_text(str(live_dir))
+        assert find_session_planning_dir("no-such-session") is None
+        # The hook-side resolver still takes that fallback, on purpose.
+        assert find_planning_dir("no-such-session") == live_dir
+
+    def test_it_does_not_fall_back_to_another_sessions_marker(self, live_dir):
+        write_marker("someone-else", live_dir)
+        assert find_session_planning_dir("sess-1") is None
+        assert find_planning_dir("sess-1") == live_dir
+
+    def test_the_env_session_id_still_counts_as_this_session(
+        self, live_dir, monkeypatch
+    ):
+        write_marker("env-sess", live_dir)
+        monkeypatch.setenv("DEEP_SESSION_ID", "env-sess")
+        assert find_session_planning_dir(None) == live_dir
 
 
 class TestStaleMarkersNeverWin:
