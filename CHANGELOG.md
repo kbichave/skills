@@ -5,6 +5,24 @@ All notable changes to deep-plan will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [5.21.0] - 2026-09-14
+
+### Changed
+- **Panel review comments were too verbose to read.** Step 8 of `review-panel`
+  now loads the new `references/review-comment-style.md`, which holds the
+  comment voice rules (moved out of SKILL.md) plus a hard length budget: two
+  sentences on a blocking comment, one on a non-blocking one, the suggestion
+  block carrying the fix, and no adverbs, preamble, praise sandwich, or
+  restatement of what the code does. The PR voice section and the summary
+  comment shape point at the same budget so nothing re-expands on the way to
+  GitHub. The cap is rendering-only: the report file, the chat render, and the
+  panel JSON keep full wording, and no finding is dropped to stay inside it.
+
+### Removed
+- **Dead `ResearchTopicStore.search_prior`.** A stub that returned `[]` with no
+  production caller, exercised only by a test asserting it returned `[]`. Gone
+  along with that test and an unused import in the same test module.
+
 ## [5.20.1] - 2026-09-04
 
 ### Fixed
