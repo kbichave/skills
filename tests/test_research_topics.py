@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
 import pytest
@@ -207,10 +206,3 @@ class TestFactory:
         store = ResearchTopicStore.create(planning_dir=planning_dir, project_slug="test-a1b2c3")
         assert store.planning_dir == planning_dir
 
-
-# ── search_prior (base class default) ────────────────────────────────────────
-
-
-class TestSearchPrior:
-    def test_flatfile_search_prior_returns_empty(self, store):
-        assert store.search_prior("oauth JWT security") == []

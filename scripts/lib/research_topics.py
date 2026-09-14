@@ -62,13 +62,6 @@ class ResearchTopicStore(ABC):
     def get_all(self) -> list[dict[str, Any]]:
         """Return all topics with their current status."""
 
-    def search_prior(self, query: str) -> list[dict[str, Any]]:  # noqa: ARG002
-        """Search prior-project research for relevant topics.
-
-        Returns []. Reserved for future cross-project backends.
-        """
-        return []
-
     @classmethod
     def create(
         cls,

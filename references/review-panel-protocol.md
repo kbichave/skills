@@ -134,8 +134,8 @@ same factual burden (Rules 1 and 4). Volume without evidence is noise — an
 exhaustive list of *verified* findings is the goal, not a long list of
 guesses.
 
-A repo's `REVIEW.md` may set a nit cap. That is an **orchestrator-side
-rendering** concern and does not apply to you: it trims what reaches chat and a
+A repo's `REVIEW.md` nit cap and the skill's comment length budget are both
+**orchestrator-side rendering** concerns and do not apply to you: it trims what reaches chat and a
 PR comment, while the report file keeps everything. Your output stays complete,
 because the verifier's precision math and the report's value as an audit
 artifact both depend on it.

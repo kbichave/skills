@@ -345,21 +345,15 @@ approved set, invoke the `deep:humanizer` skill here on every approved
 finding + improvement, producing a one-line `humanized_comment` per finding.
 Feed the humanizer the raw `issue`/`fix` (or `better`/`why`) text; keep its
 output as the comment that markers (step 8 triage) and PR posts (step 9) use.
+Humanized never means longer: re-cut every returned line to the budget below.
 The report file and chat keep the precise original wording; only the
 externalized comment lines are humanized.
 
-**Comment voice.** Severity sets the register, and the humanizer applies it:
-
-- **Blocking (`high`)**: direct and unhedged. State the defect, then the fix.
-  No riddles on correctness or security, no softening a real bug into a
-  suggestion.
-- **Non-blocking (`medium`/`low`/improvements)**: phrase as a question that
-  carries its own reasoning, so the author can answer with a constraint you
-  did not know about. "Any reason not to `X` here?" / "Could this use `Y`?" /
-  "Why the second `COALESCE`, can this return NULL?" A reviewer who cannot be
-  wrong is not reviewing. Pair the question with `teach.why` in one line.
-  Never stack hedges: one "I think" or one question mark, not both plus
-  "maybe".
+**Comment voice and length.** Load `references/review-comment-style.md` and
+apply it to every externalized line: blocking comments direct, non-blocking
+ones phrased as a question, 2 sentences max blocking / 1 non-blocking, no
+adverbs, no preamble, no restating the code, suggestion block carries the fix.
+Report file and chat keep the long form; the cap trims words, never findings.
 
 **Cite the source.** Where a finding's `teach.reference` holds a canonical URL
 (language docs, framework docs, the vendor's SQL reference, a rule-pack guide
@@ -450,6 +444,7 @@ the user explicitly picks it.
   they never appear in the PR.
 - First person, direct, humanized (reuse the step-8 humanized text). Read
   like a colleague's review, not a report.
+- Keep the step-8 length budget; never re-expand a comment en route to the PR.
 - Use Markdown `` `code` `` spans for every code token — filenames, paths,
   symbols, functions, config keys, values, commands, error strings (e.g.
   `` `dbt_project.yml` ``, `` `LT02` ``, `` `{% for kpi %}` ``). Use fenced
@@ -489,8 +484,8 @@ separate from step-8 local markers — a finding can be marked locally but not
 posted, or vice versa.
 
 **Structure of the posted review:**
-- Summary comment: verdict (merge-ready or not) + the blocking issues as a
-  short prose list, in the user's voice.
+- Summary comment: verdict (merge-ready or not) + one bullet per blocking
+  issue, ≤15 words each, in the user's voice. No preamble, no stats.
 - Inline comments: one per **confirmed** finding at its `file:line` via
   `gh pr review --comment` / the review API, phrased as the humanized fix.
 - Only approved-and-confirmed findings — never the raw panel set. Batch into
