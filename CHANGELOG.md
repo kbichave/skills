@@ -5,6 +5,31 @@ All notable changes to deep-plan will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [5.22.0] - 2026-09-28
+
+### Changed
+- **Humanizer 3.0.0, merged with content-humanizer 2.12.1.** `SKILL.md` is now
+  a short router, and the detail moved into `skills/humanizer/references/`
+  (`patterns.md`, `surfaces-and-scan.md`, `detection.md`, `voice.md`,
+  `seo-preservation.md`). From upstream: a no-fabrication rule checked in the
+  audit step, a marketing content type that keeps the sell and SEO structure,
+  file and embedded invocation modes (embedded returns only the final text,
+  which is what review-panel's comment pass needs), false-positive guidance, a
+  hard ban on em and en dashes in the rewrite, and four new patterns numbered
+  34-37 (diff-anchored writing, staccato punchlines, aphorism formulas,
+  rhetorical openers). Kept from ours: the Reinhart noun-density root cause,
+  nominal patterns 30-33, Non-Prose Surfaces, the Mechanical Scan (extended
+  with greps for the new patterns), and the Default Voice Profile, now scoped
+  to the user's own messages and comments. Patterns 1-33 keep their numbers.
+
+### Removed
+- **Humanizer examples that invented facts.** The old before/after pairs and
+  the full worked example added sources, studies and named interviewees that
+  the "Before" text never had, which taught the fabrication the new rule
+  forbids. Replaced with upstream pairs that add nothing. Upstream's
+  brand-specific `examples.md` was not imported; its general rewrite moves
+  now open `patterns.md`.
+
 ## [5.21.0] - 2026-09-14
 
 ### Changed

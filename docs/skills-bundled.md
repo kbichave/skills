@@ -12,7 +12,7 @@ plugin **depends on** are installed unmodified from their upstream source
 |---|---|
 | `deep` | The plugin's own discovery/plan/implement pipeline. |
 | `code-review` | Standalone entry point to the `code-reviewer` agent with context gathering and web-verified findings. |
-| `humanizer` | Removes signs of AI-generated writing from prose (user's own skill, v2.5.1; global copy archived — plugin is the single source). |
+| `humanizer` | Removes signs of AI-generated writing from prose (user's own skill, v3.0.0, merged with content-humanizer 2.12.1; global copy archived — plugin is the single source). |
 
 ## Installed from mattpocock/skills
 
