@@ -64,6 +64,21 @@ class TestHooksJsonConfig:
                             f"Remove quotes around ${{CLAUDE_PLUGIN_ROOT}}"
                         )
 
+    def test_uv_run_hooks_ignore_project_config(self, hooks_json_path):
+        """`uv run` hooks must pass --no-config.
+
+        Hooks run with the user's project as cwd. Without --no-config, uv reads
+        that project's [tool.uv] settings, so a pin like
+        `required-version = "==0.9.25"` makes every uv hook fail on another uv.
+        """
+        data = json.loads(hooks_json_path.read_text())
+        for hook_type, hook_list in data.get("hooks", {}).items():
+            for hook_group in hook_list:
+                for hook in hook_group.get("hooks", []):
+                    command = hook.get("command", "")
+                    if command.startswith("uv run") and "--no-config" not in command:
+                        pytest.fail(f"{hook_type} hook runs uv without --no-config:\n  {command}")
+
     def test_all_hook_scripts_exist(self, hooks_json_path):
         """All scripts referenced in hooks.json should exist."""
         plugin_root = hooks_json_path.parent.parent

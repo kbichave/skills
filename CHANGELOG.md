@@ -5,6 +5,15 @@ All notable changes to deep-plan will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [5.22.1] - 2026-09-30
+
+### Fixed
+- **`uv run` hooks failed in projects that pin a uv version.** Hooks run with
+  the user's project as cwd, and `uv run --no-project` still reads that
+  project's `[tool.uv]` settings, so a `required-version` pin that did not
+  match the installed uv broke the SessionStart and SubagentStop hooks. All
+  `uv run` hooks now pass `--no-config`, and a test enforces it.
+
 ## [5.22.0] - 2026-09-28
 
 ### Changed

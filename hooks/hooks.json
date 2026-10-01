@@ -5,11 +5,11 @@
         "hooks": [
           {
             "type": "command",
-            "command": "uv run --no-project ${CLAUDE_PLUGIN_ROOT}/scripts/hooks/capture-session-id.py"
+            "command": "uv run --no-project --no-config ${CLAUDE_PLUGIN_ROOT}/scripts/hooks/capture-session-id.py"
           },
           {
             "type": "command",
-            "command": "uv run --no-project ${CLAUDE_PLUGIN_ROOT}/scripts/hooks/auto-install-statusline.py"
+            "command": "uv run --no-project --no-config ${CLAUDE_PLUGIN_ROOT}/scripts/hooks/auto-install-statusline.py"
           }
         ]
       }
@@ -61,7 +61,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "uv run --no-project ${CLAUDE_PLUGIN_ROOT}/scripts/hooks/write-section-on-stop.py"
+            "command": "uv run --no-project --no-config ${CLAUDE_PLUGIN_ROOT}/scripts/hooks/write-section-on-stop.py"
           }
         ]
       },
@@ -70,7 +70,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "uv run --no-project ${CLAUDE_PLUGIN_ROOT}/scripts/hooks/write-section-on-stop.py"
+            "command": "uv run --no-project --no-config ${CLAUDE_PLUGIN_ROOT}/scripts/hooks/write-section-on-stop.py"
           }
         ]
       }
