@@ -1,0 +1,68 @@
+# Example deployment profile. Copy to ~/.claude/deep/profiles/<name>.toml and
+# fill in. The real file stays outside every repo: it names your organization's
+# databases, spaces and vendors, which this plugin never ships.
+#
+# Select it with DEEP_PROFILE=<name> (or a path), or let match_remotes pick it
+# from the target repo's origin URL.
+#
+# TOML rule: plain keys must come before the first [table] header. A key written
+# after a header belongs to that table, not to the top level.
+
+name = "example"
+match_remotes = ["github.com/example-org/"]
+
+# How CI names a pull request's build schema. {pr} is the PR number.
+ci_schema_pattern = "DBT_CI_PR_{pr}"
+
+# Check systems a finding's monitor recommendation targets.
+check_systems = ["dbt_tests", "metaplane"]
+
+business_units = ["Retail Fuel", "Store Operations", "Supply", "Finance", "Loyalty"]
+
+# Columns whose values never appear at row level in a report or PR comment.
+pii_column_patterns = ["(?i)email", "(?i)phone", "(?i)member_id", "(?i)card_"]
+
+# Which database prefixes mean which environment. An empty prod prefix covers a
+# migration where production dropped its prefix (RETAIL, not PROD_RETAIL).
+[environments]
+prod = "prod"
+prefixes = { dev = "DEV_", uat = "UAT_", prod = "" }
+legacy_prod_prefix = "PROD_"
+
+# Database naming per layer. {env} is the prefix above, {name} the source or domain.
+[layers]
+curated = "{env}CUR_{name}"
+business = "{env}BTR_{name}"
+app = "{env}APP_{name}"
+order = ["curated", "business", "app"]
+
+[warehouse]
+dialect = "snowflake"
+# The MCP tool that runs read-only SQL. Empty means the dbt MCP execute_sql.
+tool = ""
+describe_tool = ""
+
+# Verified monitor naming and tags, when the team has one. Without this table
+# monitor-reviewer labels its naming a proposed fallback.
+[checks]
+monitor_name_pattern = "dbt_{layer}_{model}_{monitor_type}"
+tags = ["monitor_priority_{priority}", "dbt_layer_{layer}"]
+
+# Generic names used in shipped text, mapped to the real feed names.
+[source_aliases]
+"POS feed" = "your POS vendor"
+"competitive pricing feed" = "your competitor price vendor"
+"loyalty feed" = "your loyalty vendor"
+
+# Knowledge sources the domain-context reader tries, in this order.
+[[knowledge_sources]]
+type = "confluence"
+space = "DATA"
+known_issues_page = "Known data issues"
+skip_tree = "Agent notes"
+
+[[knowledge_sources]]
+type = "semantic_layer"
+
+[[knowledge_sources]]
+type = "repo_docs"

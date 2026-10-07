@@ -33,7 +33,7 @@ HIGH_CONFIDENCE_KEYWORDS: dict[str, tuple[str, ...]] = {
     "humanizer": ("draft", "prose", "rephrase", "in my style"),
     "internal-comms": ("status report", "leadership update", "incident report"),
     "pptx": (".pptx", "slide deck", "presentation"),
-    "pptx-gp-template": ("gp slides", "gp template", "global partners deck"),
+    "pptx-gp-template": ("gp slides", "gp template", "company deck template"),
     "mcp-builder": ("mcp server", "model context protocol"),
     "pr-reply": ("pr comment", "review comment", "reply"),
     "karpathy-guidelines": ("anti-pattern", "surgical edit", "verifiable success"),

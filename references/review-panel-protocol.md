@@ -113,6 +113,16 @@ language's idioms and thresholds before flagging language-specific patterns.
 - `severity`: `high` = would cause an incident, silently wrong results, or an
   invalid conclusion in production; `medium` = should fix; `low` = observation.
 - `improvements` are behavior-preserving better-way suggestions only.
+- Optional warehouse fields on an issue (data-eng and its data tier):
+  - `hypothesis`: the claim the finding makes about the data, with a number
+    and a threshold ("more than 1% of site-days in the last 30 days are
+    filled, not observed").
+  - `disproof_sql`: one read-only, bounded, aggregated statement that would
+    disprove it, with full `DATABASE.SCHEMA.TABLE` names.
+  - `data_evidence`: added by the orchestrator from `dq-prover`, never by an
+    expert: `{query, result_excerpt, relation, environment, queried_at}`.
+  - `scope` (`new|confirms-pr-claim|fixed-by-pr`), `known`, `prior`,
+    `severity_reader`: set by the review-verifier.
 - `teach`: **required on every issue.** Do not restate the fix — name the
   underlying `principle`, say `why` it bites, and give the general `pattern`
   so the author recognizes the class of bug next time, not only this instance.
@@ -165,3 +175,16 @@ artifact both depend on it.
    rather than spending the network stage on it.
 6. Nothing in your domain touched by the diff → return
    `{"expert": "<id>", "summary": "no findings — <why>", "issues": [], "improvements": []}`.
+
+## Network stages
+
+Experts never touch the network. Three declared stages do, each run by the
+orchestrator and each skippable:
+
+1. **Context** (`deep:model-context`, `deep:domain-context-reader`): dbt
+   metadata and knowledge sources. Never reads table data.
+2. **Data** (`deep:dq-hypothesizer`, `deep:dq-prover`,
+   `deep:monitor-reviewer`): read-only warehouse queries, only with `--data`,
+   behind the SQL guard hook. See `references/dq/data-tier.md`.
+3. **Claims** (`deep:claim-verifier`): web verification of framework,
+   dialect and version claims.

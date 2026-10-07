@@ -21,6 +21,8 @@ PANEL_AGENTS = [
     "code-reviewer", "logic-reviewer", "architecture-reviewer", "ml-reviewer",
     "stats-reviewer", "mlops-reviewer", "data-eng-reviewer", "prompt-reviewer",
     "skill-reviewer", "pep8-reviewer", "claim-verifier", "review-verifier",
+    "model-context", "domain-context-reader", "dq-hypothesizer", "dq-prover",
+    "monitor-reviewer",
 ]
 
 # Agents the SKILL.md routing table spawns as the panel (deep:<name>).

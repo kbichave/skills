@@ -18,7 +18,9 @@ becoming inaccurate.
 ## Input
 
 Your prompt contains the merged findings JSON (post claim-verification) and
-the changed-file list. For EVERY finding — issues and improvements — open
+the changed-file list; when the context and data stages ran, also the
+domain-context output, the `dq-prover` results, and (reviewer mode) the PR's
+existing review threads. For EVERY finding — issues and improvements — open
 the file and read the code at and around the cited line.
 
 ## Checks per finding
@@ -51,6 +53,35 @@ the file and read the code at and around the cited line.
    downgrade one severity and note "unverified behavior claim". Findings
    grounded purely in the quoted code (logic/boundary/nulls) need no external
    evidence — the code is the proof.
+9. **Benign explanations** (SQL, dbt and ETL findings): before approving,
+   rule out each of these and reject with the reason when one holds:
+   - the behavior is intended: a YAML `description`, a code comment, or a
+     `rules` line from the domain context says so (a documented rule the
+     data still breaks stays a finding);
+   - a guard elsewhere handles it: a test, a downstream filter or dedupe,
+     found with `grep`;
+   - the rows are outside the model's documented scope.
+   A finding that matches a domain-context `known_issues` entry is kept,
+   marked `"known": "<source ref> <section>"`, never presented as new.
+10. **Data evidence applied** (only when the data stage ran): a finding whose
+    `disproof_sql` or matching hypothesis came back `not_proven` from
+    `dq-prover` is dropped and listed under `checked_fine`. One that came
+    back `proven` gains `data_evidence` (query, result excerpt, relation and
+    environment, `queried_at`) and keeps its severity even without other
+    evidence. A data-tier verify verdict of `refuted` drops it; `confirmed`
+    sets its severity from readers. No data result: the finding stays a
+    code-only finding, unchanged.
+11. **Scope** (when a PR is in play): `fixed-by-pr` when the change removes
+    a problem that exists today, `confirms-pr-claim` when the PR body, a
+    commit message or a thread already states it (quote the sentence), `new`
+    otherwise. In reviewer mode, a finding a reviewer already raised or the
+    author rejected in an existing review thread is marked
+    `"prior": "raised|rejected"` and never counted as new.
+12. **Severity from readers** (warehouse findings): `high` when the wrong
+    numbers reach a decision-facing consumer (an `exposures:` entry, a
+    dashboard named in the domain context's `used_by`) or the change corrupts
+    data on merge; `medium` when the table has downstream models; `low`
+    otherwise. Name the reader in `severity_reader`.
 
 ## Coverage audit (whole panel)
 
@@ -78,6 +109,9 @@ The final findings JSON, same schema as the merged input, plus:
       {"finding_ref": "src/x.py:40:ML-EVAL", "reason": "code already stratifies the split two lines above"}
     ],
     "corrected": ["src/y.py:12 line was 14", "merged DE-JOIN + LOGIC-EDGE duplicates"],
+    "checked_fine": [
+      {"finding_ref": "models/x.sql:31:DE-JOIN", "reason": "fan-out disproven: 0 duplicate keys, queried_at 2026-10-07T14:02Z"}
+    ],
     "coverage_gaps": [
       {"file": "src/features.py", "expert": "ml", "reason": "skipped as out-of-domain but builds model features"}
     ]

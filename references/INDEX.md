@@ -71,6 +71,8 @@ All section-level discipline in `implement-protocol.md`. Phases 1-10 with explic
 | `review-panel-protocol.md` | Every panel expert — input, output JSON, detective sweep, rules |
 | `code-review-context.md` | `review-panel` step 2 when the user picks Auto-discover |
 | `review-comment-style.md` | `review-panel` step 8 — voice and length cap for chat, marker and PR comment text |
+| `dq/` | Data tier: lenses, evidence, standard hypotheses, schedule patterns, warehouse tools, `data-tier.md` flow detail |
+| `profiles/example.toml` | Deployment profile template; real profiles live in `~/.claude/deep/profiles/` |
 | `quality/` | Rule packs the core reviewer enforces; `quality/lang/` for per-language idioms |
 
 ## Anti-patterns reference
