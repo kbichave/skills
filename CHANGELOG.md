@@ -5,6 +5,35 @@ All notable changes to deep-plan will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [5.23.0] - 2026-10-07
+
+### Added
+- **Warehouse review tier.** The review panel now carries the data quality
+  patterns from the dq_agent plugin. `data-eng-reviewer` gains zero-fill,
+  incremental-filter, late-key, promise-vs-code, configuration, blast-radius
+  and schedule checks (`DE-*` tags) and emits optional `hypothesis` and
+  `disproof_sql` fields on SQL findings.
+- **Context stage** (`--context` / `--no-context`): `model-context` and
+  `domain-context-reader` agents gather metadata and business knowledge for
+  changed models. Metadata only, no table data.
+- **Data tier** (`--data`): `dq-hypothesizer`, `dq-prover` and
+  `monitor-reviewer` agents test findings against the warehouse, read-only and
+  aggregated, between the experts and `claim-verifier`.
+- **SQL guard hook** (`scripts/hooks/warehouse-sql-guard.py`, backed by
+  `scripts/lib/sql_guard.py`): while a data-tier run is open
+  (`scripts/checks/data-tier.py`), denies warehouse MCP statements that are
+  not single, read-only, star-free and bounded. Fails open; inactive otherwise.
+- **`dq-investigate` skill** for pre-existing data problems; the review panel
+  hands off to it.
+- **Deployment profile** (`~/.claude/deep/profiles/<name>.toml`, loader
+  `scripts/lib/deep_profile.py`, CLI `scripts/checks/deep-profile.py`) keeps
+  organization specifics outside every repo. `tests/test_no_org_identifiers.py`
+  fails the build if one leaks into a tracked file.
+
+### Changed
+- `review-verifier` checks benign explanations, tags scope, dedupes against PR
+  threads in reviewer mode and sets severity by reader.
+
 ## [5.22.1] - 2026-09-30
 
 ### Fixed

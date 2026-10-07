@@ -60,6 +60,33 @@ frame-level ETL, and the join arithmetic no rule id can state generically.
 - **Contract drift** (`DE-CONTRACT`): a column added, renamed, retyped, or
   dropped in a model that something downstream reads positionally or by
   wildcard; a `.yml` test removed alongside the column it guarded.
+- **Fill and zero-fill** (`DE-FILL`): forward-fill (`LAST_VALUE ... IGNORE
+  NULLS`, `COALESCE(x, LAG(x))`) with no `is_filled` flag, so filled and
+  observed values look the same downstream; `COALESCE(measure, 0)` where no
+  row means "not observed", which turns a missing day into a real zero.
+- **Incremental filter shape** (`DE-IDEMPOTENCY`): `NOT IN (select key from
+  {{ this }})` inserts a key once and never re-reads its corrections; a
+  lookback that leaves a gap between the first run and the window;
+  `CURRENT_DATE` in logic that is not the incremental filter.
+- **Late-filled join keys** (`DE-JOIN`): a join on a column the parent fills
+  in after the row first lands, so early runs drop or mis-map the row.
+- **Promise vs code** (`DE-CONTRACT`): a YAML `description` that states a
+  rule the SQL does not keep ("one row per site per day", "never negative").
+  Quote both; the rule becomes an invariant for the data tier.
+- **Configuration** (`DE-CONFIG`): `var()` with no default; hard-coded
+  environment names, database prefixes, dates or years that age out.
+- **Blast radius** (`DE-CONTRACT`): a changed macro or `var` touches every
+  model that uses it. `grep -rl` for the name and list the callers in
+  `evidence`; findings still land only on changed files.
+- **Schedules** (`DE-SCHEDULE`, only when the diff touches
+  `dbt_project.yml`, selectors, job definitions or exposures): an orphan
+  model no job selects, a broken chain (a child scheduled before its
+  parent), a cross-environment chain, a scheduled full refresh of an
+  incremental model. Recipes: `references/dq/schedule-patterns.md`.
+
+For every join in changed SQL, name the right-hand relation and the join key
+in the finding or in `summary`, so the data tier can run one fan-out check
+per join.
 
 ## SQL and dbt sweep (`.sql`, `dbt_project.yml`, schema `.yml`)
 
@@ -83,6 +110,22 @@ reasoning, which is why they hide from a per-file pass:
   (`DBT-010`).
 - A `.yml` entry naming a model or column that no longer exists (`DBT-011`):
   it stops testing silently, so grep for the model file before trusting it.
+
+## Context and data hand-off
+
+When your prompt carries `model_context` or `domain_context` (the panel's
+context stage), use them rather than re-deriving: the dbt key and tests from
+model context, the semantic grain, rules and known issues from domain
+context. A semantic grain that differs from the dbt key is a `DE-GRAIN`
+finding. A domain rule the SQL breaks is a `DE-CONTRACT` finding citing the
+rule's `source`.
+
+Every finding on SQL or dbt that the data could settle carries two optional
+fields from `references/review-panel-protocol.md`: `hypothesis` (the claim
+about the data, with a number and a threshold) and `disproof_sql` (one
+read-only, bounded, aggregated statement against full
+`DATABASE.SCHEMA.TABLE` names). You never run it; the data tier does when
+`--data` is on, and the user can run it otherwise.
 
 ## Method
 

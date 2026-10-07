@@ -1,6 +1,6 @@
 ---
 name: review-panel
-description: Standalone multi-expert code review, outside of /deep implement. Routes the diff to a panel of specialist reviewer subagents (core packs, logic, architecture, ML, stats, MLOps, data engineering, prompt engineering), verifies claims against current docs, gates everything through a final review-verifier, and writes a dated report under ~/.claude/code-reviews/ (never inside the repo). Detects whose code it is: on the user's own work it offers fixes and inserts inline CODECHANGE/RECOMMENDATION markers, while on someone else's branch or PR it runs read-only as a pre-review and delivers the findings as GitHub PR comments instead. Use when the user asks to review code, review a diff/branch/PR, pre-review a teammate's PR before commenting, or check changes against the quality packs. Do NOT use for writing or fixing code (only reviewing it), for /deep implement Phase 5 (that flow spawns the reviewer itself), for reviewing prose documents/PRDs, or for git operations like merging or resolving conflicts.
+description: Standalone multi-expert code review, outside of /deep implement. Routes the diff to a panel of specialist reviewer subagents (core packs, logic, architecture, ML, stats, MLOps, data engineering, prompt engineering), optionally checks dbt changes against warehouse context and production data (--data), verifies claims against current docs, gates everything through a final review-verifier, and writes a dated report under ~/.claude/code-reviews/ (never inside the repo). Detects whose code it is: on the user's own work it offers fixes and inserts inline CODECHANGE/RECOMMENDATION markers, while on someone else's branch or PR it runs read-only as a pre-review and delivers the findings as GitHub PR comments instead. Use when the user asks to review code, review a diff/branch/PR, pre-review a teammate's PR before commenting, or check changes against the quality packs. Do NOT use for writing or fixing code (only reviewing it), for /deep implement Phase 5 (that flow spawns the reviewer itself), for reviewing prose documents/PRDs, or for git operations like merging or resolving conflicts.
 ---
 
 # Code Review (standalone, expert panel)
@@ -42,11 +42,9 @@ Fail fast before any agent spawns: `git rev-parse <base>` must resolve and the
 diff must be non-empty. A bad ref or empty diff dies here, not inside a
 sub-agent.
 
-**Size guardrail.** Measure the diff (`git diff <base> --shortstat`). Defect
-detection collapses past ~400 changed LOC (SmartBear). If the diff exceeds ~400 LOC, tell the user, and offer to
-either (a) scope the review to a subset of files/commits now, or (b) proceed
-but run in paced passes so no region gets a shallow read. Proceed whole only
-on the user's say-so.
+**Size guardrail.** Defect detection collapses past ~400 changed LOC
+(SmartBear; `git diff <base> --shortstat`). Past that, offer to (a) scope to a
+subset now or (b) proceed in paced passes. Proceed whole only on the user's say-so.
 
 ### 1b. Authorship — sets `review_mode` (do this before step 2)
 
@@ -108,6 +106,13 @@ Otherwise ask (AskUserQuestion):
    cloned, apply `references/repository-freshness.md`: refresh `origin/main`, use
    that commit, record fetch failures as potentially stale specialist context.
 
+**2b. Warehouse context.** When `deep:data-eng-reviewer` will spawn and the
+diff touches dbt models, YAML, macros, seeds or snapshots: resolve the profile,
+then spawn `deep:model-context` and (profile `knowledge_sources`, or
+`--context`; never `--no-context`) `deep:domain-context-reader` in parallel.
+Their outputs go to data-eng-reviewer and the review-verifier. Flags, inputs
+and the data tier: `references/dq/data-tier.md`.
+
 ### 3. Resolve packs + languages
 
 ```python
@@ -135,9 +140,9 @@ parallel — one message, multiple Agent calls**. Every expert follows
 | `deep:skill-reviewer` | `**/SKILL.md`, `agents/*.md`, or hook-prompt files |
 | `deep:prompt-reviewer` | LLM/API prompts, prompt templates, inline model instructions in app code |
 
-Detect signals by extension + `grep -l` for the trigger imports across changed
-files. When in doubt, spawn — a no-findings expert returns cheaply. Tell the
-user which experts were selected and why (one line each).
+Detect signals by extension + `grep -l` for trigger imports. When in doubt,
+spawn; a no-findings expert returns cheaply. Tell the user which experts were
+selected and why (one line each).
 
 Each expert's prompt file (temp) contains: `changed_files`, `diff_base`,
 `review_context`, its `focus`. The core reviewer additionally gets
@@ -148,7 +153,12 @@ review") per its own contract.
 
 1. **Merge** all expert JSONs into one findings set. Keep each finding's
    `expert` tag. Do not dedupe or rerank yourself — the verifiers own that.
-2. **`deep:claim-verifier`** — the panel's ONLY network stage, and the reason
+1b. **Data stage** (`--data` only; reviewer mode allowed, it only reads):
+   arm the SQL guard, run `deep:dq-hypothesizer` per changed model and
+   `deep:dq-prover` batches, verify proven items, disarm. After step 3,
+   `deep:monitor-reviewer` per approved high/medium warehouse finding. Steps,
+   caps and report sections: `references/dq/data-tier.md`.
+2. **`deep:claim-verifier`** — the panel's only web stage, and the reason
    experts are told not to web-search. Spawn if any finding has
    `needs_verification: true`, or a `high` finding cites neither tool output
    nor a documentation URL, or a finding rests on a SQL-dialect behavior
@@ -202,9 +212,8 @@ standards pass can't mask a spec miss (and vice versa):
     the pattern is: trace every optional to its use before shipping").
   - **What to study** — 2–4 concrete pointers (the `reference` links, a
     concept to read up on), chosen from the themes, not generic advice.
-  - **Strengths** — pull the panel's `praise` here as positive
-    reinforcement: what the author did well and should keep doing.
-  Always render it (even a clean review gets a strengths note); it never affects a verdict.
+  - **Strengths** — the panel's `praise`: what the author should keep doing.
+  Always render it; it never affects a verdict.
 
 Within each axis:
 - Verdict line: pass/fail + one-sentence summary.
@@ -239,9 +248,8 @@ so severity and intent read at a glance. Mapping:
 | praise | `praise:` |
 | unresolved question (panel could not confirm intent) | `question:` |
 
-`blocking` findings are the ones that fail a verdict; everything else is
-`non-blocking`. The internal report table keeps `rule_id`/severity; the
-label is for the human-facing surfaces.
+`blocking` findings fail a verdict; the rest are `non-blocking`. Labels are for
+human-facing surfaces; the report table keeps `rule_id`/severity.
 
 **Author mode only:** offer to fix `high` findings, and apply fixes only on
 user confirmation. In reviewer mode, offer nothing and change nothing; the fix
@@ -251,8 +259,7 @@ travels to the author as a suggestion block on the PR.
 
 Always persist the full report, then echo the absolute path in chat.
 
-**Reports live outside the reviewed repo.** Writing them into the working tree
-adds an untracked file the user must ignore, or worse, accidentally commits.
+**Reports live outside the reviewed repo**, so nothing untracked can be committed by accident.
 
 ```
 ~/.claude/code-reviews/<owner>__<repo>/<YYYY-MM-DD>-<pr-N|branch-slug>.md
@@ -409,11 +416,9 @@ Payload — one entry per approved finding:
   files. The script itself skips lines already carrying a `(review):` marker
   (idempotent re-review) and reports `inserted`/`skipped` counts.
 
-Append a `## Markers inserted` list (`file:line — marker text — approved/
-edited`) plus a `## Skipped` list to the report file, and tell the user
-markers are greppable via `grep -rn "(review):" <paths>`. Markers are
-working annotations — the user removes them as they address each one; they
-are not meant to be committed.
+Append `## Markers inserted` (`file:line — marker text — approved/edited`)
+and `## Skipped` to the report; tell the user `grep -rn "(review):" <paths>`
+finds them. Markers are working annotations, removed as addressed, never committed.
 
 ### 9. Posting to a GitHub PR
 

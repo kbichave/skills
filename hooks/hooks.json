@@ -24,6 +24,16 @@
             "command": "python3 ${CLAUDE_PLUGIN_ROOT}/scripts/hooks/guard-pre-tool-use.py"
           }
         ]
+      },
+      {
+        "matcher": "mcp__.*",
+        "hooks": [
+          {
+            "type": "command",
+            "timeout": 5,
+            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/scripts/hooks/warehouse-sql-guard.py"
+          }
+        ]
       }
     ],
     "PostToolUse": [

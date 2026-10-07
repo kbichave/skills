@@ -104,6 +104,11 @@ cases:
     should_trigger: true
     checks: [writes_reviews_file, learning_summary_present]
 
+  - id: edge-data-eng-zero-fill
+    prompt: "Review my dbt model change"  # diff wraps a measure in COALESCE(x, 0) with no is_filled flag
+    should_trigger: true
+    checks: [spawns_data_eng_reviewer, flags_zero_fill]
+
 # Deterministic check definitions (regex/exit-code against transcript + workspace).
 # ~90% deterministic; LLM-judge reserved for report quality only.
 checks:
@@ -124,6 +129,7 @@ checks:
   no_agent_spawn_on_bad_ref: "zero Agent tool calls"
   skips_context_question_uses_provided: "no context AskUserQuestion; review_context contains 'DAI-123'"
   no_duplicate_markers: "grep -c 'CODECHANGE(review)' on seeded line == 1 after run"
+  flags_zero_fill: "a DE-FILL finding names the COALESCE(measure, 0) line"
   warns_large_diff: "response warns the diff exceeds ~400 LOC and offers to split or run paced passes"
   learning_summary_present: "the report file contains a '## Learning summary' section with recurring-themes or what-to-study content"
 

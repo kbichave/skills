@@ -338,6 +338,11 @@ The plugin is being aligned with Anthropic's [AI-Native SDLC Playbook](https://c
 |-------|---------|
 | `code-reviewer.md` | Sole multi-language reviewer (Python/TS/Go): pack-scoped rule families, 4-phase workflow, cross-cutting + language reference library, report-only dead-code. Absorbed `python-code-reviewer` |
 | `pep8-reviewer.md` | Python style + coding-standards panel expert: PEP 8 naming, PEP 257 docstrings, PEP 484/585/604 typing form, and the project's complexity/length/param/nesting thresholds. Reads the repo's own ruff/black/isort config first; never restates raw linter output |
+| `model-context.md` | Panel context stage: dbt model metadata, tests, lineage to raw sources and exposures. No table data |
+| `domain-context-reader.md` | Panel context stage: business meaning, grain, rules and known issues from the profile's knowledge sources |
+| `dq-hypothesizer.md` | Data tier (`--data`): falsifiable data hypotheses per model, one read-only test SQL each |
+| `dq-prover.md` | Data tier (`--data`): runs hypotheses and standard checks read-only, judges proven or not, refutes proven findings |
+| `monitor-reviewer.md` | Data tier (`--data`): is a confirmed finding covered by a check; recommends the one that would catch it |
 | `opus-plan-reviewer.md` | Plan review fallback when external LLMs unavailable |
 | `audit-doc-writer.md` | Focused audit document generation per topic |
 | `section-writer.md` | Self-contained section content generation |
@@ -390,6 +395,7 @@ This plugin vendors a curated subset of [mattpocock/skills](https://github.com/m
 | Skill | Slash command | Use |
 |-------|--------------|-----|
 | `deep` | `/deep` | The discovery/plan/implement/auto pipeline. |
+| `dq-investigate` | `/dq-investigate` | Data quality investigation of a model and its lineage: hypothesize, prove, verify, monitor review. Report under `~/.claude/code-reviews/dq/`. |
 | `review-panel` | `/review-panel` | Standalone multi-expert review panel. Renamed from `code-review` in 5.19.0 to avoid clashing with the built-in `/code-review`. |
 | `humanizer` | `/humanizer` | Strips AI-writing tells from prose outputs. |
 
